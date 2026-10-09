@@ -33,19 +33,36 @@ let socketToPhone = {};
 
 io.on('connection', (socket) => {
     
-    // LOGIN / SIGNUP LOGIC
+    // SIGNUP LOGIC
+    socket.on('signup', ({ number, pin }) => {
+        let db = loadDB();
+        
+        if (db.users[number]) {
+            return socket.emit('login error', 'Yeh number pehle se registered hai! Kripya Login karein.');
+        } 
+        
+        // Register new user
+        db.users[number] = { pin: pin, registeredAt: new Date().toISOString() };
+        saveDB(db);
+
+        // Auto login after signup
+        connectedUsers[number] = socket.id;
+        socketToPhone[socket.id] = number;
+        console.log(`User signed up: ${number}`);
+        
+        socket.emit('login success', { number, history: [] });
+    });
+
+    // LOGIN LOGIC
     socket.on('login', ({ number, pin }) => {
         let db = loadDB();
         
-        // If user exists, check PIN
-        if (db.users[number]) {
-            if (db.users[number].pin !== pin) {
-                return socket.emit('login error', 'Galat PIN! Yeh number pehle se registered hai kisi aur PIN ke sath.');
-            }
-        } else {
-            // New user, register them
-            db.users[number] = { pin: pin, registeredAt: new Date().toISOString() };
-            saveDB(db);
+        if (!db.users[number]) {
+            return socket.emit('login error', 'Account nahi mila! Pehle Sign Up karein.');
+        }
+        
+        if (db.users[number].pin !== pin) {
+            return socket.emit('login error', 'Galat PIN! Kripya sahi PIN dalein.');
         }
 
         // Success Login

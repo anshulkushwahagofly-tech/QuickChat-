@@ -22,11 +22,29 @@ let myNumber = '';
 let activeChat = null; 
 let chats = {}; 
 
-// --- LOGIN LOGIC ---
+const loginFormView = document.getElementById('login-form-view');
+const signupFormView = document.getElementById('signup-form-view');
+const showSignupBtn = document.getElementById('show-signup');
+const showLoginBtn = document.getElementById('show-login');
+
+showSignupBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginFormView.style.display = 'none';
+    signupFormView.style.display = 'block';
+});
+
+showLoginBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    signupFormView.style.display = 'none';
+    loginFormView.style.display = 'block';
+});
+
+const loginBtn = document.getElementById('login-btn');
+const signupBtn = document.getElementById('signup-btn');
+
 loginBtn.addEventListener('click', () => {
-    const num = myNumberInput.value.trim();
-    const pin = myPinInput ? myPinInput.value.trim() : '';
-    
+    const num = document.getElementById('login-number').value.trim();
+    const pin = document.getElementById('login-pin').value.trim();
     if (num && pin) {
         socket.emit('login', { number: num, pin: pin });
     } else {
@@ -34,13 +52,14 @@ loginBtn.addEventListener('click', () => {
     }
 });
 
-if (myPinInput) {
-    myPinInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') loginBtn.click();
-    });
-}
-myNumberInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') myPinInput.focus();
+signupBtn.addEventListener('click', () => {
+    const num = document.getElementById('signup-number').value.trim();
+    const pin = document.getElementById('signup-pin').value.trim();
+    if (num && pin) {
+        socket.emit('signup', { number: num, pin: pin });
+    } else {
+        alert("Kripya apna Number aur 4-digit PIN dono dalein.");
+    }
 });
 
 socket.on('login error', (msg) => {

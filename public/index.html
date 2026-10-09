@@ -18,28 +18,60 @@
         </div>
         <div class="login-box">
             <div class="login-content">
-                <h2>Welcome to QuickChat</h2>
-                <p class="login-subtitle">A simple, fast, and secure messaging app.</p>
-                
-                <div class="input-group">
-                    <label for="my-number-input">Enter your phone number</label>
-                    <div class="input-wrapper">
-                        <span class="country-code">+91</span>
-                        <input type="text" id="my-number-input" placeholder="e.g. 9876543210" autofocus autocomplete="off">
+                <!-- Login Mode -->
+                <div id="login-form-view">
+                    <h2>Login to QuickChat</h2>
+                    <p class="login-subtitle">Welcome back! Please enter your details.</p>
+                    
+                    <div class="input-group">
+                        <label>Phone Number</label>
+                        <div class="input-wrapper">
+                            <span class="country-code">+91</span>
+                            <input type="text" id="login-number" placeholder="Enter number" autocomplete="off">
+                        </div>
                     </div>
+                    
+                    <div class="input-group">
+                        <label>4-digit PIN</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="login-pin" placeholder="****" maxlength="4" autocomplete="off" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
+                        </div>
+                    </div>
+                    
+                    <button id="login-btn">
+                        <span>Login</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <p style="margin-top:20px; font-size:14px; color:#54656f; text-align:center;">New here? <a href="#" id="show-signup" style="color:#008bbf; font-weight:bold; text-decoration:none;">Create an account</a></p>
+                </div>
+
+                <!-- Signup Mode -->
+                <div id="signup-form-view" style="display:none;">
+                    <h2>Create Account</h2>
+                    <p class="login-subtitle">Join QuickChat and connect with friends.</p>
+                    
+                    <div class="input-group">
+                        <label>Choose Phone Number</label>
+                        <div class="input-wrapper">
+                            <span class="country-code">+91</span>
+                            <input type="text" id="signup-number" placeholder="Enter new number" autocomplete="off">
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Create 4-digit PIN</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="signup-pin" placeholder="****" maxlength="4" autocomplete="off" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
+                        </div>
+                    </div>
+                    
+                    <button id="signup-btn">
+                        <span>Sign Up</span>
+                        <i class="fas fa-user-plus"></i>
+                    </button>
+                    <p style="margin-top:20px; font-size:14px; color:#54656f; text-align:center;">Already have an account? <a href="#" id="show-login" style="color:#008bbf; font-weight:bold; text-decoration:none;">Login here</a></p>
                 </div>
                 
-                <div class="input-group">
-                    <label for="my-pin-input">Set / Enter a 4-digit PIN</label>
-                    <div class="input-wrapper">
-                        <input type="password" id="my-pin-input" placeholder="****" maxlength="4" autocomplete="off" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
-                    </div>
-                </div>
-                
-                <button id="login-btn">
-                    <span>Start Chatting</span>
-                    <i class="fas fa-arrow-right"></i>
-                </button>
                 <div class="secure-badge">
                     <i class="fas fa-lock"></i> End-to-end encrypted
                 </div>
