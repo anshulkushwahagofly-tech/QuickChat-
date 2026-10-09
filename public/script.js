@@ -201,19 +201,48 @@ messageInput.addEventListener('input', () => {
     }
 });
 
-function sendMessage() {
+// --- IMAGE COMPRESSION & UPLOAD ---
+const imageUpload = document.getElementById('image-upload');
+imageUpload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800;
+            const scaleSize = MAX_WIDTH / img.width;
+            canvas.width = MAX_WIDTH;
+            canvas.height = img.height * scaleSize;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // Compress and get Base64
+            const base64Str = canvas.toDataURL('image/jpeg', 0.6);
+            sendMessage(base64Str);
+        };
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // Reset input
+});
+
+function sendMessage(imageStr = null) {
     if (!activeChat) return;
     
     const text = messageInput.value.trim();
-    if (text) {
+    if (text || imageStr) {
         const timeNow = formatTime(new Date());
         
         // Local update
-        const msgObj = { from: myNumber, text: text, time: timeNow };
+        const msgObj = { from: myNumber, text: text, image: imageStr, time: timeNow };
         chats[activeChat].push(msgObj);
         
         // Send to server
-        socket.emit('private message', { to: activeChat, text: text });
+        socket.emit('private message', { to: activeChat, text: text, image: imageStr });
         
         messageInput.value = '';
         messageInput.dispatchEvent(new Event('input')); 
@@ -222,7 +251,7 @@ function sendMessage() {
     }
 }
 
-sendBtn.addEventListener('click', sendMessage);
+sendBtn.addEventListener('click', () => sendMessage());
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
@@ -232,7 +261,7 @@ function renderMessages() {
     
     messagesContainer.innerHTML = `
         <div class="encryption-msg">
-            <i class="fas fa-lock"></i> Messages are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.
+            <i class="fas fa-lock"></i> Messages are end-to-end encrypted. No one outside of this chat, not even QuickChat, can read or listen to them.
         </div>
     `;
     
@@ -244,11 +273,14 @@ function renderMessages() {
         msgElement.className = `message ${isMe ? 'sent' : 'received'}`;
         
         let ticksHTML = isMe ? `<i class="fas fa-check-double ticks"></i>` : '';
+        let mediaHTML = msg.image ? `<img src="${msg.image}" style="max-width:100%; border-radius:5px; margin-bottom:5px; display:block;">` : '';
+        let textHTML = msg.text ? `<span class="message-content">${msg.text}</span>` : '';
         
         msgElement.innerHTML = `
-            <span class="message-content">${msg.text}</span>
-            <div class="message-footer">
-                <span class="message-time">${msg.time}</span>
+            ${mediaHTML}
+            ${textHTML}
+            <div class="message-footer" style="${(!msg.text && msg.image) ? 'position:absolute; bottom:5px; right:10px; background:rgba(0,0,0,0.5); border-radius:10px; padding:2px 5px;' : ''}">
+                <span class="message-time" style="${(!msg.text && msg.image) ? 'color:white;' : ''}">${msg.time}</span>
                 ${ticksHTML}
             </div>
             <div style="clear:both"></div>
@@ -266,7 +298,7 @@ socket.on('private message', (data) => {
     
     if (!chats[sender]) chats[sender] = [];
     
-    chats[sender].push({ from: sender, text: data.text, time: timeNow });
+    chats[sender].push({ from: sender, text: data.text, image: data.image, time: timeNow });
     
     if (activeChat === sender) {
         renderMessages();

@@ -130,7 +130,10 @@
 
             <div class="chat-panel-input">
                 <i class="far fa-smile icon-btn"></i>
-                <i class="fas fa-paperclip icon-btn"></i>
+                <input type="file" id="image-upload" accept="image/*" style="display:none;">
+                <label for="image-upload" style="margin:0;">
+                    <i class="fas fa-paperclip icon-btn" id="attach-btn" title="Send Photo"></i>
+                </label>
                 <input type="text" id="message-input" placeholder="Type a message">
                 <i class="fas fa-microphone icon-btn" id="mic-btn"></i>
                 <button id="send-btn" style="display: none;"><i class="fas fa-paper-plane"></i></button>
@@ -147,6 +150,6 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=5"></script>
+    <script src="script.js?v=6"></script>
 </body>
 </html>

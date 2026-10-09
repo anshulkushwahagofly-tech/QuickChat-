@@ -34,6 +34,7 @@ const Message = mongoose.model('Message', new mongoose.Schema({
     from: String, 
     to: String, 
     text: String, 
+    image: String,
     timestamp: Date 
 }));
 
@@ -64,12 +65,12 @@ async function createUser(number, pin) {
     }
 }
 
-async function saveMessage(from, to, text, timestamp) {
+async function saveMessage(from, to, text, image, timestamp) {
     if (useMongo) {
-        await Message.create({ from, to, text, timestamp });
+        await Message.create({ from, to, text, image, timestamp });
     } else {
         let db = loadDB();
-        db.messages.push({ from, to, text, timestamp: timestamp.toISOString() });
+        db.messages.push({ from, to, text, image, timestamp: timestamp.toISOString() });
         saveDB(db);
     }
 }
@@ -77,7 +78,7 @@ async function saveMessage(from, to, text, timestamp) {
 async function getUserMessages(number) {
     if (useMongo) {
         const msgs = await Message.find({ $or: [{ from: number }, { to: number }] }).sort('timestamp');
-        return msgs.map(m => ({ from: m.from, to: m.to, text: m.text, timestamp: m.timestamp.toISOString() }));
+        return msgs.map(m => ({ from: m.from, to: m.to, text: m.text, image: m.image, timestamp: m.timestamp.toISOString() }));
     } else {
         return loadDB().messages.filter(m => m.from === number || m.to === number);
     }
@@ -132,14 +133,17 @@ io.on('connection', (socket) => {
         if (!senderNumber) return;
 
         const timestamp = new Date();
+        const textToSave = data.text || '';
+        const imageToSave = data.image || '';
         
         // Save to DB
-        await saveMessage(senderNumber, data.to, data.text, timestamp);
+        await saveMessage(senderNumber, data.to, textToSave, imageToSave, timestamp);
 
         const messageObj = {
             from: senderNumber,
             to: data.to,
-            text: data.text,
+            text: textToSave,
+            image: imageToSave,
             timestamp: timestamp.toISOString()
         };
 
