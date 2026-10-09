@@ -172,6 +172,46 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- WebRTC Signaling ---
+    socket.on('call-user', (data) => {
+        const receiverSocketId = connectedUsers[data.to];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('call-made', {
+                offer: data.offer,
+                from: socketToPhone[socket.id],
+                isVideo: data.isVideo
+            });
+        }
+    });
+
+    socket.on('make-answer', (data) => {
+        const receiverSocketId = connectedUsers[data.to];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('answer-made', { answer: data.answer });
+        }
+    });
+
+    socket.on('reject-call', (data) => {
+        const receiverSocketId = connectedUsers[data.to];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('call-rejected');
+        }
+    });
+
+    socket.on('end-call', (data) => {
+        const receiverSocketId = connectedUsers[data.to];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('call-ended');
+        }
+    });
+
+    socket.on('ice-candidate', (data) => {
+        const receiverSocketId = connectedUsers[data.to];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('ice-candidate', { candidate: data.candidate });
+        }
+    });
+
     socket.on('disconnect', () => {
         const phoneNumber = socketToPhone[socket.id];
         if (phoneNumber) {

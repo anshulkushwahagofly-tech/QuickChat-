@@ -31,7 +31,7 @@ async function initStream(video = true) {
         if(!video) localVideo.style.display = 'none';
         else localVideo.style.display = 'block';
     } catch (err) {
-        alert("Camera/Mic permission required!");
+        alert("Camera/Mic Error: " + err.message);
         console.error(err);
         return false;
     }
