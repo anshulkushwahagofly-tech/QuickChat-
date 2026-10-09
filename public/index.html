@@ -10,12 +10,33 @@
 <body>
     <!-- Login Overlay -->
     <div id="login-container">
+        <div class="login-header">
+            <div class="logo-wrapper">
+                <i class="fab fa-whatsapp"></i>
+                <span>QuickChat</span>
+            </div>
+        </div>
         <div class="login-box">
-            <div style="color: #25D366; font-size: 50px; margin-bottom: 15px;"><i class="fab fa-whatsapp"></i></div>
-            <h2>QuickChat Login</h2>
-            <p style="margin-bottom: 15px; color: #555;">Enter your number to login</p>
-            <input type="text" id="my-number-input" placeholder="e.g. 9876543210" autofocus>
-            <button id="login-btn">Login</button>
+            <div class="login-content">
+                <h2>Welcome to QuickChat</h2>
+                <p class="login-subtitle">A simple, fast, and secure messaging app.</p>
+                
+                <div class="input-group">
+                    <label for="my-number-input">Enter your phone number</label>
+                    <div class="input-wrapper">
+                        <span class="country-code">+91</span>
+                        <input type="text" id="my-number-input" placeholder="e.g. 9876543210" autofocus autocomplete="off">
+                    </div>
+                </div>
+                
+                <button id="login-btn">
+                    <span>Start Chatting</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+                <div class="secure-badge">
+                    <i class="fas fa-lock"></i> End-to-end encrypted
+                </div>
+            </div>
         </div>
     </div>
 
