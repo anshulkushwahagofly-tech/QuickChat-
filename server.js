@@ -17,12 +17,16 @@ const MONGODB_URI = process.env.MONGODB_URI;
 let useMongo = false;
 
 if (MONGODB_URI) {
-    mongoose.connect(MONGODB_URI).then(() => {
-        useMongo = true;
-        console.log("Connected to MongoDB successfully! Data is now permanent.");
-    }).catch(err => {
-        console.error("MongoDB connection error:", err);
-    });
+    try {
+        mongoose.connect(MONGODB_URI).then(() => {
+            useMongo = true;
+            console.log("Connected to MongoDB successfully! Data is now permanent.");
+        }).catch(err => {
+            console.error("MongoDB connection error:", err);
+        });
+    } catch (criticalErr) {
+        console.error("CRITICAL MongoDB URI Error (Make sure it starts with mongodb+srv://):", criticalErr);
+    }
 }
 
 // Mongoose Schemas
@@ -92,65 +96,79 @@ io.on('connection', (socket) => {
     
     // SIGNUP LOGIC
     socket.on('signup', async ({ number, pin }) => {
-        const existingUser = await getUser(number);
-        
-        if (existingUser) {
-            return socket.emit('login error', 'Yeh number pehle se registered hai! Kripya Login karein.');
-        } 
-        
-        await createUser(number, pin);
+        try {
+            const existingUser = await getUser(number);
+            
+            if (existingUser) {
+                return socket.emit('login error', 'Yeh number pehle se registered hai! Kripya Login karein.');
+            } 
+            
+            await createUser(number, pin);
 
-        connectedUsers[number] = socket.id;
-        socketToPhone[socket.id] = number;
-        console.log(`User signed up: ${number}`);
-        
-        socket.emit('login success', { number, history: [] });
+            connectedUsers[number] = socket.id;
+            socketToPhone[socket.id] = number;
+            console.log(`User signed up: ${number}`);
+            
+            socket.emit('login success', { number, history: [] });
+        } catch (err) {
+            console.error("Signup error:", err);
+            socket.emit('login error', 'Server error. Please try again.');
+        }
     });
 
     // LOGIN LOGIC
     socket.on('login', async ({ number, pin }) => {
-        const existingUser = await getUser(number);
-        
-        if (!existingUser) {
-            return socket.emit('login error', 'Account nahi mila! Pehle Sign Up karein.');
-        }
-        
-        if (existingUser.pin !== pin) {
-            return socket.emit('login error', 'Galat PIN! Kripya sahi PIN dalein.');
-        }
+        try {
+            const existingUser = await getUser(number);
+            
+            if (!existingUser) {
+                return socket.emit('login error', 'Account nahi mila! Pehle Sign Up karein.');
+            }
+            
+            if (existingUser.pin !== pin) {
+                return socket.emit('login error', 'Galat PIN! Kripya sahi PIN dalein.');
+            }
 
-        connectedUsers[number] = socket.id;
-        socketToPhone[socket.id] = number;
-        console.log(`User logged in: ${number}`);
-        
-        const userMessages = await getUserMessages(number);
-        socket.emit('login success', { number, history: userMessages });
+            connectedUsers[number] = socket.id;
+            socketToPhone[socket.id] = number;
+            console.log(`User logged in: ${number}`);
+            
+            const userMessages = await getUserMessages(number);
+            socket.emit('login success', { number, history: userMessages });
+        } catch (err) {
+            console.error("Login error:", err);
+            socket.emit('login error', 'Server error. Please try again.');
+        }
     });
 
     // Handle private messages
     socket.on('private message', async (data) => {
-        const senderNumber = socketToPhone[socket.id];
-        if (!senderNumber) return;
+        try {
+            const senderNumber = socketToPhone[socket.id];
+            if (!senderNumber) return;
 
-        const timestamp = new Date();
-        const textToSave = data.text || '';
-        const imageToSave = data.image || '';
-        
-        // Save to DB
-        await saveMessage(senderNumber, data.to, textToSave, imageToSave, timestamp);
+            const timestamp = new Date();
+            const textToSave = data.text || '';
+            const imageToSave = data.image || '';
+            
+            // Save to DB
+            await saveMessage(senderNumber, data.to, textToSave, imageToSave, timestamp);
 
-        const messageObj = {
-            from: senderNumber,
-            to: data.to,
-            text: textToSave,
-            image: imageToSave,
-            timestamp: timestamp.toISOString()
-        };
+            const messageObj = {
+                from: senderNumber,
+                to: data.to,
+                text: textToSave,
+                image: imageToSave,
+                timestamp: timestamp.toISOString()
+            };
 
-        // Send to receiver if online
-        const receiverSocketId = connectedUsers[data.to];
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit('private message', messageObj);
+            // Send to receiver if online
+            const receiverSocketId = connectedUsers[data.to];
+            if (receiverSocketId) {
+                io.to(receiverSocketId).emit('private message', messageObj);
+            }
+        } catch (err) {
+            console.error("Message error:", err);
         }
     });
 
