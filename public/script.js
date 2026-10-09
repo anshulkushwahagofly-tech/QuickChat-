@@ -2,9 +2,6 @@ const socket = io();
 
 const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
-const myNumberInput = document.getElementById('my-number-input');
-const myPinInput = document.getElementById('my-pin-input');
-const loginBtn = document.getElementById('login-btn');
 const myDisplayNumber = document.getElementById('my-display-number');
 
 const newChatInput = document.getElementById('new-chat-input');
