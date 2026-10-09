@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Web Clone</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Login Overlay -->
+    <div id="login-container">
+        <div class="login-box">
+            <div style="color: #25D366; font-size: 50px; margin-bottom: 15px;"><i class="fab fa-whatsapp"></i></div>
+            <h2>WhatsApp Login</h2>
+            <p style="margin-bottom: 15px; color: #555;">Enter your number to login</p>
+            <input type="text" id="my-number-input" placeholder="e.g. 9876543210" autofocus>
+            <button id="login-btn">Login</button>
+        </div>
+    </div>
+
+    <!-- Main WhatsApp Web Layout -->
+    <div id="app-container" style="display: none;">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="header-info" style="display:flex; align-items:center; gap:15px;">
+                    <div class="avatar" id="my-avatar"></div>
+                    <strong id="my-display-number" style="color:#54656f; font-size:16px;"></strong>
+                </div>
+                <div class="header-icons">
+                    <i class="fas fa-users" title="Communities"></i>
+                    <i class="fas fa-circle-notch" title="Status"></i>
+                    <i class="fas fa-comment-alt" title="New Chat"></i>
+                    <i class="fas fa-ellipsis-v" title="Menu"></i>
+                </div>
+            </div>
+            
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="new-chat-input" placeholder="Enter friend's number & press Enter">
+                </div>
+            </div>
+            
+            <div class="chat-list" id="chat-list">
+                <!-- Chat items will be added dynamically -->
+            </div>
+        </div>
+
+        <!-- Right Chat Panel (Active Chat) -->
+        <div class="chat-panel" id="chat-panel" style="display: none;">
+            <div class="chat-panel-header">
+                <div class="chat-header-info">
+                    <div class="avatar"></div>
+                    <div class="chat-title">
+                        <h3 id="active-chat-title">+91 0000000000</h3>
+                        <span class="status">online</span>
+                    </div>
+                </div>
+                <div class="header-icons">
+                    <i class="fas fa-search"></i>
+                    <i class="fas fa-ellipsis-v"></i>
+                </div>
+            </div>
+
+            <div class="chat-panel-messages" id="messages-container">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div class="chat-panel-input">
+                <i class="far fa-smile icon-btn"></i>
+                <i class="fas fa-paperclip icon-btn"></i>
+                <input type="text" id="message-input" placeholder="Type a message">
+                <i class="fas fa-microphone icon-btn" id="mic-btn"></i>
+                <button id="send-btn" style="display: none;"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </div>
+        
+        <!-- Empty state when no chat is selected -->
+        <div class="empty-chat-state" id="empty-state">
+            <div style="font-size: 80px; color: #ccc; margin-bottom: 20px;"><i class="fas fa-laptop"></i></div>
+            <h2>WhatsApp Web Clone</h2>
+            <p>Send and receive private messages using phone numbers.</p>
+            <p style="margin-top:5px; font-size:13px;">Search for a number on the left to start chatting.</p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
