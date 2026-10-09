@@ -77,6 +77,16 @@ document.getElementById('signup-pin').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') doSignup();
 });
 
+// Logout Logic
+const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        if (confirm("Kya aap sach mein logout karna chahte hain?")) {
+            window.location.reload();
+        }
+    });
+}
+
 socket.on('login error', (msg) => {
     alert(msg);
 });
