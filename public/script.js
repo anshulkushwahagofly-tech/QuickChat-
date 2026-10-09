@@ -19,6 +19,13 @@ let myNumber = '';
 let activeChat = null; 
 let chats = {}; 
 
+const savedNum = localStorage.getItem('quickchat_session_num');
+const savedPin = localStorage.getItem('quickchat_session_pin');
+
+if (savedNum && savedPin) {
+    socket.emit('login', { number: savedNum, pin: savedPin });
+}
+
 const loginFormView = document.getElementById('login-form-view');
 const signupFormView = document.getElementById('signup-form-view');
 const showSignupBtn = document.getElementById('show-signup');
@@ -44,6 +51,8 @@ function doLogin() {
     const pin = document.getElementById('login-pin').value.trim();
     console.log("Attempting login with", num, pin);
     if (num && pin) {
+        localStorage.setItem('quickchat_session_num', num);
+        localStorage.setItem('quickchat_session_pin', pin);
         socket.emit('login', { number: num, pin: pin });
     } else {
         alert("Kripya apna Number aur 4-digit PIN dono dalein.");
@@ -55,6 +64,8 @@ function doSignup() {
     const pin = document.getElementById('signup-pin').value.trim();
     console.log("Attempting signup with", num, pin);
     if (num && pin) {
+        localStorage.setItem('quickchat_session_num', num);
+        localStorage.setItem('quickchat_session_pin', pin);
         socket.emit('signup', { number: num, pin: pin });
     } else {
         alert("Kripya apna Number aur 4-digit PIN dono dalein.");
@@ -82,6 +93,8 @@ const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
         if (confirm("Kya aap sach mein logout karna chahte hain?")) {
+            localStorage.removeItem('quickchat_session_num');
+            localStorage.removeItem('quickchat_session_pin');
             window.location.reload();
         }
     });
@@ -89,6 +102,8 @@ if (logoutBtn) {
 
 socket.on('login error', (msg) => {
     alert(msg);
+    localStorage.removeItem('quickchat_session_num');
+    localStorage.removeItem('quickchat_session_pin');
 });
 
 socket.on('login success', (data) => {
