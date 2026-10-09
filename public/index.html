@@ -7,7 +7,8 @@
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#AFDCEC">
-    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="mobile-whatsapp.css?v=1">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <style>
         /* Force Mobile View */
@@ -110,10 +111,10 @@
                     <strong id="my-display-number" style="color:#54656f; font-size:16px;"></strong>
                 </div>
                 <div class="header-icons">
-                    <i class="fas fa-users" title="Communities"></i>
-                    <i class="fas fa-circle-notch" title="Status"></i>
-                    <i class="fas fa-comment-alt" title="New Chat"></i>
-                    <i class="fas fa-sign-out-alt" title="Logout" id="logout-btn" style="color: #ff4d4d; cursor: pointer;"></i>
+                    <i class="fas fa-camera" title="Camera"></i>
+                    <i class="fas fa-search" title="Search"></i>
+                    <i class="fas fa-ellipsis-v" title="Menu"></i>
+                    <i class="fas fa-sign-out-alt" title="Logout" id="logout-btn" style="color: #ff4d4d; cursor: pointer; margin-left:10px;"></i>
                 </div>
             </div>
             
@@ -145,7 +146,8 @@
                     </div>
                 </div>
                 <div class="header-icons">
-                    <i class="fas fa-search"></i>
+                    <i class="fas fa-video"></i>
+                    <i class="fas fa-phone"></i>
                     <i class="fas fa-ellipsis-v"></i>
                 </div>
             </div>
@@ -155,14 +157,19 @@
             </div>
 
             <div class="chat-panel-input">
-                <i class="far fa-smile icon-btn"></i>
-                <input type="file" id="image-upload" accept="image/*" style="display:none;">
-                <label for="image-upload" style="margin:0;">
-                    <i class="fas fa-paperclip icon-btn" id="attach-btn" title="Send Photo"></i>
-                </label>
-                <input type="text" id="message-input" placeholder="Type a message">
-                <i class="fas fa-microphone icon-btn" id="mic-btn"></i>
-                <button id="send-btn" style="display: none;"><i class="fas fa-paper-plane"></i></button>
+                <div class="input-pill-wrapper">
+                    <i class="far fa-smile icon-btn"></i>
+                    <input type="text" id="message-input" placeholder="Message">
+                    <input type="file" id="image-upload" accept="image/*" style="display:none;">
+                    <label for="image-upload" style="margin:0;">
+                        <i class="fas fa-paperclip icon-btn" id="attach-btn" title="Send Photo"></i>
+                    </label>
+                    <i class="fas fa-camera icon-btn"></i>
+                </div>
+                <div class="mic-circle-wrapper">
+                    <i class="fas fa-microphone" id="mic-btn"></i>
+                    <button id="send-btn" style="display: none; border: none; background: transparent;"><i class="fas fa-paper-plane"></i></button>
+                </div>
             </div>
         </div>
         
