@@ -14,6 +14,7 @@ const messagesContainer = document.getElementById('messages-container');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
 const micBtn = document.getElementById('mic-btn');
+const backBtn = document.getElementById('back-btn');
 
 let myNumber = '';
 let activeChat = null; 
@@ -183,8 +184,20 @@ function openChat(friendNumber) {
     chatPanel.style.display = 'flex';
     activeChatTitle.innerText = friendNumber;
     
+    // Add mobile active class
+    chatPanel.classList.add('active-mobile');
+    
     renderChatList(); 
     renderMessages();
+}
+
+// Mobile Back Button Logic
+if(backBtn) {
+    backBtn.addEventListener('click', () => {
+        chatPanel.classList.remove('active-mobile');
+        activeChat = null;
+        renderChatList();
+    });
 }
 
 // --- MESSAGING LOGIC ---
