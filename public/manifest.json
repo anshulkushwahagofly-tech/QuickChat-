@@ -1,0 +1,21 @@
+{
+  "name": "QuickChat",
+  "short_name": "QuickChat",
+  "description": "A real-time messaging app.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#d1d7db",
+  "theme_color": "#AFDCEC",
+  "icons": [
+    {
+      "src": "logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

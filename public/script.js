@@ -19,6 +19,13 @@ let myNumber = '';
 let activeChat = null; 
 let chats = {}; 
 
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+        console.log("Service Worker Registered");
+    });
+}
+
 const savedNum = localStorage.getItem('quickchat_session_num');
 const savedPin = localStorage.getItem('quickchat_session_pin');
 
