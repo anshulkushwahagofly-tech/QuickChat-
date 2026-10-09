@@ -15,6 +15,7 @@ body {
     overflow: hidden;
 }
 
+/* Background arctic blue stripe for QuickChat */
 body::before {
     content: '';
     position: absolute;
@@ -22,7 +23,7 @@ body::before {
     left: 0;
     width: 100%;
     height: 127px;
-    background-color: #00a884;
+    background-color: #AFDCEC;
     z-index: -1;
 }
 
@@ -47,7 +48,7 @@ body::before {
     left: 0;
     width: 100%;
     height: 222px;
-    background-color: #00a884;
+    background-color: #AFDCEC;
     z-index: -1;
 }
 
@@ -63,9 +64,9 @@ body::before {
     display: flex;
     align-items: center;
     gap: 12px;
-    color: white;
+    color: #111b21;
     font-size: 18px;
-    font-weight: 500;
+    font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 1px;
 }
@@ -129,8 +130,8 @@ body::before {
 }
 
 .input-wrapper:focus-within {
-    border-color: #00a884;
-    box-shadow: 0 0 0 1px #00a884;
+    border-color: #AFDCEC;
+    box-shadow: 0 0 0 1px #AFDCEC;
 }
 
 .country-code {
@@ -152,25 +153,25 @@ body::before {
 }
 
 #login-btn {
-    background-color: #00a884;
-    color: white;
+    background-color: #AFDCEC;
+    color: #111b21;
     border: none;
     padding: 14px 20px;
     border-radius: 24px;
     font-size: 16px;
     cursor: pointer;
     width: 100%;
-    font-weight: 500;
+    font-weight: 600;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 10px;
     transition: background-color 0.2s, transform 0.1s;
-    box-shadow: 0 4px 12px rgba(0, 168, 132, 0.3);
+    box-shadow: 0 4px 12px rgba(175, 220, 236, 0.5);
 }
 
 #login-btn:hover {
-    background-color: #018f6f;
+    background-color: #9acbdc;
 }
 
 #login-btn:active {
@@ -331,7 +332,7 @@ body::before {
     justify-content: center;
     align-items: center;
     background-color: #f0f2f5;
-    border-bottom: 6px solid #25D366;
+    border-bottom: 6px solid #AFDCEC;
     text-align: center;
     color: #41525d;
 }
@@ -367,7 +368,7 @@ body::before {
     height: 100%;
     background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
     background-repeat: repeat;
-    opacity: 0.4;
+    opacity: 0.2; /* Lighter opacity to match icy theme */
     z-index: 0;
 }
 
@@ -433,7 +434,7 @@ body::before {
 }
 
 .message.sent {
-    background-color: #d9fdd3;
+    background-color: #dcf5ff; /* Icy light blue for sent messages */
     align-self: flex-end;
     border-top-right-radius: 0;
 }
@@ -457,7 +458,7 @@ body::before {
 }
 
 .ticks {
-    color: #53bdeb;
+    color: #53bdeb; /* Blue double ticks */
     font-size: 11px;
 }
 
@@ -493,4 +494,9 @@ body::before {
     color: #54656f;
     font-size: 24px;
     cursor: pointer;
+    transition: color 0.2s;
+}
+
+#send-btn:hover {
+    color: #AFDCEC;
 }
