@@ -27,7 +27,7 @@
                         <label>Phone Number</label>
                         <div class="input-wrapper">
                             <span class="country-code">+91</span>
-                            <input type="text" id="login-number" placeholder="Enter number" autocomplete="off">
+                            <input type="text" id="login-number" placeholder="Enter 10-digit number" maxlength="10" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         </div>
                     </div>
                     
@@ -54,7 +54,7 @@
                         <label>Choose Phone Number</label>
                         <div class="input-wrapper">
                             <span class="country-code">+91</span>
-                            <input type="text" id="signup-number" placeholder="Enter new number" autocomplete="off">
+                            <input type="text" id="signup-number" placeholder="Enter 10-digit number" maxlength="10" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         </div>
                     </div>
                     
