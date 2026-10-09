@@ -39,24 +39,42 @@ showLoginBtn.addEventListener('click', (e) => {
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
 
-loginBtn.addEventListener('click', () => {
+function doLogin() {
     const num = document.getElementById('login-number').value.trim();
     const pin = document.getElementById('login-pin').value.trim();
+    console.log("Attempting login with", num, pin);
     if (num && pin) {
         socket.emit('login', { number: num, pin: pin });
     } else {
         alert("Kripya apna Number aur 4-digit PIN dono dalein.");
     }
-});
+}
 
-signupBtn.addEventListener('click', () => {
+function doSignup() {
     const num = document.getElementById('signup-number').value.trim();
     const pin = document.getElementById('signup-pin').value.trim();
+    console.log("Attempting signup with", num, pin);
     if (num && pin) {
         socket.emit('signup', { number: num, pin: pin });
     } else {
         alert("Kripya apna Number aur 4-digit PIN dono dalein.");
     }
+}
+
+if (loginBtn) {
+    loginBtn.addEventListener('click', doLogin);
+}
+
+if (signupBtn) {
+    signupBtn.addEventListener('click', doSignup);
+}
+
+// Add Enter key support
+document.getElementById('login-pin').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') doLogin();
+});
+document.getElementById('signup-pin').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') doSignup();
 });
 
 socket.on('login error', (msg) => {
