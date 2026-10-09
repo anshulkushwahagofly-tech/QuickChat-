@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const server = http.createServer(app);
@@ -9,25 +10,58 @@ const io = new Server(server);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store connected users: { 'phoneNumber': socket.id }
-const connectedUsers = {};
-const socketToPhone = {};
+const DATA_FILE = path.join(__dirname, 'data.json');
+
+// Helper to read/write DB
+function loadDB() {
+    if (fs.existsSync(DATA_FILE)) {
+        try {
+            return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        } catch (e) {
+            return { users: {}, messages: [] };
+        }
+    }
+    return { users: {}, messages: [] };
+}
+
+function saveDB(db) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+}
+
+let connectedUsers = {}; // { 'number': socket.id }
+let socketToPhone = {};
 
 io.on('connection', (socket) => {
     
-    // User logs in with their number
-    socket.on('register', (phoneNumber) => {
-        connectedUsers[phoneNumber] = socket.id;
-        socketToPhone[socket.id] = phoneNumber;
-        console.log(`User registered: ${phoneNumber} with socket ${socket.id}`);
-        socket.emit('registered', phoneNumber);
+    // LOGIN / SIGNUP LOGIC
+    socket.on('login', ({ number, pin }) => {
+        let db = loadDB();
+        
+        // If user exists, check PIN
+        if (db.users[number]) {
+            if (db.users[number].pin !== pin) {
+                return socket.emit('login error', 'Galat PIN! Yeh number pehle se registered hai kisi aur PIN ke sath.');
+            }
+        } else {
+            // New user, register them
+            db.users[number] = { pin: pin, registeredAt: new Date().toISOString() };
+            saveDB(db);
+        }
+
+        // Success Login
+        connectedUsers[number] = socket.id;
+        socketToPhone[socket.id] = number;
+        console.log(`User logged in: ${number}`);
+        
+        // Send history of this user
+        const userMessages = db.messages.filter(m => m.from === number || m.to === number);
+        socket.emit('login success', { number, history: userMessages });
     });
 
     // Handle private messages
     socket.on('private message', (data) => {
-        // data: { to: 'receiverNumber', text: 'hello' }
         const senderNumber = socketToPhone[socket.id];
-        const receiverSocketId = connectedUsers[data.to];
+        if (!senderNumber) return;
 
         const messageObj = {
             from: senderNumber,
@@ -36,21 +70,23 @@ io.on('connection', (socket) => {
             timestamp: new Date().toISOString()
         };
 
+        // Save to DB immediately
+        let db = loadDB();
+        db.messages.push(messageObj);
+        saveDB(db);
+
         // Send to receiver if online
+        const receiverSocketId = connectedUsers[data.to];
         if (receiverSocketId) {
             io.to(receiverSocketId).emit('private message', messageObj);
-        } else {
-            socket.emit('user offline', data.to);
         }
     });
 
-    // Handle disconnect
     socket.on('disconnect', () => {
         const phoneNumber = socketToPhone[socket.id];
         if (phoneNumber) {
             delete connectedUsers[phoneNumber];
             delete socketToPhone[socket.id];
-            console.log(`User disconnected: ${phoneNumber}`);
         }
     });
 });
