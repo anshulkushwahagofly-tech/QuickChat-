@@ -146,8 +146,8 @@
                     </div>
                 </div>
                 <div class="header-icons">
-                    <i class="fas fa-video"></i>
-                    <i class="fas fa-phone"></i>
+                    <i class="fas fa-video" id="video-call-btn" style="cursor:pointer;"></i>
+                    <i class="fas fa-phone" id="audio-call-btn" style="cursor:pointer;"></i>
                     <i class="fas fa-ellipsis-v"></i>
                 </div>
             </div>
@@ -182,7 +182,38 @@
         </div>
     </div>
 
+    <!-- Call Modals -->
+    <!-- Incoming Call Alert -->
+    <div id="incoming-call-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center; flex-direction:column; color:white;">
+        <h2 id="caller-name" style="margin-bottom:10px;">+91...</h2>
+        <p style="margin-bottom:30px;">is calling you...</p>
+        <div style="display:flex; gap:30px;">
+            <button id="reject-call-btn" style="background:#ff4d4d; border:none; width:60px; height:60px; border-radius:50%; color:white; font-size:24px; cursor:pointer;"><i class="fas fa-phone-slash"></i></button>
+            <button id="accept-call-btn" style="background:#00a884; border:none; width:60px; height:60px; border-radius:50%; color:white; font-size:24px; cursor:pointer; animation: pulse 1s infinite;"><i class="fas fa-phone"></i></button>
+        </div>
+    </div>
+
+    <!-- Active Call Screen -->
+    <div id="active-call-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:#111; z-index:1000; flex-direction:column;">
+        <div style="position:relative; flex:1; display:flex; justify-content:center; align-items:center; overflow:hidden;">
+            <video id="remote-video" autoplay playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+            <video id="local-video" autoplay playsinline muted style="position:absolute; bottom:20px; right:20px; width:100px; height:150px; background:black; border-radius:10px; border:2px solid white; object-fit:cover;"></video>
+        </div>
+        <div style="height:80px; background:#222; display:flex; justify-content:center; align-items:center; gap:30px;">
+            <button id="end-call-btn" style="background:#ff4d4d; border:none; width:60px; height:60px; border-radius:50%; color:white; font-size:24px; cursor:pointer;"><i class="fas fa-phone-slash"></i></button>
+        </div>
+    </div>
+
+    <style>
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 168, 132, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(0, 168, 132, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 168, 132, 0); }
+        }
+    </style>
+
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=9"></script>
+    <script src="script.js?v=10"></script>
+    <script src="webrtc.js?v=1"></script>
 </body>
 </html>
