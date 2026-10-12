@@ -328,16 +328,53 @@ if (menuMyNumber) {
     });
 }
 
-// Search Bar Toggle
+// Search Bar Toggle (Mobile)
 if (toggleSearchBtn && searchContainer) {
     toggleSearchBtn.addEventListener('click', () => {
-        const isVisible = searchContainer.style.display === 'block';
-        searchContainer.style.display = isVisible ? 'none' : 'block';
-        if (!isVisible && newChatInput) {
+        searchContainer.classList.toggle('active');
+        if (searchContainer.classList.contains('active') && newChatInput) {
             newChatInput.focus();
         }
     });
 }
+
+// Desktop Header Icons
+const headerStatusBtn = document.getElementById('header-status-btn');
+if (headerStatusBtn) {
+    headerStatusBtn.addEventListener('click', () => {
+        alert("Status Feature: Yahan aap status dekh/laga sakenge (Coming soon).");
+    });
+}
+
+const myProfileBtn = document.getElementById('my-profile-btn');
+if (myProfileBtn) {
+    myProfileBtn.addEventListener('click', () => {
+        alert("Aapka Registered Number: +91 " + (myNumber || ""));
+    });
+}
+
+// Window Resize Responsive Handler
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 900) {
+        if (activeChat) {
+            chatPanel.style.display = 'flex';
+            emptyState.style.display = 'none';
+        } else {
+            chatPanel.style.display = 'none';
+            emptyState.style.display = 'flex';
+        }
+    } else {
+        if (activeChat) {
+            chatPanel.classList.add('active-mobile');
+            chatPanel.style.display = 'flex';
+            emptyState.style.display = 'none';
+        } else {
+            chatPanel.classList.remove('active-mobile');
+            chatPanel.style.display = 'none';
+            emptyState.style.display = 'none';
+        }
+    }
+});
 
 // WhatsApp Tab Bar Logic
 const waTabs = document.querySelectorAll('.wa-tab');
