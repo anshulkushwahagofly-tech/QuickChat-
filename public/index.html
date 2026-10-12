@@ -7,8 +7,8 @@
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#008069">
-    <link rel="stylesheet" href="style.css?v=14">
-    <link rel="stylesheet" href="mobile-whatsapp.css?v=4">
+    <link rel="stylesheet" href="style.css?v=15">
+    <link rel="stylesheet" href="mobile-whatsapp.css?v=5">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -99,28 +99,33 @@
         <!-- Left Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="header-info" style="display:flex; align-items:center; gap:12px;">
-                    <div class="avatar" id="my-avatar"></div>
-                    <strong id="my-display-number" style="font-size:17px; font-weight:600;">QuickChat</strong>
+                <div class="whatsapp-brand">
+                    <span>WhatsApp</span>
                 </div>
                 <div class="header-icons">
-                    <i class="fas fa-camera" title="Camera"></i>
                     <i class="fas fa-search" id="toggle-search-btn" title="Search"></i>
-                    <i class="fas fa-user-plus" id="header-new-chat-btn" title="New Chat"></i>
-                    <i class="fas fa-sign-out-alt" title="Logout" id="logout-btn" style="color: #ff4d4d; cursor: pointer; margin-left:6px;"></i>
+                    <i class="fas fa-ellipsis-v" id="menu-dots-btn" title="Menu"></i>
+                    <!-- Dropdown Menu -->
+                    <div id="dropdown-menu" class="dropdown-menu" style="display:none;">
+                        <div class="menu-item" id="menu-new-chat"><i class="fas fa-user-plus"></i> New chat</div>
+                        <div class="menu-item" id="menu-my-number"><i class="fas fa-id-card"></i> <span id="my-number-preview">My number</span></div>
+                        <div class="menu-divider"></div>
+                        <div class="menu-item logout" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Log out</div>
+                    </div>
                 </div>
             </div>
             
             <div class="wa-tabs-bar">
+                <div class="wa-tab-camera" title="Camera"><i class="fas fa-camera"></i></div>
                 <div class="wa-tab active">CHATS</div>
-                <div class="wa-tab">STATUS</div>
+                <div class="wa-tab">STATUS <span class="tab-dot"></span></div>
                 <div class="wa-tab">CALLS</div>
             </div>
 
-            <div class="search-container" id="search-container">
+            <div class="search-container" id="search-container" style="display:none;">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="new-chat-input" placeholder="Search or type 10-digit number & Enter">
+                    <input type="text" id="new-chat-input" placeholder="Search chats or contacts...">
                 </div>
             </div>
             
@@ -129,7 +134,7 @@
             </div>
             
             <div class="fab-btn" id="open-new-chat-btn" title="New Chat">
-                <i class="fas fa-comment-dots"></i>
+                <i class="fas fa-comment-alt"></i>
             </div>
         </div>
 
@@ -137,17 +142,17 @@
         <div class="chat-panel" id="chat-panel" style="display: none;">
             <div class="chat-panel-header">
                 <div class="chat-header-info">
-                    <button id="back-btn" class="icon-btn" style="display:none; border:none; background:transparent; font-size:20px; cursor:pointer; color:#54656f; padding-right:15px;"><i class="fas fa-arrow-left"></i></button>
-                    <div class="avatar"></div>
+                    <button id="back-btn" class="icon-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <div class="avatar" id="active-chat-avatar"></div>
                     <div class="chat-title">
                         <h3 id="active-chat-title">+91 0000000000</h3>
                         <span class="status">online</span>
                     </div>
                 </div>
                 <div class="header-icons">
-                    <i class="fas fa-video" id="video-call-btn" style="cursor:pointer;"></i>
-                    <i class="fas fa-phone" id="audio-call-btn" style="cursor:pointer;"></i>
-                    <i class="fas fa-ellipsis-v"></i>
+                    <i class="fas fa-video" id="video-call-btn" title="Video call"></i>
+                    <i class="fas fa-phone-alt" id="audio-call-btn" title="Voice call"></i>
+                    <i class="fas fa-ellipsis-v" title="More"></i>
                 </div>
             </div>
 
@@ -158,9 +163,9 @@
             <div class="chat-panel-input">
                 <div class="input-pill-wrapper">
                     <i class="far fa-smile icon-btn"></i>
-                    <input type="text" id="message-input" placeholder="Message">
+                    <input type="text" id="message-input" placeholder="Type a message">
                     <input type="file" id="image-upload" accept="image/*" style="display:none;">
-                    <label for="image-upload" style="margin:0;">
+                    <label for="image-upload" style="margin:0; display:flex; align-items:center;">
                         <i class="fas fa-paperclip icon-btn" id="attach-btn" title="Send Photo"></i>
                     </label>
                     <i class="fas fa-camera icon-btn"></i>
@@ -237,7 +242,7 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=19"></script>
+    <script src="script.js?v=20"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>

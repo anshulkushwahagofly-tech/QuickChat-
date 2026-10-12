@@ -3,6 +3,13 @@ const socket = io();
 const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
 const myDisplayNumber = document.getElementById('my-display-number');
+const myNumberPreview = document.getElementById('my-number-preview');
+const menuDotsBtn = document.getElementById('menu-dots-btn');
+const dropdownMenu = document.getElementById('dropdown-menu');
+const menuNewChat = document.getElementById('menu-new-chat');
+const menuMyNumber = document.getElementById('menu-my-number');
+const toggleSearchBtn = document.getElementById('toggle-search-btn');
+const searchContainer = document.getElementById('search-container');
 
 const newChatInput = document.getElementById('new-chat-input');
 const chatList = document.getElementById('chat-list');
@@ -28,6 +35,7 @@ const contactsList = document.getElementById('contacts-list');
 let myNumber = '';
 let activeChat = null; 
 let chats = {}; 
+let unreadCounts = {};
 let allRegisteredUsers = [];
 
 // Register Service Worker for PWA
@@ -134,6 +142,69 @@ if (signupPinInput) {
     });
 }
 
+// Dropdown Menu Logic
+if (menuDotsBtn && dropdownMenu) {
+    menuDotsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = dropdownMenu.style.display === 'block';
+        dropdownMenu.style.display = isVisible ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+        if (dropdownMenu && !dropdownMenu.contains(e.target) && e.target !== menuDotsBtn) {
+            dropdownMenu.style.display = 'none';
+        }
+    });
+}
+
+if (menuNewChat) {
+    menuNewChat.addEventListener('click', () => {
+        if (dropdownMenu) dropdownMenu.style.display = 'none';
+        openModal();
+    });
+}
+
+if (menuMyNumber) {
+    menuMyNumber.addEventListener('click', () => {
+        if (dropdownMenu) dropdownMenu.style.display = 'none';
+        alert("Aapka Registered Number: +91 " + (myNumber || ""));
+    });
+}
+
+// Search Bar Toggle
+if (toggleSearchBtn && searchContainer) {
+    toggleSearchBtn.addEventListener('click', () => {
+        const isVisible = searchContainer.style.display === 'block';
+        searchContainer.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible && newChatInput) {
+            newChatInput.focus();
+        }
+    });
+}
+
+// WhatsApp Tab Bar Logic
+const waTabs = document.querySelectorAll('.wa-tab');
+waTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        waTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const txt = tab.innerText.trim();
+        if (txt.includes('STATUS')) {
+            alert("Status Feature: Yahan WhatsApp status dekh/laga sakenge (Coming soon).");
+        } else if (txt.includes('CALLS')) {
+            alert("Calls Feature: Voice ya Video call ke liye kisi bhi chat ko open karke call icon par tap karein!");
+        }
+    });
+});
+
+const waTabCamera = document.querySelector('.wa-tab-camera');
+if (waTabCamera) {
+    waTabCamera.addEventListener('click', () => {
+        const imgInput = document.getElementById('image-upload');
+        if (imgInput) imgInput.click();
+    });
+}
+
 // Logout Logic
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
@@ -175,6 +246,10 @@ socket.on('login success', (data) => {
     if (myNumber) localStorage.setItem('quickchat_session_num', myNumber);
     if (currentPin) localStorage.setItem('quickchat_session_pin', currentPin);
 
+    // Update UI previews
+    if (myNumberPreview) myNumberPreview.innerText = '+91 ' + myNumber;
+    if (myDisplayNumber) myDisplayNumber.innerText = "QuickChat";
+
     // Load history from database
     data.history.forEach(msg => {
         const friend = (msg.from === myNumber) ? msg.to : msg.from;
@@ -186,7 +261,6 @@ socket.on('login success', (data) => {
     if (loginLoadingView) loginLoadingView.style.display = 'none';
     loginContainer.style.display = 'none';
     appContainer.style.display = 'flex';
-    myDisplayNumber.innerText = "QuickChat";
     
     renderChatList();
 });
@@ -321,11 +395,21 @@ function renderChatList(filter = '') {
     filteredFriends.forEach(friendNumber => {
         const messages = chats[friendNumber];
         const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
+        let lastMsgPrefix = '';
         let lastMsgText = 'Tap to chat';
         if (lastMsg) {
-            lastMsgText = lastMsg.image ? '📷 Photo' : (lastMsg.text || 'Message');
+            if (lastMsg.from === myNumber) {
+                lastMsgPrefix = '<i class="fas fa-check-double" style="font-size:11px; color:#53bdeb; margin-right:4px;"></i>';
+            }
+            if (lastMsg.image) {
+                lastMsgText = '<i class="fas fa-camera" style="font-size:12px; margin-right:4px; color:#8696a0;"></i> Photo';
+            } else {
+                lastMsgText = escapeHtml(lastMsg.text || 'Message');
+            }
         }
         let lastMsgTime = lastMsg ? lastMsg.time : '';
+        const unreadCount = unreadCounts[friendNumber] || 0;
+        const unreadHTML = unreadCount > 0 ? `<div class="unread-badge">${unreadCount}</div>` : '';
 
         const chatItem = document.createElement('div');
         chatItem.className = `chat-list-item ${activeChat === friendNumber ? 'active' : ''}`;
@@ -336,9 +420,12 @@ function renderChatList(filter = '') {
             <div class="chat-info">
                 <div class="chat-title-row">
                     <h4>+91 ${friendNumber}</h4>
-                    <span class="time" style="font-size:12px; color:#667781">${lastMsgTime}</span>
+                    <span class="time">${lastMsgTime}</span>
                 </div>
-                <div class="chat-last-msg">${lastMsgText}</div>
+                <div class="chat-subtitle-row">
+                    <div class="chat-last-msg">${lastMsgPrefix}${lastMsgText}</div>
+                    ${unreadHTML}
+                </div>
             </div>
         `;
         chatList.appendChild(chatItem);
@@ -347,6 +434,7 @@ function renderChatList(filter = '') {
 
 function openChat(friendNumber) {
     activeChat = friendNumber;
+    unreadCounts[friendNumber] = 0; // Clear unread badge
     if (!chats[friendNumber]) {
         chats[friendNumber] = [];
     }
@@ -354,7 +442,7 @@ function openChat(friendNumber) {
     chatPanel.style.display = 'flex';
     activeChatTitle.innerText = "+91 " + friendNumber;
     
-    // Add mobile active class to open full screen on mobile!
+    // Add mobile active class to open full screen on mobile
     chatPanel.classList.add('active-mobile');
     
     renderChatList(); 
@@ -370,6 +458,14 @@ if (backBtn) {
         emptyState.style.display = 'flex';
         renderChatList();
     });
+}
+
+// Helper to escape text
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.innerText = text;
+    return div.innerHTML;
 }
 
 // --- MESSAGING LOGIC ---
@@ -392,6 +488,18 @@ messageInput.addEventListener('input', () => {
         sendBtn.style.display = 'none';
     }
 });
+
+// Mic or Send wrapper click
+const micCircleWrapper = document.querySelector('.mic-circle-wrapper');
+if (micCircleWrapper) {
+    micCircleWrapper.addEventListener('click', () => {
+        if (messageInput.value.trim().length > 0) {
+            sendMessage();
+        } else {
+            alert("Voice recording feature coming soon! You can type a message or tap the camera/clip to send photos.");
+        }
+    });
+}
 
 // --- IMAGE COMPRESSION & UPLOAD ---
 const imageUpload = document.getElementById('image-upload');
@@ -445,7 +553,11 @@ function sendMessage(imageStr = null) {
     }
 }
 
-if (sendBtn) sendBtn.addEventListener('click', () => sendMessage());
+if (sendBtn) sendBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sendMessage();
+});
+
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') sendMessage();
 });
@@ -454,6 +566,7 @@ function renderMessages() {
     if (!activeChat) return;
     
     messagesContainer.innerHTML = `
+        <div class="date-chip">TODAY</div>
         <div class="encryption-msg">
             <i class="fas fa-lock"></i> Messages and calls are end-to-end encrypted. No one outside of this chat can read them.
         </div>
@@ -466,11 +579,13 @@ function renderMessages() {
         const msgElement = document.createElement('div');
         msgElement.className = `message ${isMe ? 'sent' : 'received'}`;
         
+        let senderTagHTML = !isMe ? `<span class="sender-name-tag">~+91 ${msg.from}</span>` : '';
         let ticksHTML = isMe ? `<i class="fas fa-check-double ticks"></i>` : '';
         let mediaHTML = msg.image ? `<img src="${msg.image}" style="max-width:100%; border-radius:6px; margin-bottom:4px; display:block;">` : '';
-        let textHTML = msg.text ? `<span class="message-content">${msg.text}</span>` : '';
+        let textHTML = msg.text ? `<span class="message-content">${escapeHtml(msg.text)}</span>` : '';
         
         msgElement.innerHTML = `
+            ${senderTagHTML}
             ${mediaHTML}
             ${textHTML}
             <div class="message-footer" style="${(!msg.text && msg.image) ? 'position:absolute; bottom:5px; right:8px; background:rgba(0,0,0,0.5); border-radius:10px; padding:2px 6px;' : ''}">
@@ -496,6 +611,8 @@ socket.on('private message', (data) => {
     
     if (activeChat === sender) {
         renderMessages();
+    } else {
+        unreadCounts[sender] = (unreadCounts[sender] || 0) + 1;
     }
     renderChatList();
 });
