@@ -119,32 +119,31 @@ async function getAllUsers() {
     }
 }
 
-// --- SMS OTP SETUP (Fast2SMS Gateway) ---
-const FAST2SMS_API_KEY = process.env.FAST2SMS_API_KEY;
-const pendingOTPs = {}; // { '9876543210': { otp: '4829', expiresAt: Date.now() + 5*60*1000 } }
-
-async function sendSMSViaFast2SMS(number, otp) {
-    if (!FAST2SMS_API_KEY) {
-        console.log(`[FAST2SMS INFO] Key not set. Demo OTP for ${number}: ${otp}`);
-        return { success: true, devMode: true };
+// --- REAL INDIAN MOBILE NUMBER VALIDATOR ---
+function validateRealIndianNumber(number) {
+    const clean = (number || '').trim();
+    // 1. Must be exactly 10 digits
+    if (!/^\d{10}$/.test(clean)) {
+        return { valid: false, message: 'Mobile number exactly 10-digits ka hona chahiye.' };
     }
-    try {
-        const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${FAST2SMS_API_KEY}&variables_values=${otp}&route=otp&numbers=${number}`;
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: { 'cache-control': 'no-cache' }
-        });
-        const data = await response.json();
-        console.log("Fast2SMS API Response:", data);
-        if (data.return === true || data.status_code === 200) {
-            return { success: true };
-        } else {
-            return { success: false, message: data.message || 'SMS send failed' };
-        }
-    } catch (err) {
-        console.error("Fast2SMS Network Error:", err);
-        return { success: false, message: err.message };
+    // 2. Must start with 6, 7, 8, or 9 (Indian telecom standard)
+    if (!/^[6-9]/.test(clean)) {
+        return { valid: false, message: 'Invalid Number! Real Indian mobile number sirf 6, 7, 8 ya 9 se shuru hota hai.' };
     }
+    // 3. Block all repeating identical digits (e.g. 9999999999, 8888888888, 7777777777)
+    if (/^(\d)\1{9}$/.test(clean)) {
+        return { valid: false, message: 'Dummy number (jaise 9999999999 ya 7777777777) allowed nahi hai. Apna real mobile number dalein.' };
+    }
+    // 4. Block trivial fake sequence numbers
+    const fakeNumbers = ['1234567890', '0123456789', '9876543210', '9898989898', '8989898989', '7878787878'];
+    if (fakeNumbers.includes(clean)) {
+        return { valid: false, message: 'Dummy sequence number allowed nahi hai. Kripya apna real number dalein.' };
+    }
+    // 5. Block numbers with more than 5 identical digits in a row
+    if (/(\d)\1{5}/.test(clean)) {
+        return { valid: false, message: 'Fake number detect hua. Kripya apna real mobile number dalein.' };
+    }
+    return { valid: true, number: clean };
 }
 
 // --- SOCKET.IO LOGIC ---
@@ -153,83 +152,37 @@ let socketToPhone = {};
 
 io.on('connection', (socket) => {
     
-    // SEND OTP LOGIC
-    socket.on('send-otp', async ({ number }) => {
+    // SIGNUP LOGIC (Strict Real Number Verification)
+    socket.on('signup', async ({ number, pin }) => {
         try {
-            const cleanNum = (number || '').trim();
-            if (!/^[6-9]\d{9}$/.test(cleanNum)) {
-                return socket.emit('otp-error', 'Kripya ek valid 10-digit Indian mobile number enter karein (6, 7, 8 ya 9 se shuru hona chahiye).');
+            const validation = validateRealIndianNumber(number);
+            if (!validation.valid) {
+                return socket.emit('login error', validation.message);
+            }
+            const cleanNum = validation.number;
+
+            const cleanPin = (pin || '').trim();
+            if (!cleanPin || cleanPin.length !== 4) {
+                return socket.emit('login error', 'Kripya 4-digit PIN banayein.');
             }
 
             const existingUser = await getUser(cleanNum);
             if (existingUser) {
-                return socket.emit('otp-error', 'Yeh number pehle se registered hai! Kripya Login karein.');
+                return socket.emit('login error', 'Yeh number pehle se registered hai! Kripya Login karein.');
             }
-
-            const otp = Math.floor(1000 + Math.random() * 9000).toString();
-            pendingOTPs[cleanNum] = { otp, expiresAt: Date.now() + 5 * 60 * 1000 };
-
-            const result = await sendSMSViaFast2SMS(cleanNum, otp);
-            if (result.success) {
-                if (result.devMode) {
-                    socket.emit('otp-sent', { 
-                        number: cleanNum, 
-                        devOtp: otp,
-                        message: `Testing OTP: ${otp} (Fast2SMS API key set karne par yeh SMS phone par aayega)` 
-                    });
-                } else {
-                    socket.emit('otp-sent', { 
-                        number: cleanNum, 
-                        message: 'OTP aapke mobile number par SMS ke zariye bhej diya gaya hai!' 
-                    });
-                }
-            } else {
-                socket.emit('otp-error', 'SMS bhejne mein dikkat: ' + (result.message || 'Please try again'));
-            }
-        } catch (err) {
-            console.error("send-otp error:", err);
-            socket.emit('otp-error', 'Server error. Kripya dobara try karein.');
-        }
-    });
-
-    // SIGNUP WITH OTP LOGIC
-    socket.on('signup', async ({ number, otp, pin }) => {
-        try {
-            const cleanNum = (number || '').trim();
-            const cleanOtp = (otp || '').trim();
-            const cleanPin = (pin || '').trim();
-
-            if (!cleanNum || !cleanOtp || !cleanPin) {
-                return socket.emit('signup error', 'Sabhi details bharna zaroori hai.');
-            }
-
-            const record = pendingOTPs[cleanNum];
-            if (!record) {
-                return socket.emit('signup error', 'Pehle "Send OTP" par click karein.');
-            }
-            if (Date.now() > record.expiresAt) {
-                delete pendingOTPs[cleanNum];
-                return socket.emit('signup error', 'OTP expire ho gaya hai! Kripya naya OTP mangwayein.');
-            }
-            if (record.otp !== cleanOtp) {
-                return socket.emit('signup error', 'Galat OTP! Kripya sahi OTP dalein.');
-            }
-
-            // OTP verified successfully
-            delete pendingOTPs[cleanNum];
 
             await createUser(cleanNum, cleanPin);
 
             connectedUsers[cleanNum] = socket.id;
             socketToPhone[socket.id] = cleanNum;
-            console.log(`User signed up with verified OTP: ${cleanNum}`);
+            console.log(`Real user signed up: ${cleanNum}`);
             
             const allUsers = await getAllUsers();
             socket.emit('login success', { number: cleanNum, history: [], allUsers });
             io.emit('all users', allUsers);
         } catch (err) {
             console.error("Signup error:", err);
-            socket.emit('signup error', 'Server error. Please try again.');
+            socket.emit('login error', 'Server error. Please try again.');
         }
     });
 

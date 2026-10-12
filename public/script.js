@@ -83,94 +83,8 @@ showLoginBtn.addEventListener('click', (e) => {
 
 const loginBtn = document.getElementById('login-btn');
 const signupBtn = document.getElementById('signup-btn');
-const sendOtpBtn = document.getElementById('send-otp-btn');
-const signupStep1 = document.getElementById('signup-step-1');
-const signupStep2 = document.getElementById('signup-step-2');
 const signupNumberInput = document.getElementById('signup-number');
-const signupOtpInput = document.getElementById('signup-otp');
 const signupPinInput = document.getElementById('signup-pin');
-const otpSentNumber = document.getElementById('otp-sent-number');
-const changeNumberLink = document.getElementById('change-number-link');
-const resendOtpBtn = document.getElementById('resend-otp-btn');
-
-let resendTimer = null;
-let resendCountdown = 30;
-
-function startResendCountdown() {
-    resendCountdown = 30;
-    if (!resendOtpBtn) return;
-    resendOtpBtn.disabled = true;
-    resendOtpBtn.innerText = `Resend OTP (${resendCountdown}s)`;
-    clearInterval(resendTimer);
-    resendTimer = setInterval(() => {
-        resendCountdown--;
-        if (resendCountdown <= 0) {
-            clearInterval(resendTimer);
-            resendOtpBtn.disabled = false;
-            resendOtpBtn.innerText = "Resend OTP";
-        } else {
-            resendOtpBtn.innerText = `Resend OTP (${resendCountdown}s)`;
-        }
-    }, 1000);
-}
-
-function handleSendOtp() {
-    const num = signupNumberInput.value.trim();
-    if (!num || num.length !== 10) {
-        alert("Kripya ek valid 10-digit Indian mobile number enter karein.");
-        return;
-    }
-    if (!/^[6-9]\d{9}$/.test(num)) {
-        alert("Real Indian mobile number 6, 7, 8 ya 9 se shuru hona chahiye.");
-        return;
-    }
-    sendOtpBtn.disabled = true;
-    sendOtpBtn.innerText = "Sending OTP...";
-    socket.emit('send-otp', { number: num });
-}
-
-if (sendOtpBtn) sendOtpBtn.addEventListener('click', handleSendOtp);
-if (resendOtpBtn) resendOtpBtn.addEventListener('click', handleSendOtp);
-
-socket.on('otp-sent', (data) => {
-    if (sendOtpBtn) {
-        sendOtpBtn.disabled = false;
-        sendOtpBtn.innerText = "Send OTP";
-    }
-    if (signupStep1) signupStep1.style.display = 'none';
-    if (signupStep2) signupStep2.style.display = 'block';
-    if (otpSentNumber) otpSentNumber.innerText = "+91 " + data.number;
-    if (signupOtpInput) {
-        signupOtpInput.value = '';
-        signupOtpInput.focus();
-    }
-    if (signupPinInput) signupPinInput.value = '';
-    
-    startResendCountdown();
-    
-    if (data.devOtp) {
-        alert(`OTP: ${data.devOtp}\n\n${data.message}`);
-    } else {
-        alert(data.message || "OTP aapke mobile number par SMS ke zariye bhej diya gaya hai!");
-    }
-});
-
-socket.on('otp-error', (msg) => {
-    if (sendOtpBtn) {
-        sendOtpBtn.disabled = false;
-        sendOtpBtn.innerText = "Send OTP";
-    }
-    alert(msg);
-});
-
-if (changeNumberLink) {
-    changeNumberLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (signupStep2) signupStep2.style.display = 'none';
-        if (signupStep1) signupStep1.style.display = 'block';
-        if (signupNumberInput) signupNumberInput.focus();
-    });
-}
 
 function doLogin() {
     const num = document.getElementById('login-number').value.trim();
@@ -186,36 +100,27 @@ function doLogin() {
 
 function doSignup() {
     const num = signupNumberInput.value.trim();
-    const otp = signupOtpInput.value.trim();
     const pin = signupPinInput.value.trim();
-    if (!num || !otp || !pin) {
-        alert("Kripya Mobile Number, 4-digit OTP aur 4-digit PIN teeno bharein.");
+    if (!num || !pin) {
+        alert("Kripya Mobile Number aur 4-digit PIN dono dalein.");
         return;
     }
-    if (otp.length !== 4) {
-        alert("OTP 4-digit ka hona chahiye.");
+    if (!/^[6-9]\d{9}$/.test(num)) {
+        alert("Kripya ek valid 10-digit Indian mobile number dalein (6, 7, 8 ya 9 se shuru hona chahiye).");
         return;
     }
     if (pin.length !== 4) {
-        alert("PIN 4-digit ka hona chahiye.");
+        alert("PIN exactly 4-digit ka hona chahiye.");
         return;
     }
     if (signupBtn) {
         signupBtn.disabled = true;
-        signupBtn.innerText = "Verifying OTP...";
+        signupBtn.innerText = "Creating Account...";
     }
     localStorage.setItem('quickchat_session_num', num);
     localStorage.setItem('quickchat_session_pin', pin);
-    socket.emit('signup', { number: num, otp: otp, pin: pin });
+    socket.emit('signup', { number: num, pin: pin });
 }
-
-socket.on('signup error', (msg) => {
-    if (signupBtn) {
-        signupBtn.disabled = false;
-        signupBtn.innerText = "Verify & Create Account";
-    }
-    alert(msg);
-});
 
 if (loginBtn) loginBtn.addEventListener('click', doLogin);
 if (signupBtn) signupBtn.addEventListener('click', doSignup);
@@ -245,6 +150,10 @@ socket.on('login error', (msg) => {
     console.warn("Login response:", msg);
     if (loginLoadingView) loginLoadingView.style.display = 'none';
     if (loginFormView) loginFormView.style.display = 'block';
+    if (signupBtn) {
+        signupBtn.disabled = false;
+        signupBtn.innerText = "Sign Up";
+    }
 
     if (msg.includes('Galat PIN')) {
         alert(msg);
