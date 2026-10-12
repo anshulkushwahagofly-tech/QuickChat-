@@ -203,13 +203,15 @@ function doSendOtp() {
                     resetSendOtpBtn();
                     try { if (window.recaptchaVerifier) window.recaptchaVerifier.clear(); } catch(e){}
 
-                    const isNotAllowed = (err.code === 'auth/operation-not-allowed') || 
-                                          (err.message && err.message.includes('operation-not-allowed'));
+                    const errCode = err.code || '';
+                    const errMsg = (err.message || '').toLowerCase();
+                    const isNotAllowed = errCode === 'auth/operation-not-allowed' || errMsg.includes('operation-not-allowed');
+                    const isQuotaExceeded = errCode === 'auth/quota-exceeded' || errCode === 'auth/too-many-requests' || errMsg.includes('quota') || errMsg.includes('too many');
 
                     if (isNotAllowed) {
                         const allowTesting = confirm(
                             "Firebase SMS Alert:\n\n" +
-                            "Aapke Firebase Console mein Phone Authentication ya SMS Region (India +91) abhi enable nahi hai.\n\n" +
+                            "Firebase Console mein Phone Authentication ya SMS Region (India +91) abhi enable nahi hai.\n\n" +
                             "👉 Isko Firebase Console > Authentication > Sign-in method > Phone me Enable karein.\n\n" +
                             "Kya aap abhi TESTING OTP (123456) se turant login karna chahte hain?"
                         );
@@ -220,8 +222,31 @@ function doSendOtp() {
                             showOtpVerifyScreen(rawNum);
                             return;
                         }
+                    } else if (isQuotaExceeded) {
+                        const allowTesting = confirm(
+                            "Firebase SMS Limit Notice:\n\n" +
+                            "Aaj ki free SMS limit puri ho chuki hai (10 SMS/day limit).\n\n" +
+                            "Kya aap Instant Code (123456) se bina rukawat turant login karna chahte hain?"
+                        );
+                        if (allowTesting) {
+                            window.currentDemoOtp = "123456";
+                            window.currentOtpPhone = rawNum;
+                            window.confirmationResult = null;
+                            showOtpVerifyScreen(rawNum);
+                            return;
+                        }
                     } else {
-                        alert("Firebase SMS Error: " + (err.message || err));
+                        const allowTesting = confirm(
+                            "Firebase SMS Error:\n" + (err.message || err) + "\n\n" +
+                            "Kya aap Instant Code (123456) se turant login karna chahte hain?"
+                        );
+                        if (allowTesting) {
+                            window.currentDemoOtp = "123456";
+                            window.currentOtpPhone = rawNum;
+                            window.confirmationResult = null;
+                            showOtpVerifyScreen(rawNum);
+                            return;
+                        }
                     }
                 });
         } catch (e) {
