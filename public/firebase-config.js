@@ -1,18 +1,15 @@
 // ========================================================
 // FIREBASE CONFIGURATION FOR QUICKCHAT REAL PHONE OTP
 // ========================================================
-// 1. console.firebase.google.com par jaayein (apne Gmail se)
-// 2. Naya free project banayein -> Build -> Authentication -> Phone Enable karein
-// 3. Project Settings (gear icon) -> General -> Your apps -> Web app (</>) banayein
-// 4. Niche diye gaye firebaseConfig me apni keys paste karein:
 
 const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyC9-48jVcFO8RXMlmvtDIUPETSosJCLiK0",
+    authDomain: "quickchat-a506e.firebaseapp.com",
+    projectId: "quickchat-a506e",
+    storageBucket: "quickchat-a506e.firebasestorage.app",
+    messagingSenderId: "119908008465",
+    appId: "1:119908008465:web:696c374ed53bf21e19a7b0",
+    measurementId: "G-T0XCLKMJZH"
 };
 
 // Check if user has entered real keys
@@ -34,9 +31,9 @@ if (typeof firebase !== 'undefined') {
             }
             firebaseAuth = firebase.auth();
             firebaseAuth.useDeviceLanguage();
-            console.log("Firebase Phone Auth ready!");
+            console.log("Firebase Phone Auth ready for QuickChat!");
         } else {
-            console.warn("Firebase not yet configured with real keys. Demo OTP mode active for testing.");
+            console.warn("Firebase not configured.");
         }
     } catch (e) {
         console.error("Firebase init error:", e);

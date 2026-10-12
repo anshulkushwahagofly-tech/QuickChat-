@@ -156,12 +156,13 @@ function doSendOtp() {
 
     if (hasRealFirebase) {
         try {
-            if (!window.recaptchaVerifier) {
-                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                    'size': 'invisible',
-                    'callback': () => { console.log('Firebase reCAPTCHA verified'); }
-                });
+            if (window.recaptchaVerifier) {
+                try { window.recaptchaVerifier.clear(); } catch(e){}
             }
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                'size': 'invisible',
+                'callback': () => { console.log('Firebase reCAPTCHA verified'); }
+            });
 
             firebaseAuth.signInWithPhoneNumber('+91' + rawNum, window.recaptchaVerifier)
                 .then((confirmationResult) => {
@@ -243,6 +244,11 @@ if (otpPhoneInput) {
     });
 }
 if (otpCodeInput) {
+    otpCodeInput.addEventListener('input', () => {
+        if (otpCodeInput.value.trim().length === 6) {
+            doVerifyOtp();
+        }
+    });
     otpCodeInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') doVerifyOtp();
     });
