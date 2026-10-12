@@ -1,4 +1,10 @@
-const socket = io();
+const socket = io({
+    transports: ['websocket', 'polling'],
+    upgrade: true,
+    reconnection: true,
+    reconnectionAttempts: 20,
+    reconnectionDelay: 800
+});
 
 const loginContainer = document.getElementById('login-container');
 const appContainer = document.getElementById('app-container');
@@ -94,32 +100,78 @@ function showStep(stepName) {
     });
 }
 
-// Check saved session immediately to prevent flashing login form on reload
+// Cache and Status Helpers
+function setConnectingState(isConnecting) {
+    const banner = document.getElementById('connecting-banner');
+    if (banner) {
+        banner.style.display = isConnecting ? 'flex' : 'none';
+    }
+}
+
+function saveLocalCache() {
+    try {
+        localStorage.setItem('quickchat_cached_chats', JSON.stringify(chats));
+        localStorage.setItem('quickchat_cached_users', JSON.stringify(allRegisteredUsers));
+    } catch(e) {}
+}
+
+// Instant Session Restoration (0ms delay, no white flash or connecting screen on reload)
 const savedNum = localStorage.getItem('quickchat_session_num');
 const savedPin = localStorage.getItem('quickchat_session_pin');
 
 if (savedNum) {
-    showStep('loading');
+    myNumber = savedNum;
+    document.documentElement.classList.add('user-logged-in');
+
+    if (loginLoadingView) loginLoadingView.style.display = 'none';
+    if (loginContainer) loginContainer.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'flex';
+
+    if (myNumberPreview) myNumberPreview.innerText = '+91 ' + myNumber;
+    if (myDisplayNumber) myDisplayNumber.innerText = "QuickChat";
+
+    // Load cached chats and contacts immediately (Instant 0ms display)
+    try {
+        const cachedChats = localStorage.getItem('quickchat_cached_chats');
+        if (cachedChats) {
+            chats = JSON.parse(cachedChats);
+            renderChatList();
+        }
+        const cachedUsers = localStorage.getItem('quickchat_cached_users');
+        if (cachedUsers) {
+            allRegisteredUsers = JSON.parse(cachedUsers);
+        }
+    } catch (e) {
+        console.warn("Local cache parse err:", e);
+    }
+
+    setConnectingState(true);
+
     if (savedPin) {
         socket.emit('login', { number: savedNum, pin: savedPin });
     } else {
         socket.emit('auto login', { number: savedNum });
     }
 } else {
+    document.documentElement.classList.remove('user-logged-in');
     showStep('welcome');
 }
 
-// Auto-login on socket connect and reconnect
+// Auto-sync on socket connect and reconnect
 socket.on('connect', () => {
     const num = myNumber || localStorage.getItem('quickchat_session_num');
     const pin = localStorage.getItem('quickchat_session_pin');
-    if (num && !myNumber) {
+    if (num) {
         if (pin) {
             socket.emit('login', { number: num, pin: pin });
         } else {
             socket.emit('auto login', { number: num });
         }
     }
+});
+
+socket.on('disconnect', () => {
+    if (myNumber) setConnectingState(true);
 });
 
 // Resend countdown timer
@@ -577,6 +629,9 @@ if (logoutBtn) {
         if (confirm("Kya aap sach mein logout karna chahte hain?")) {
             localStorage.removeItem('quickchat_session_num');
             localStorage.removeItem('quickchat_session_pin');
+            localStorage.removeItem('quickchat_cached_chats');
+            localStorage.removeItem('quickchat_cached_users');
+            document.documentElement.classList.remove('user-logged-in');
             window.location.reload();
         }
     });
@@ -585,6 +640,8 @@ if (logoutBtn) {
 socket.on('login error', (msg) => {
     console.warn("Login response:", msg);
     resetVerifyOtpBtn();
+    setConnectingState(false);
+    document.documentElement.classList.remove('user-logged-in');
     showStep('pin');
 
     if (msg.includes('Galat PIN')) {
@@ -605,6 +662,9 @@ socket.on('login error', (msg) => {
 
 socket.on('login success', (data) => {
     resetVerifyOtpBtn();
+    setConnectingState(false);
+    document.documentElement.classList.add('user-logged-in');
+
     myNumber = data.number;
     chats = {};
     allRegisteredUsers = data.allUsers || [];
@@ -632,10 +692,12 @@ socket.on('login success', (data) => {
     appContainer.style.display = 'flex';
     
     renderChatList();
+    saveLocalCache();
 });
 
 socket.on('all users', (users) => {
     allRegisteredUsers = users || [];
+    saveLocalCache();
     renderContactsInModal();
 });
 
@@ -919,6 +981,7 @@ function sendMessage(imageStr = null) {
         messageInput.dispatchEvent(new Event('input')); 
         renderMessages();
         renderChatList(); 
+        saveLocalCache();
     }
 }
 
@@ -984,4 +1047,5 @@ socket.on('private message', (data) => {
         unreadCounts[sender] = (unreadCounts[sender] || 0) + 1;
     }
     renderChatList();
+    saveLocalCache();
 });

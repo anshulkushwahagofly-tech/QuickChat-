@@ -422,6 +422,36 @@ body::before {
     gap: 5px;
 }
 
+/* Instant Login State (Zero-delay reload, no connecting flash) */
+.user-logged-in #login-container {
+    display: none !important;
+}
+
+.user-logged-in #app-container {
+    display: flex !important;
+}
+
+/* WhatsApp Connecting Status Banner */
+.wa-connecting-banner {
+    background-color: #008069;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    letter-spacing: 0.2px;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    animation: fadeInBanner 0.2s ease-out;
+}
+
+@keyframes fadeInBanner {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* --- APP CONTAINER --- */
 #app-container {
     width: 100%;

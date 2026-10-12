@@ -9,9 +9,16 @@
     <link rel="apple-touch-icon" href="logo.png?v=4">
     <link rel="manifest" href="manifest.json?v=4">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=21">
-    <link rel="stylesheet" href="mobile-whatsapp.css?v=10">
+    <link rel="stylesheet" href="style.css?v=22">
+    <link rel="stylesheet" href="mobile-whatsapp.css?v=11">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <script>
+        try {
+            if (localStorage.getItem('quickchat_session_num')) {
+                document.documentElement.classList.add('user-logged-in');
+            }
+        } catch(e) {}
+    </script>
 </head>
 <body>
     <!-- Login Overlay (QuickChat Native Onboarding Flow) -->
@@ -203,7 +210,12 @@
                         <div class="menu-divider"></div>
                         <div class="menu-item logout" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Log out</div>
                     </div>
-                </div>
+            </div>
+            
+            <!-- WhatsApp Connecting Bar -->
+            <div id="connecting-banner" class="wa-connecting-banner" style="display:none;">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span>Connecting...</span>
             </div>
             
             <div class="wa-tabs-bar">
@@ -341,7 +353,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=32"></script>
+    <script src="script.js?v=33"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>

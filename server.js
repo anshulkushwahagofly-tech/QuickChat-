@@ -5,11 +5,23 @@ const path = require('path');
 const fs = require('fs');
 const mongoose = require('mongoose');
 
+const compression = require('compression');
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: { origin: '*' },
+    transports: ['websocket', 'polling']
+});
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Enable Gzip compression to speed up network asset delivery by up to 70%
+app.use(compression());
+
+// Static file serving with short-term caching & etag for instant reloads
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: '1h',
+    etag: true
+}));
 
 // --- DATABASE SETUP (MongoDB or Local JSON Fallback) ---
 const DATA_FILE = path.join(__dirname, 'data.json');
@@ -53,15 +65,18 @@ function saveDB(db) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
 }
 
-// Ensure database connection is ready before querying
+// Ensure database connection is ready before querying without blocking requests
 async function ensureDBReady() {
-    if (MONGODB_URI && mongoose.connection.readyState !== 1) {
-        for (let i = 0; i < 30; i++) {
+    if (useMongo || mongoose.connection.readyState === 1) return true;
+    if (!MONGODB_URI) return false;
+    // Only wait if it's actively connecting (readyState === 2)
+    if (mongoose.connection.readyState === 2) {
+        for (let i = 0; i < 10; i++) {
             if (mongoose.connection.readyState === 1) {
                 useMongo = true;
                 return true;
             }
-            await new Promise(r => setTimeout(r, 200));
+            await new Promise(r => setTimeout(r, 100));
         }
     }
     return mongoose.connection.readyState === 1;
@@ -76,7 +91,11 @@ async function getUser(number) {
     return loadDB().users[number] ? { pin: loadDB().users[number].pin } : null;
 }
 
+let cachedAllUsers = null;
+let lastUsersFetch = 0;
+
 async function createUser(number, pin) {
+    cachedAllUsers = null; // Invalidate user cache on new signup
     await ensureDBReady();
     if (useMongo || mongoose.connection.readyState === 1) {
         await User.create({ number, pin });
@@ -109,14 +128,22 @@ async function getUserMessages(number) {
 }
 
 async function getAllUsers() {
+    const now = Date.now();
+    if (cachedAllUsers && (now - lastUsersFetch < 4000)) {
+        return cachedAllUsers;
+    }
     await ensureDBReady();
+    let result = [];
     if (useMongo || mongoose.connection.readyState === 1) {
         const users = await User.find({}, 'number');
-        return users.map(u => u.number);
+        result = users.map(u => u.number);
     } else {
         const db = loadDB();
-        return Object.keys(db.users);
+        result = Object.keys(db.users);
     }
+    cachedAllUsers = result;
+    lastUsersFetch = now;
+    return result;
 }
 
 // --- REAL INDIAN MOBILE NUMBER VALIDATOR ---
