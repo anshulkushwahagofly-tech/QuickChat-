@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- WhatsApp Gradient -->
+    <linearGradient id="waGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#25D366"/>
+      <stop offset="50%" stop-color="#00A884"/>
+      <stop offset="100%" stop-color="#075E54"/>
+    </linearGradient>
+    
+    <!-- Bubble Drop Shadow -->
+    <filter id="bubbleShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.22"/>
+    </filter>
+    
+    <!-- Subtle Inner Glow -->
+    <filter id="softGlow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#ffffff" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Full Bleed Rounded Square (Zero Black Border) -->
+  <rect width="512" height="512" rx="115" fill="url(#waGradient)"/>
+
+  <!-- Glassmorphic Subtle Top Light Reflex -->
+  <path d="M 0,115 C 0,51 51,0 115,0 L 397,0 C 461,0 512,51 512,115 C 512,190 380,240 256,240 C 130,240 0,190 0,115 Z" fill="#ffffff" opacity="0.08"/>
+
+  <!-- Main Pure White Chat Speech Bubble -->
+  <g filter="url(#bubbleShadow)">
+    <path d="M 256 110 C 160 110 82 180 82 266 C 82 312 103 353 138 381 L 118 438 C 115 446 123 454 131 450 L 198 420 C 216 426 236 430 256 430 C 352 430 430 360 430 274 C 430 188 352 110 256 110 Z" fill="#ffffff"/>
+  </g>
+
+  <!-- Three Subtle Elegant Message Dots -->
+  <g fill="#00A884">
+    <circle cx="196" cy="270" r="19"/>
+    <circle cx="256" cy="270" r="19"/>
+    <circle cx="316" cy="270" r="19"/>
+  </g>
+</svg>
