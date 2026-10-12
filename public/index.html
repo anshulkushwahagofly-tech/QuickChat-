@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="logo.png?v=4">
     <link rel="manifest" href="manifest.json?v=4">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=22">
+    <link rel="stylesheet" href="style.css?v=23">
     <link rel="stylesheet" href="mobile-whatsapp.css?v=11">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script>
@@ -240,6 +240,69 @@
             <div class="fab-btn" id="open-new-chat-btn" title="New Chat">
                 <i class="fas fa-comment-alt"></i>
             </div>
+
+            <!-- WhatsApp Sliding Drawer: New Chat -->
+            <div id="new-chat-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-new-chat-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>New chat</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="search-container" style="background:#fff; border-bottom:1px solid #e9edef;">
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="drawer-search-contacts" placeholder="Search contacts">
+                        </div>
+                    </div>
+                    <div class="wa-drawer-direct-add">
+                        <div class="wa-direct-input-row">
+                            <span class="wa-direct-prefix">+91</span>
+                            <input type="tel" id="drawer-direct-phone" placeholder="Enter 10-digit number" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                            <button id="drawer-start-chat-btn"><i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                    <div class="wa-drawer-contacts-title">CONTACTS ON QUICKCHAT</div>
+                    <div class="wa-drawer-contacts-list" id="drawer-contacts-list">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Drawer: Profile -->
+            <div id="profile-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-profile-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Profile</h3>
+                </div>
+                <div class="wa-drawer-body" style="background:#f0f2f5;">
+                    <div class="wa-profile-avatar-section">
+                        <div class="wa-profile-big-avatar" id="profile-big-avatar">
+                            <div class="avatar" style="width:160px; height:160px; margin:0 auto;"></div>
+                        </div>
+                    </div>
+                    <div class="wa-profile-card">
+                        <span class="wa-profile-label">Your name</span>
+                        <div class="wa-profile-val-row">
+                            <span id="profile-display-name">QuickChat User</span>
+                            <i class="fas fa-pen wa-profile-edit-icon" id="edit-profile-name-btn" title="Edit name"></i>
+                        </div>
+                        <p class="wa-profile-hint">This is not your username or pin. This name will be visible to your QuickChat contacts.</p>
+                    </div>
+                    <div class="wa-profile-card">
+                        <span class="wa-profile-label">About</span>
+                        <div class="wa-profile-val-row">
+                            <span id="profile-display-about">Hey there! I am using QuickChat.</span>
+                            <i class="fas fa-pen wa-profile-edit-icon" id="edit-profile-about-btn" title="Edit about"></i>
+                        </div>
+                    </div>
+                    <div class="wa-profile-card">
+                        <span class="wa-profile-label">Phone number</span>
+                        <div class="wa-profile-val-row">
+                            <span id="profile-display-phone" style="font-weight:600; color:#111b21;">+91 ...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Right Chat Panel (Active Chat) -->
@@ -250,7 +313,7 @@
                     <div class="avatar" id="active-chat-avatar"></div>
                     <div class="chat-title">
                         <h3 id="active-chat-title">+91 0000000000</h3>
-                        <span class="status">online</span>
+                        <span class="status" id="active-chat-status">online</span>
                     </div>
                 </div>
                 <div class="header-icons">
@@ -264,18 +327,28 @@
                 <!-- Messages will appear here -->
             </div>
 
+            <!-- WhatsApp Emoji Picker Popup -->
+            <div id="emoji-picker-popup" class="wa-emoji-picker" style="display:none;">
+                <div class="wa-emoji-tabs">
+                    <span class="wa-emoji-tab active" data-cat="all">All Emojis</span>
+                </div>
+                <div class="wa-emoji-grid" id="emoji-grid">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
             <div class="chat-panel-input">
                 <div class="input-pill-wrapper">
-                    <i class="far fa-smile icon-btn"></i>
-                    <input type="text" id="message-input" placeholder="Type a message">
+                    <i class="far fa-smile icon-btn" id="emoji-toggle-btn" title="Emojis"></i>
+                    <input type="text" id="message-input" placeholder="Type a message" autocomplete="off">
                     <input type="file" id="image-upload" accept="image/*" style="display:none;">
                     <label for="image-upload" style="margin:0; display:flex; align-items:center;">
-                        <i class="fas fa-paperclip icon-btn" id="attach-btn" title="Send Photo"></i>
+                        <i class="fas fa-paperclip icon-btn" id="attach-btn" title="Attach file/photo"></i>
                     </label>
-                    <i class="fas fa-camera icon-btn"></i>
+                    <i class="fas fa-camera icon-btn" id="camera-btn" title="Camera"></i>
                 </div>
                 <div class="mic-circle-wrapper">
-                    <i class="fas fa-microphone" id="mic-btn"></i>
+                    <i class="fas fa-microphone" id="mic-btn" title="Voice message"></i>
                     <button id="send-btn" style="display: none; border: none; background: transparent;"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -354,7 +427,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=34"></script>
+    <script src="script.js?v=35"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>

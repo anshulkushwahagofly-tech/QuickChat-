@@ -704,80 +704,190 @@ socket.on('all users', (users) => {
     renderContactsInModal();
 });
 
-// --- NEW CHAT / CONTACTS MODAL ---
-function openModal() {
-    if (newChatModal) {
-        newChatModal.style.display = 'flex';
-        modalChatNumber.value = '';
-        modalChatNumber.focus();
-        renderContactsInModal();
+// --- WHATSAPP SLIDING DRAWERS (NEW CHAT & PROFILE) ---
+const newChatDrawer = document.getElementById('new-chat-drawer');
+const closeNewChatDrawerBtn = document.getElementById('close-new-chat-drawer');
+const drawerContactsList = document.getElementById('drawer-contacts-list');
+const drawerSearchContacts = document.getElementById('drawer-search-contacts');
+const drawerDirectPhone = document.getElementById('drawer-direct-phone');
+const drawerStartChatBtn = document.getElementById('drawer-start-chat-btn');
+
+const profileDrawer = document.getElementById('profile-drawer');
+const closeProfileDrawerBtn = document.getElementById('close-profile-drawer');
+const myProfileBtn = document.getElementById('my-profile-btn');
+const profileDisplayName = document.getElementById('profile-display-name');
+const profileDisplayPhone = document.getElementById('profile-display-phone');
+
+function openNewChatDrawer() {
+    if (newChatDrawer) {
+        newChatDrawer.classList.add('active');
+        if (drawerDirectPhone) drawerDirectPhone.focus();
+        renderDrawerContacts();
     }
 }
 
-function closeModal() {
-    if (newChatModal) {
-        newChatModal.style.display = 'none';
+function closeNewChatDrawer() {
+    if (newChatDrawer) newChatDrawer.classList.remove('active');
+}
+
+function openProfileDrawer() {
+    if (profileDrawer) {
+        if (profileDisplayPhone) profileDisplayPhone.innerText = '+91 ' + (myNumber || '');
+        profileDrawer.classList.add('active');
     }
 }
 
-if (openNewChatBtn) openNewChatBtn.addEventListener('click', openModal);
-if (headerNewChatBtn) headerNewChatBtn.addEventListener('click', openModal);
-if (closeNewChatModal) closeNewChatModal.addEventListener('click', closeModal);
+function closeProfileDrawer() {
+    if (profileDrawer) profileDrawer.classList.remove('active');
+}
 
-if (newChatModal) {
-    newChatModal.addEventListener('click', (e) => {
-        if (e.target === newChatModal) closeModal();
+if (headerNewChatBtn) headerNewChatBtn.addEventListener('click', openNewChatDrawer);
+if (openNewChatBtn) openNewChatBtn.addEventListener('click', openNewChatDrawer);
+if (closeNewChatDrawerBtn) closeNewChatDrawerBtn.addEventListener('click', closeNewChatDrawer);
+if (myProfileBtn) myProfileBtn.addEventListener('click', openProfileDrawer);
+if (closeProfileDrawerBtn) closeProfileDrawerBtn.addEventListener('click', closeProfileDrawer);
+
+// Drawer direct number start chat
+if (drawerStartChatBtn && drawerDirectPhone) {
+    const doDrawerStart = () => {
+        const num = drawerDirectPhone.value.trim();
+        if (!num || num.length !== 10) {
+            alert("Kripya valid 10-digit number dalein.");
+            return;
+        }
+        if (num === myNumber) {
+            alert("Aap apne hi number par chat nahi kar sakte!");
+            return;
+        }
+        closeNewChatDrawer();
+        startChat(num);
+        drawerDirectPhone.value = '';
+    };
+    drawerStartChatBtn.addEventListener('click', doDrawerStart);
+    drawerDirectPhone.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doDrawerStart();
     });
 }
 
-function renderContactsInModal() {
-    if (!contactsList) return;
-    contactsList.innerHTML = '';
-    const otherUsers = allRegisteredUsers.filter(u => u !== myNumber);
-    
+function renderDrawerContacts(filter = '') {
+    if (!drawerContactsList) return;
+    drawerContactsList.innerHTML = '';
+    const otherUsers = allRegisteredUsers.filter(u => u !== myNumber && u.includes(filter));
+
     if (otherUsers.length === 0) {
-        contactsList.innerHTML = '<p style="color:#8696a0; font-size:13px; text-align:center; padding:15px;">Abhi koi aur user registered nahi hai.<br>Aap upar 10-digit number enter karke nayi chat shuru kar sakte hain!</p>';
+        drawerContactsList.innerHTML = `
+            <div style="padding: 30px 20px; text-align: center; color: #8696a0; font-size: 13.5px;">
+                <p>Abhi koi aur user nahi mila.<br>Aap upar number daal kar seedha chat shuru karein!</p>
+            </div>
+        `;
         return;
     }
 
     otherUsers.forEach(num => {
-        const card = document.createElement('div');
-        card.className = 'contact-card';
-        card.innerHTML = `
-            <div class="avatar" style="width:40px; height:40px;"></div>
+        const item = document.createElement('div');
+        item.className = 'contact-card';
+        item.innerHTML = `
+            <div class="avatar" style="width:44px; height:44px;"></div>
             <div class="contact-info">
                 <div class="contact-number">+91 ${num}</div>
-                <div class="contact-sub">QuickChat User • Click to chat</div>
+                <div class="contact-sub">Available on QuickChat</div>
             </div>
             <span class="chat-action-badge"><i class="fas fa-comment"></i> Chat</span>
         `;
-        card.onclick = () => {
-            closeModal();
+        item.onclick = () => {
+            closeNewChatDrawer();
             startChat(num);
         };
-        contactsList.appendChild(card);
+        drawerContactsList.appendChild(item);
     });
 }
 
-function startChatFromModal() {
-    const num = modalChatNumber.value.trim();
-    if (!num || num.length !== 10) {
-        alert("Kripya valid 10-digit phone number dalein.");
-        return;
-    }
-    if (num === myNumber) {
-        alert("Aap apne hi number par chat nahi kar sakte!");
-        return;
-    }
-    closeModal();
-    startChat(num);
+if (drawerSearchContacts) {
+    drawerSearchContacts.addEventListener('input', (e) => {
+        renderDrawerContacts(e.target.value.trim().toLowerCase());
+    });
 }
 
-if (modalStartChatBtn) modalStartChatBtn.addEventListener('click', startChatFromModal);
-if (modalChatNumber) {
-    modalChatNumber.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') startChatFromModal();
+// --- EMOJI PICKER POPUP ---
+const emojiToggleBtn = document.getElementById('emoji-toggle-btn');
+const emojiPickerPopup = document.getElementById('emoji-picker-popup');
+const emojiGrid = document.getElementById('emoji-grid');
+
+const EMOJIS = [
+    '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😍','🥰','😘','😋','😛','😜','🤪','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','😌','😔','😴','😷','🤒','😎','🥳','🥺','🤠','🤡','💩','👻','💀','👽','🤖','🎃','❤️','🧡','💛','💚','💙','💜','🖤','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','✋','🤚','🖐️','🖖','👋','💪','🙏','👏','🤝','🙌','👐','🤲','🔥','✨','🎉','🎊','🎈','🎂','⭐','🌟','💥','💯','🍕','🍔','🍟','☕','🍵','🚀','✈️','🚗'
+];
+
+function initEmojiPicker() {
+    if (!emojiGrid) return;
+    emojiGrid.innerHTML = '';
+    EMOJIS.forEach(emo => {
+        const item = document.createElement('span');
+        item.className = 'wa-emoji-item';
+        item.innerText = emo;
+        item.onclick = (e) => {
+            e.stopPropagation();
+            if (messageInput) {
+                messageInput.value += emo;
+                messageInput.focus();
+                messageInput.dispatchEvent(new Event('input'));
+            }
+        };
+        emojiGrid.appendChild(item);
     });
+}
+
+if (emojiToggleBtn && emojiPickerPopup) {
+    emojiToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = emojiPickerPopup.style.display === 'block';
+        emojiPickerPopup.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) initEmojiPicker();
+    });
+
+    document.addEventListener('click', (e) => {
+        if (emojiPickerPopup && !emojiPickerPopup.contains(e.target) && e.target !== emojiToggleBtn) {
+            emojiPickerPopup.style.display = 'none';
+        }
+    });
+}
+
+// --- WHATSAPP SOUND EFFECTS (SYNTHESIZED WEB AUDIO) ---
+function playSentSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.08);
+    } catch(e) {}
+}
+
+function playReceivedSound() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(520, ctx.currentTime);
+        osc.frequency.setValueAtTime(680, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.18, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.18);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.18);
+    } catch(e) {}
 }
 
 // --- SEARCH / ADD INPUT ---
@@ -807,22 +917,48 @@ function renderChatList(filter = '') {
     chatList.innerHTML = '';
     
     const friendNumbers = Object.keys(chats);
-
-    // If there's a search query, filter
     const filteredFriends = friendNumbers.filter(num => num.includes(filter));
 
     if (filteredFriends.length === 0 && friendNumbers.length === 0) {
-        // Welcome helper state when chat list is empty
+        // WhatsApp interactive first-time state with contacts
         const emptyPrompt = document.createElement('div');
-        emptyPrompt.style.padding = '35px 20px';
+        emptyPrompt.style.padding = '24px 16px';
         emptyPrompt.style.textAlign = 'center';
-        emptyPrompt.style.color = '#667781';
+        
+        const otherUsers = allRegisteredUsers.filter(u => u !== myNumber);
+        let contactsSnippet = '';
+        if (otherUsers.length > 0) {
+            contactsSnippet = `
+                <div style="text-align:left; margin-top:20px; border-top:1px solid #f0f2f5; padding-top:14px;">
+                    <div style="font-size:12px; font-weight:600; color:#008069; margin-bottom:8px; text-transform:uppercase;">QuickChat Contacts:</div>
+                    ${otherUsers.slice(0, 5).map(u => `
+                        <div class="contact-card" style="padding:8px 6px;" onclick="startChat('${u}')">
+                            <div class="avatar" style="width:38px; height:38px;"></div>
+                            <div class="contact-info">
+                                <div class="contact-number">+91 ${u}</div>
+                            </div>
+                            <span class="chat-action-badge"><i class="fas fa-comment"></i> Chat</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
         emptyPrompt.innerHTML = `
-            <i class="fas fa-comments" style="font-size:45px; color:#00a884; margin-bottom:12px; display:block;"></i>
-            <h4 style="color:#111b21; margin-bottom:6px; font-weight:500;">Koi chat nahi hai</h4>
-            <p style="font-size:13.5px; line-height:1.4;">Niche diye gaye hare button (💬) par tap karein aur kisi bhi dost ko add karke chat shuru karein!</p>
+            <div style="width:52px; height:52px; border-radius:50%; background:#e8f5e9; color:#00a884; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto; font-size:24px;">
+                <i class="fas fa-comments"></i>
+            </div>
+            <h4 style="color:#111b21; margin-bottom:6px; font-weight:600; font-size:15.5px;">Welcome to QuickChat</h4>
+            <p style="color:#667781; font-size:13px; line-height:1.45; margin-bottom:16px;">Apne kisi bhi dost ke sath chat shuru karein!</p>
+            <button id="start-first-chat-btn" style="background:#00a884; color:white; border:none; padding:9px 20px; border-radius:20px; font-size:13.5px; font-weight:600; cursor:pointer; box-shadow:0 2px 5px rgba(0,168,132,0.25);">
+                <i class="fas fa-plus" style="margin-right:6px;"></i> Start New Chat
+            </button>
+            ${contactsSnippet}
         `;
         chatList.appendChild(emptyPrompt);
+
+        const firstChatBtn = document.getElementById('start-first-chat-btn');
+        if (firstChatBtn) firstChatBtn.addEventListener('click', openNewChatDrawer);
         return;
     }
 
@@ -913,15 +1049,26 @@ function formatTime(date) {
     return hours + ':' + minutes + ' ' + ampm;
 }
 
-messageInput.addEventListener('input', () => {
-    if (messageInput.value.trim().length > 0) {
-        micBtn.style.display = 'none';
-        sendBtn.style.display = 'block';
-    } else {
-        micBtn.style.display = 'block';
-        sendBtn.style.display = 'none';
-    }
-});
+let typingTimer = null;
+if (messageInput) {
+    messageInput.addEventListener('input', () => {
+        if (messageInput.value.trim().length > 0) {
+            micBtn.style.display = 'none';
+            sendBtn.style.display = 'block';
+        } else {
+            micBtn.style.display = 'block';
+            sendBtn.style.display = 'none';
+        }
+
+        if (activeChat) {
+            socket.emit('typing', { to: activeChat, isTyping: true });
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                socket.emit('typing', { to: activeChat, isTyping: false });
+            }, 1500);
+        }
+    });
+}
 
 // Mic or Send wrapper click
 const micCircleWrapper = document.querySelector('.mic-circle-wrapper');
@@ -979,12 +1126,14 @@ function sendMessage(imageStr = null) {
         
         // Send to server
         socket.emit('private message', { to: activeChat, text: text, image: imageStr });
+        socket.emit('typing', { to: activeChat, isTyping: false });
         
         messageInput.value = '';
         messageInput.dispatchEvent(new Event('input')); 
         renderMessages();
         renderChatList(); 
         saveLocalCache();
+        playSentSound();
     }
 }
 
@@ -1051,4 +1200,19 @@ socket.on('private message', (data) => {
     }
     renderChatList();
     saveLocalCache();
+    playReceivedSound();
+});
+
+// Real-time typing status receiver
+socket.on('user typing', (data) => {
+    if (activeChat && data.from === activeChat) {
+        const statusEl = document.getElementById('active-chat-status');
+        if (statusEl) {
+            if (data.isTyping) {
+                statusEl.innerHTML = `<span style="color:#00a884; font-weight:600;">typing...</span>`;
+            } else {
+                statusEl.innerHTML = `online`;
+            }
+        }
+    }
 });

@@ -452,22 +452,31 @@ body::before {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- APP CONTAINER --- */
+/* --- APP CONTAINER (WHATSAPP WEB DESKTOP FRAME) --- */
 #app-container {
     width: 100%;
-    max-width: 1600px;
     height: 100vh;
     display: flex;
     background: #fff;
-    box-shadow: 0 1px 1px 0 rgba(0,0,0,.06), 0 2px 5px 0 rgba(0,0,0,.2);
     position: relative;
     overflow: hidden;
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 900px) {
+    body {
+        background-color: #eae6df;
+    }
+    body::before {
+        height: 127px;
+        background-color: #00a884;
+    }
     #app-container {
-        height: 95vh;
-        border-radius: 4px;
+        width: calc(100% - 38px);
+        max-width: 1600px;
+        height: calc(100vh - 38px);
+        box-shadow: 0 6px 18px rgba(11,20,26,.12);
+        border-radius: 0;
+        margin: 0 auto;
     }
 }
 
@@ -511,6 +520,7 @@ body::before {
     flex-direction: column;
     background: #fff;
     position: relative;
+    overflow: hidden;
 }
 
 .sidebar-header {
@@ -1153,4 +1163,265 @@ body::before {
     border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
+}
+
+/* --- WHATSAPP SLIDING DRAWERS (NEW CHAT & PROFILE) --- */
+.wa-drawer {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    z-index: 150;
+    display: flex;
+    flex-direction: column;
+    transition: left 0.28s cubic-bezier(0.1, 0.82, 0.25, 1);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.wa-drawer.active {
+    left: 0;
+}
+
+.wa-drawer-header {
+    height: 108px;
+    background-color: #008069;
+    color: #ffffff;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 24px 20px 24px;
+    gap: 28px;
+}
+
+.wa-drawer-header h3 {
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+.wa-drawer-back-btn {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 19px;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.wa-drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.wa-drawer-direct-add {
+    padding: 12px 16px;
+    background: #ffffff;
+    border-bottom: 1px solid #f0f2f5;
+}
+
+.wa-direct-input-row {
+    display: flex;
+    align-items: center;
+    background: #f0f2f5;
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 2px 8px;
+}
+
+.wa-direct-prefix {
+    font-weight: 600;
+    color: #54656f;
+    padding: 8px 6px 8px 8px;
+    font-size: 14.5px;
+}
+
+.wa-direct-input-row input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 8px 6px;
+    font-size: 15px;
+    outline: none;
+    color: #111b21;
+}
+
+.wa-direct-input-row button {
+    background: #00a884;
+    color: white;
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.wa-direct-input-row button:hover {
+    background: #008f6f;
+}
+
+.wa-drawer-contacts-title {
+    padding: 20px 24px 10px 24px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #008069;
+    letter-spacing: 0.5px;
+}
+
+.wa-drawer-contacts-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Profile Drawer Styling */
+.wa-profile-avatar-section {
+    padding: 28px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.wa-profile-big-avatar {
+    position: relative;
+    cursor: pointer;
+}
+
+.wa-profile-card {
+    background: #ffffff;
+    padding: 14px 24px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.wa-profile-label {
+    font-size: 12.5px;
+    color: #008069;
+    font-weight: 500;
+    display: block;
+    margin-bottom: 12px;
+}
+
+.wa-profile-val-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #111b21;
+    font-size: 15.5px;
+}
+
+.wa-profile-edit-icon {
+    color: #8696a0;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.wa-profile-hint {
+    margin-top: 10px;
+    font-size: 12.5px;
+    color: #8696a0;
+    line-height: 1.45;
+}
+
+/* --- WHATSAPP EMOJI PICKER POPUP --- */
+.wa-emoji-picker {
+    background: #ffffff;
+    border-top: 1px solid #e9edef;
+    padding: 10px 16px;
+    max-height: 220px;
+    overflow-y: auto;
+    box-shadow: 0 -3px 12px rgba(0,0,0,0.08);
+    animation: emojiSlideUp 0.15s ease-out;
+    z-index: 50;
+}
+
+@keyframes emojiSlideUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.wa-emoji-tabs {
+    display: flex;
+    gap: 16px;
+    border-bottom: 1px solid #f0f2f5;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+.wa-emoji-tab {
+    font-size: 13px;
+    font-weight: 600;
+    color: #008069;
+    cursor: pointer;
+}
+
+.wa-emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(36px, 1fr));
+    gap: 6px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.wa-emoji-item {
+    font-size: 24px;
+    cursor: pointer;
+    text-align: center;
+    padding: 4px;
+    border-radius: 6px;
+    transition: transform 0.1s, background-color 0.1s;
+    user-select: none;
+}
+
+.wa-emoji-item:hover {
+    background-color: #f0f2f5;
+    transform: scale(1.2);
+}
+
+/* --- WHATSAPP AUTHENTIC MESSAGE BUBBLES --- */
+.message {
+    max-width: 65%;
+    padding: 6px 10px 4px 10px;
+    font-size: 14.5px;
+    line-height: 19px;
+    color: #111b21;
+    position: relative;
+    box-shadow: 0 1px 0.5px rgba(11,20,26,.13);
+    word-wrap: break-word;
+}
+
+.message.sent {
+    background-color: #d9fdd3 !important;
+    align-self: flex-end;
+    border-radius: 8px 8px 0px 8px !important;
+}
+
+.message.received {
+    background-color: #ffffff !important;
+    align-self: flex-start;
+    border-radius: 8px 8px 8px 0px !important;
+}
+
+.message-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    margin-top: 2px;
+    float: right;
+    margin-left: 12px;
+}
+
+.message-time {
+    font-size: 11px;
+    color: #667781;
+}
+
+.ticks {
+    font-size: 13px;
+    color: #53bdeb; /* WhatsApp blue ticks */
 }

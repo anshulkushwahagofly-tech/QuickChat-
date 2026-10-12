@@ -337,6 +337,16 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Real-time typing indicator
+    socket.on('typing', ({ to, isTyping }) => {
+        const senderNumber = socketToPhone[socket.id];
+        if (!senderNumber || !to) return;
+        const receiverSocketId = connectedUsers[to];
+        if (receiverSocketId) {
+            io.to(receiverSocketId).emit('user typing', { from: senderNumber, isTyping: !!isTyping });
+        }
+    });
+
     // --- WebRTC Signaling ---
     socket.on('call-user', (data) => {
         const receiverSocketId = connectedUsers[data.to];
