@@ -645,7 +645,7 @@ if (menuDotsBtn && dropdownMenu) {
 if (menuNewChat) {
     menuNewChat.addEventListener('click', () => {
         if (dropdownMenu) dropdownMenu.style.display = 'none';
-        openModal();
+        openNewChatDrawer();
     });
 }
 
@@ -779,9 +779,49 @@ socket.on('login success', (data) => {
     document.documentElement.classList.add('user-logged-in');
 
     myNumber = data.number;
-    chats = {};
     allRegisteredUsers = data.allUsers || [];
     
+    // Preserve any existing / cached contacts so added numbers are NEVER wiped out
+    const mergedChats = {};
+    try {
+        const raw = localStorage.getItem('quickchat_cached_chats_' + myNumber);
+        if (raw) Object.assign(mergedChats, JSON.parse(raw));
+    } catch(e) {}
+    if (chats && typeof chats === 'object') {
+        Object.keys(chats).forEach(k => {
+            if (!mergedChats[k]) mergedChats[k] = chats[k];
+        });
+    }
+
+    // Load history from database and merge
+    data.history.forEach(msg => {
+        const friend = (msg.from === myNumber) ? msg.to : msg.from;
+        if (!mergedChats[friend]) mergedChats[friend] = [];
+        const timeStr = formatTime(new Date(msg.timestamp));
+        const exists = mergedChats[friend].some(m => m.id === msg.id || (m.time === timeStr && m.text === msg.text && m.from === msg.from));
+        if (!exists) {
+            mergedChats[friend].push({
+                id: msg.id || ('msg_' + Date.now()),
+                from: msg.from,
+                to: msg.to,
+                text: msg.text,
+                image: msg.image,
+                audio: msg.audio,
+                location: msg.location,
+                poll: msg.poll,
+                replyTo: msg.replyTo,
+                reactions: msg.reactions || {},
+                isEdited: msg.isEdited || false,
+                isDeleted: msg.isDeleted || false,
+                isPinned: msg.isPinned || false,
+                starred: msg.starred || false,
+                time: timeStr
+            });
+        }
+    });
+
+    chats = mergedChats;
+
     // Ensure session credentials remain safely saved in localStorage
     const pinInput = document.getElementById('login-pin');
     const currentPin = (pinInput && pinInput.value.trim()) || localStorage.getItem('quickchat_session_pin');
@@ -791,14 +831,6 @@ socket.on('login success', (data) => {
     // Update UI previews
     if (myNumberPreview) myNumberPreview.innerText = '+91 ' + myNumber;
     if (myDisplayNumber) myDisplayNumber.innerText = "QuickChat";
-
-    // Load history from database
-    data.history.forEach(msg => {
-        const friend = (msg.from === myNumber) ? msg.to : msg.from;
-        if (!chats[friend]) chats[friend] = [];
-        const timeStr = formatTime(new Date(msg.timestamp));
-        chats[friend].push({ from: msg.from, text: msg.text, image: msg.image, time: timeStr });
-    });
 
     if (loginLoadingView) loginLoadingView.style.display = 'none';
     loginContainer.style.display = 'none';
@@ -811,7 +843,7 @@ socket.on('login success', (data) => {
 socket.on('all users', (users) => {
     allRegisteredUsers = users || [];
     saveLocalCache();
-    renderContactsInModal();
+    renderDrawerContacts();
 });
 
 // --- WHATSAPP SLIDING DRAWERS (NEW CHAT & PROFILE) ---
@@ -1020,11 +1052,13 @@ function startChat(friendNumber) {
     if (!chats[friendNumber]) {
         chats[friendNumber] = []; 
     }
+    saveLocalCache();
+    setActiveFilter('all');
     openChat(friendNumber);
 }
 
 // --- MODERN CHAT FILTER & RENDERING LOGIC ---
-let currentChatFilter = 'unread'; // Matches WhatsApp Web screenshot state
+let currentChatFilter = 'all'; // Defaults to All chats (WhatsApp Web standard)
 
 function setActiveFilter(filterName) {
     currentChatFilter = filterName;
@@ -1128,19 +1162,24 @@ function renderChatList(filter = '') {
         const emptyPrompt = document.createElement('div');
         emptyPrompt.className = 'wa-unread-empty-wrapper';
         emptyPrompt.innerHTML = `
-            <div style="width:60px; height:60px; border-radius:50%; background:var(--wa-bg-pill-active); color:var(--wa-text-pill-active); display:flex; align-items:center; justify-content:center; margin:0 auto 16px auto; font-size:26px;">
+            <div style="width:54px; height:54px; border-radius:50%; background:var(--wa-bg-pill-active); color:var(--wa-text-pill-active); display:flex; align-items:center; justify-content:center; margin:0 auto 14px auto; font-size:22px;">
                 <i class="far fa-comments"></i>
             </div>
             <div class="wa-unread-empty-title">No chats yet</div>
-            <div class="wa-unread-empty-sub">Tap the green + button to start a conversation with any number.</div>
-            <button class="wa-view-all-chats-btn" id="start-first-chat-btn" style="background:#00a884; color:white; padding:8px 22px; border-radius:20px; margin-top:10px; text-decoration:none; font-weight:600;">
-                <i class="fas fa-plus" style="margin-right:6px;"></i> Start New Chat
-            </button>
+            <div class="wa-unread-empty-sub">Tap the <i class="fas fa-plus" style="color:#00a884;"></i> button above to start a conversation with any number.</div>
         `;
         chatList.appendChild(emptyPrompt);
+        return;
+    }
 
-        const firstChatBtn = document.getElementById('start-first-chat-btn');
-        if (firstChatBtn) firstChatBtn.addEventListener('click', openNewChatDrawer);
+    if (filteredFriends.length === 0 && friendNumbers.length > 0) {
+        const noMatch = document.createElement('div');
+        noMatch.className = 'wa-unread-empty-wrapper';
+        noMatch.innerHTML = `
+            <div class="wa-unread-empty-title" style="margin-top:20px;">No chats found</div>
+            <div class="wa-unread-empty-sub">No results found for "${escapeHtml(filter)}"</div>
+        `;
+        chatList.appendChild(noMatch);
         return;
     }
 
