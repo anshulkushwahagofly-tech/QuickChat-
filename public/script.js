@@ -269,13 +269,34 @@ if (showPinViewBtn) {
         e.preventDefault();
         if (otpPhoneView) otpPhoneView.style.display = 'none';
         if (loginFormView) loginFormView.style.display = 'block';
+        const enteredNum = otpPhoneInput ? otpPhoneInput.value.trim() : '';
+        const pinNumInput = document.getElementById('login-number');
+        if (enteredNum && pinNumInput) pinNumInput.value = enteredNum;
     });
 }
+
+const forgotPinBtn = document.getElementById('forgot-pin-btn');
+if (forgotPinBtn) {
+    forgotPinBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (loginFormView) loginFormView.style.display = 'none';
+        if (otpPhoneView) otpPhoneView.style.display = 'block';
+        const pinNumInput = document.getElementById('login-number');
+        if (pinNumInput && otpPhoneInput && pinNumInput.value.trim()) {
+            otpPhoneInput.value = pinNumInput.value.trim();
+        }
+    });
+}
+
 if (backToOtpBtn) {
     backToOtpBtn.addEventListener('click', (e) => {
         e.preventDefault();
         if (loginFormView) loginFormView.style.display = 'none';
         if (otpPhoneView) otpPhoneView.style.display = 'block';
+        const pinNumInput = document.getElementById('login-number');
+        if (pinNumInput && otpPhoneInput && pinNumInput.value.trim()) {
+            otpPhoneInput.value = pinNumInput.value.trim();
+        }
     });
 }
 
@@ -421,9 +442,17 @@ socket.on('login error', (msg) => {
     }
 
     if (msg.includes('Galat PIN')) {
-        alert(msg);
         localStorage.removeItem('quickchat_session_num');
         localStorage.removeItem('quickchat_session_pin');
+        const useOtp = confirm("Galat PIN!\n\nKya aap PIN bhool gaye hain? 'OK' dabayein taaki bina kisi password ke seedha Phone OTP se turant login kar sakein.");
+        if (useOtp) {
+            if (loginFormView) loginFormView.style.display = 'none';
+            if (otpPhoneView) otpPhoneView.style.display = 'block';
+            const pinNum = document.getElementById('login-number');
+            if (pinNum && otpPhoneInput && pinNum.value.trim()) {
+                otpPhoneInput.value = pinNum.value.trim();
+            }
+        }
     } else {
         alert(msg);
     }

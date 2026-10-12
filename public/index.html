@@ -103,10 +103,15 @@
                     </div>
                     
                     <button id="login-btn">
-                        <span>Login</span>
+                        <span>Login with PIN</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
-                    <p style="margin-top:16px; font-size:14px; text-align:center;"><a href="#" id="back-to-otp-btn" style="color:#008069; font-weight:bold; text-decoration:none;">⬅ Back to Phone OTP</a></p>
+                    <p style="margin-top:15px; font-size:13.5px; text-align:center;">
+                        <a href="#" id="forgot-pin-btn" style="color:#00a884; font-weight:600; text-decoration:none;"><i class="fas fa-key"></i> PIN bhool gaye? OTP se login karein</a>
+                    </p>
+                    <p style="margin-top:8px; font-size:13px; text-align:center;">
+                        <a href="#" id="back-to-otp-btn" style="color:#667781; text-decoration:none;">⬅ Back to Phone OTP</a>
+                    </p>
                 </div>
                 
                 <div class="secure-badge">
@@ -286,7 +291,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=24"></script>
+    <script src="script.js?v=25"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>
