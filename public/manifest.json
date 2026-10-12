@@ -4,8 +4,8 @@
   "description": "A real-time messaging app.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#d1d7db",
-  "theme_color": "#AFDCEC",
+  "background_color": "#075E54",
+  "theme_color": "#075E54",
   "icons": [
     {
       "src": "logo.jpg",
