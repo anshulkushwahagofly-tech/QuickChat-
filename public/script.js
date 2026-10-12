@@ -200,9 +200,29 @@ function doSendOtp() {
                 })
                 .catch((err) => {
                     console.error("Firebase SMS error:", err);
-                    alert("Firebase SMS Error: " + (err.message || err));
                     resetSendOtpBtn();
                     try { if (window.recaptchaVerifier) window.recaptchaVerifier.clear(); } catch(e){}
+
+                    const isNotAllowed = (err.code === 'auth/operation-not-allowed') || 
+                                          (err.message && err.message.includes('operation-not-allowed'));
+
+                    if (isNotAllowed) {
+                        const allowTesting = confirm(
+                            "Firebase SMS Alert:\n\n" +
+                            "Aapke Firebase Console mein Phone Authentication ya SMS Region (India +91) abhi enable nahi hai.\n\n" +
+                            "👉 Isko Firebase Console > Authentication > Sign-in method > Phone me Enable karein.\n\n" +
+                            "Kya aap abhi TESTING OTP (123456) se turant login karna chahte hain?"
+                        );
+                        if (allowTesting) {
+                            window.currentDemoOtp = "123456";
+                            window.currentOtpPhone = rawNum;
+                            window.confirmationResult = null;
+                            showOtpVerifyScreen(rawNum);
+                            return;
+                        }
+                    } else {
+                        alert("Firebase SMS Error: " + (err.message || err));
+                    }
                 });
         } catch (e) {
             console.error("Firebase send exception:", e);
