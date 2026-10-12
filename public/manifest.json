@@ -1,7 +1,7 @@
 {
-  "name": "QuickChat",
-  "short_name": "QuickChat",
-  "description": "A real-time messaging app.",
+  "name": "WhatsApp",
+  "short_name": "WhatsApp",
+  "description": "Simple. Reliable. Private.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#075E54",

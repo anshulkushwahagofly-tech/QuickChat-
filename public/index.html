@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QuickChat</title>
+    <title>WhatsApp</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg?v=4">
     <link rel="alternate icon" type="image/png" href="logo.png?v=4">
     <link rel="apple-touch-icon" href="logo.png?v=4">
     <link rel="manifest" href="manifest.json?v=3">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=17">
-    <link rel="stylesheet" href="mobile-whatsapp.css?v=7">
+    <link rel="stylesheet" href="style.css?v=18">
+    <link rel="stylesheet" href="mobile-whatsapp.css?v=8">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 </head>
 <body>
@@ -19,13 +19,13 @@
         <!-- Top 3-dots menu for Onboarding -->
         <div class="onboarding-top-bar">
             <div class="onboarding-brand mobile-only">
-                <!-- Empty or subtle -->
+                <!-- Clean minimal -->
             </div>
             <div class="onboarding-menu-wrapper">
                 <i class="fas fa-ellipsis-v" id="onboarding-dots-btn" title="More options"></i>
                 <div id="onboarding-menu" class="onboarding-dropdown" style="display: none;">
                     <div class="onboarding-menu-item" id="menu-switch-pin"><i class="fas fa-key"></i> Login with PIN</div>
-                    <div class="onboarding-menu-item" id="menu-help"><i class="fas fa-question-circle"></i> Help & FAQs</div>
+                    <div class="onboarding-menu-item" id="menu-help"><i class="fas fa-question-circle"></i> Help</div>
                 </div>
             </div>
         </div>
@@ -37,23 +37,20 @@
                     <div style="font-size: 48px; color: #00a884; margin-bottom: 20px;">
                         <i class="fas fa-circle-notch fa-spin"></i>
                     </div>
-                    <h3 style="color:#111b21; font-weight:600; font-size: 22px; margin-bottom: 8px;">QuickChat</h3>
-                    <p style="color:#667781; font-size:14.5px;">Connecting your account...</p>
+                    <h3 style="color:#111b21; font-weight:600; font-size: 22px; margin-bottom: 8px;">WhatsApp</h3>
+                    <p style="color:#667781; font-size:14.5px;">Connecting...</p>
                 </div>
 
-                <!-- 1. Screen 1: WhatsApp Welcome Screen (Left Phone in screenshot) -->
+                <!-- 1. Screen 1: WhatsApp Welcome Screen -->
                 <div id="onboarding-welcome-view" class="wa-onboarding-step">
                     <div class="wa-doodle-container">
-                        <img src="welcome-doodle.png" alt="Welcome to QuickChat" class="wa-welcome-doodle">
+                        <img src="welcome-doodle.png" alt="WhatsApp" class="wa-welcome-doodle">
                     </div>
                     
-                    <h1 class="wa-welcome-title">Welcome to QuickChat</h1>
+                    <h1 class="wa-welcome-title">Welcome to WhatsApp</h1>
                     
                     <p class="wa-welcome-terms">
-                        By signing up, you agree to QuickChat's <a href="#" onclick="alert('QuickChat Terms: End-to-end encrypted messaging service.'); return false;">Privacy Policy</a> and <a href="#" onclick="alert('QuickChat Terms: Respectful and secure messaging.'); return false;">Terms of Service</a>.
-                    </p>
-                    <p class="wa-welcome-subterms">
-                        We use your information to create your account, deliver our services, and help keep QuickChat safe and secure.
+                        Read our <a href="#" onclick="return false;">Privacy Policy</a>. Tap "Agree and continue" to accept the <a href="#" onclick="return false;">Terms of Service</a>.
                     </p>
 
                     <div class="wa-lang-wrapper">
@@ -71,11 +68,11 @@
                     </div>
                 </div>
 
-                <!-- 2. Screen 2: Enter Phone Number (Right Phone in screenshot) -->
+                <!-- 2. Screen 2: Enter Phone Number -->
                 <div id="otp-phone-view" class="wa-onboarding-step" style="display:none;">
                     <h2 class="wa-screen-title">Enter your phone number</h2>
                     <p class="wa-screen-desc">
-                        QuickChat will need to verify your phone number. Carrier charges may apply. <a href="#" id="whats-my-number-btn" class="wa-green-link">What's my number?</a>
+                        WhatsApp will need to verify your phone number.
                     </p>
 
                     <div class="wa-input-section">
@@ -95,9 +92,6 @@
                                 <input type="tel" id="otp-phone-input" placeholder="Phone number" maxlength="10" autocomplete="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                         </div>
-                        <div class="wa-input-hint">
-                            Enter your real 10-digit mobile number
-                        </div>
                     </div>
 
                     <!-- Invisible Firebase reCAPTCHA container -->
@@ -107,8 +101,8 @@
                         <button id="send-otp-btn" class="wa-pill-btn">
                             Next
                         </button>
-                        <div class="wa-alt-auth-link">
-                            <a href="#" id="show-pin-view-btn" class="wa-green-link">Or login with 4-digit PIN</a>
+                        <div class="wa-alt-auth-link" style="margin-top:12px;">
+                            <a href="#" id="show-pin-view-btn" class="wa-green-link" style="font-size:13px; opacity:0.85;">Use 4-digit PIN</a>
                         </div>
                     </div>
                 </div>
@@ -117,7 +111,7 @@
                 <div id="otp-verify-view" class="wa-onboarding-step" style="display:none;">
                     <h2 class="wa-screen-title">Verifying your number</h2>
                     <p class="wa-screen-desc">
-                        Waiting to automatically detect an SMS sent to <b id="otp-target-display" style="color:#111b21;">+91 ...</b>
+                        Waiting to detect an SMS sent to <b id="otp-target-display" style="color:#111b21;">+91 ...</b>
                         <br>
                         <a href="#" id="change-number-btn" class="wa-green-link" style="display:inline-block; margin-top:6px;"><i class="fas fa-edit"></i> Wrong number?</a>
                     </p>
@@ -126,17 +120,16 @@
                         <div class="wa-otp-input-wrapper">
                             <input type="text" id="otp-code-input" placeholder="---  ---" maxlength="6" autocomplete="one-time-code" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         </div>
-                        <div class="wa-otp-hint">Enter 6-digit code</div>
                     </div>
 
                     <div class="wa-resend-section">
                         <span id="countdown-box"><i class="far fa-clock"></i> Resend SMS in <b id="countdown-timer">30</b>s</span>
-                        <a href="#" id="resend-otp-btn" style="display:none;" class="wa-green-link"><i class="fas fa-redo"></i> Resend SMS OTP</a>
+                        <a href="#" id="resend-otp-btn" style="display:none;" class="wa-green-link"><i class="fas fa-redo"></i> Resend SMS</a>
                     </div>
 
                     <div class="wa-bottom-btn-area">
                         <button id="verify-otp-btn" class="wa-pill-btn">
-                            Verify & Continue
+                            Next
                         </button>
                     </div>
                 </div>
@@ -144,7 +137,7 @@
                 <!-- 4. Screen 4: Legacy PIN Mode (Fallback) -->
                 <div id="login-form-view" class="wa-onboarding-step" style="display:none;">
                     <h2 class="wa-screen-title">Login with PIN</h2>
-                    <p class="wa-screen-desc">Enter your 10-digit registered number and 4-digit security PIN.</p>
+                    <p class="wa-screen-desc">Enter your 10-digit number and 4-digit PIN.</p>
                     
                     <div class="wa-input-section">
                         <div class="wa-phone-row">
@@ -153,12 +146,12 @@
                                 <span class="wa-dial-code">91</span>
                             </div>
                             <div class="wa-number-input-box">
-                                <input type="tel" id="login-number" placeholder="10-digit number" maxlength="10" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <input type="tel" id="login-number" placeholder="Phone number" maxlength="10" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                             </div>
                         </div>
 
                         <div class="wa-pin-row" style="margin-top:20px;">
-                            <input type="password" id="login-pin" placeholder="Enter 4-digit PIN" maxlength="4" autocomplete="off">
+                            <input type="password" id="login-pin" placeholder="PIN" maxlength="4" autocomplete="off">
                         </div>
                     </div>
 
@@ -167,10 +160,10 @@
                             Login
                         </button>
                         <div class="wa-alt-auth-link" style="margin-top:14px;">
-                            <a href="#" id="forgot-pin-btn" class="wa-green-link"><i class="fas fa-key"></i> PIN bhool gaye? OTP se login karein</a>
+                            <a href="#" id="forgot-pin-btn" class="wa-green-link"><i class="fas fa-key"></i> Forgot PIN? Login with OTP</a>
                         </div>
                         <div class="wa-alt-auth-link" style="margin-top:8px;">
-                            <a href="#" id="back-to-otp-btn" style="color:#667781; text-decoration:none; font-size:13px;">⬅ Back to Phone number</a>
+                            <a href="#" id="back-to-otp-btn" style="color:#667781; text-decoration:none; font-size:13px;">⬅ Back</a>
                         </div>
                     </div>
                 </div>
@@ -280,8 +273,8 @@
             <div class="empty-state-icon">
                 <i class="fas fa-laptop"></i>
             </div>
-            <h2>QuickChat Web</h2>
-            <p>Send and receive messages with your contacts privately.<br>Select a chat on the left to start conversation.</p>
+            <h2>WhatsApp Web</h2>
+            <p>Send and receive messages without keeping your phone online.<br>Use WhatsApp on up to 4 linked devices and 1 phone at the same time.</p>
             <div class="empty-state-lock">
                 <i class="fas fa-lock"></i> End-to-end encrypted
             </div>
@@ -348,7 +341,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=26"></script>
+    <script src="script.js?v=27"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>

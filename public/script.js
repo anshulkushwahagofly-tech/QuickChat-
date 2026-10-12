@@ -144,7 +144,7 @@ function resetSendOtpBtn() {
 function resetVerifyOtpBtn() {
     if (verifyOtpBtn) {
         verifyOtpBtn.disabled = false;
-        verifyOtpBtn.innerHTML = `<span>Verify & Continue</span>`;
+        verifyOtpBtn.innerHTML = `<span>Next</span>`;
     }
 }
 
@@ -530,7 +530,7 @@ socket.on('login success', (data) => {
 
     // Update UI previews
     if (myNumberPreview) myNumberPreview.innerText = '+91 ' + myNumber;
-    if (myDisplayNumber) myDisplayNumber.innerText = "QuickChat";
+    if (myDisplayNumber) myDisplayNumber.innerText = "WhatsApp";
 
     // Load history from database
     data.history.forEach(msg => {
