@@ -9,13 +9,17 @@
     <link rel="apple-touch-icon" href="logo.png?v=4">
     <link rel="manifest" href="manifest.json?v=4">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=23">
-    <link rel="stylesheet" href="mobile-whatsapp.css?v=11">
+    <link rel="stylesheet" href="style.css?v=24">
+    <link rel="stylesheet" href="mobile-whatsapp.css?v=12">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script>
         try {
             if (localStorage.getItem('quickchat_session_num')) {
                 document.documentElement.classList.add('user-logged-in');
+            }
+            const theme = localStorage.getItem('quickchat_theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-theme');
             }
         } catch(e) {}
     </script>
@@ -180,33 +184,87 @@
 
     <!-- Main WhatsApp Web Layout -->
     <div id="app-container" style="display: none;">
+        <!-- Modern WhatsApp Web Navigation Rail (Dock) -->
+        <aside class="wa-nav-rail" id="wa-nav-rail">
+            <div class="wa-rail-top">
+                <button class="wa-rail-item active" id="rail-chats-btn" title="Chats">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M19.005 3.175H4.674C3.642 3.175 2.8 4.017 2.8 5.05v15.775l3.87-3.87h12.335c1.032 0 1.874-.842 1.874-1.875V5.05c0-1.033-.842-1.875-1.874-1.875zm0 13.9H6.108l-1.428 1.428V5.05h14.325v12.025z"/>
+                        <path d="M7 8h10v1.5H7zm0 3h7v1.5H7z"/>
+                    </svg>
+                </button>
+                <button class="wa-rail-item has-badge" id="rail-calls-btn" title="Calls">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.44-5.15-3.75-6.59-6.59l1.97-1.57c.28-.28.37-.68.25-1.02A11.36 11.36 0 0 1 8.56 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.62c0-.55-.45-1-.99-1z"/>
+                    </svg>
+                    <span class="wa-rail-badge">11</span>
+                </button>
+                <button class="wa-rail-item has-dot" id="rail-status-btn" title="Status">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="8 3"/>
+                    </svg>
+                    <span class="wa-rail-dot"></span>
+                </button>
+                <button class="wa-rail-item has-dot" id="rail-channels-btn" title="Channels">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5a1.5 1.5 0 1 1 1.5-1.5 1.5 1.5 0 0 1-1.5 1.5zm3.2-3.8a4.5 4.5 0 0 0-6.4 0 .75.75 0 1 1-1.06-1.06 6 6 0 0 1 8.52 0 .75.75 0 1 1-1.06 1.06z"/>
+                    </svg>
+                    <span class="wa-rail-dot"></span>
+                </button>
+                <button class="wa-rail-item" id="rail-communities-btn" title="Communities">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M16.5 12c1.38 0 2.49-1.12 2.49-2.5S17.88 7 16.5 7a2.5 2.5 0 0 0 0 5zM9 11c1.66 0 2.99-1.34 2.99-3S10.66 5 9 5C7.34 5 6 6.34 6 8s1.34 3 3 3zm7.5 3c-1.83 0-5.5.92-5.5 2.75V19h11v-2.25c0-1.83-3.67-2.75-5.5-2.75zM9 13c-2.33 0-7 1.17-7 3.5V19h7v-2.25c0-.85.34-1.65.94-2.28-.31-.31-.63-.47-.94-.47z"/>
+                    </svg>
+                </button>
+                <button class="wa-rail-item wa-meta-ai-btn" id="rail-ai-btn" title="QuickChat AI">
+                    <div class="wa-meta-ai-icon">
+                        <span class="wa-ai-ring"></span>
+                    </div>
+                </button>
+            </div>
+
+            <div class="wa-rail-bottom">
+                <button class="wa-rail-item" id="rail-starred-btn" title="Starred / Media">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                        <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                    </svg>
+                </button>
+                <button class="wa-rail-item" id="rail-theme-btn" title="Toggle Dark / Light Theme">
+                    <i class="fas fa-moon" id="theme-toggle-icon"></i>
+                </button>
+                <button class="wa-rail-item" id="rail-settings-btn" title="Settings">
+                    <i class="fas fa-cog" style="font-size: 19px;"></i>
+                </button>
+                <div class="wa-rail-item wa-rail-profile" id="rail-profile-btn" title="Profile">
+                    <div class="avatar" id="rail-user-avatar"></div>
+                </div>
+            </div>
+        </aside>
+
         <!-- Left Sidebar -->
         <div class="sidebar">
-            <div class="sidebar-header">
-                <!-- Desktop user avatar (Visible on Desktop only) -->
-                <div class="desktop-avatar-wrapper" id="my-profile-btn" title="My profile">
-                    <div class="avatar" id="my-profile-avatar"></div>
+            <div class="sidebar-header wa-modern-header">
+                <!-- Mobile & Desktop brand -->
+                <div class="wa-header-brand">
+                    <span class="wa-header-title">QuickChat</span>
                 </div>
 
-                <!-- Mobile QuickChat branding (Visible on Mobile only) -->
-                <div class="whatsapp-brand">
-                    <span>QuickChat</span>
-                </div>
+                <div class="header-icons wa-header-actions">
+                    <!-- WhatsApp Green + Button for starting new chat -->
+                    <button class="wa-header-green-plus" id="new-chat-green-btn" title="New chat">
+                        <i class="fas fa-plus"></i>
+                    </button>
 
-                <div class="header-icons">
-                    <!-- Desktop only icons -->
-                    <i class="fas fa-circle-notch desktop-only" id="header-status-btn" title="Status"></i>
-                    <i class="fas fa-comment-alt desktop-only" id="header-new-chat-btn" title="New chat"></i>
-
-                    <!-- Mobile only search toggle -->
-                    <i class="fas fa-search mobile-only" id="toggle-search-btn" title="Search"></i>
-                    
-                    <i class="fas fa-ellipsis-v" id="menu-dots-btn" title="Menu"></i>
+                    <!-- 3-Dots Menu -->
+                    <button class="wa-icon-action" id="menu-dots-btn" title="Menu">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
                     
                     <!-- Dropdown Menu -->
                     <div id="dropdown-menu" class="dropdown-menu" style="display:none;">
                         <div class="menu-item" id="menu-new-chat"><i class="fas fa-user-plus"></i> New chat</div>
                         <div class="menu-item" id="menu-my-number"><i class="fas fa-id-card"></i> <span id="my-number-preview">My number</span></div>
+                        <div class="menu-item" id="menu-theme-toggle"><i class="fas fa-adjust"></i> Switch Theme</div>
                         <div class="menu-divider"></div>
                         <div class="menu-item logout" id="logout-btn"><i class="fas fa-sign-out-alt"></i> Log out</div>
                     </div>
@@ -226,15 +284,34 @@
                 <div class="wa-tab">CALLS</div>
             </div>
 
+            <!-- Search Container -->
             <div class="search-container" id="search-container">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="new-chat-input" placeholder="Search or start new chat">
+                    <input type="text" id="new-chat-input" placeholder="Search unread chats">
                 </div>
             </div>
+
+            <!-- Modern Filter Pills Row (All, Unread, Favorites, Groups, +) -->
+            <div class="wa-filter-pills-row" id="wa-filter-pills-row">
+                <button class="wa-pill" data-filter="all">All</button>
+                <button class="wa-pill active" data-filter="unread">Unread</button>
+                <button class="wa-pill" data-filter="favorites">Favorites</button>
+                <button class="wa-pill" data-filter="groups">Groups</button>
+                <button class="wa-pill wa-pill-add" id="filter-add-btn" title="Add custom list">+</button>
+            </div>
             
+            <!-- Chat List / Unread Empty State -->
             <div class="chat-list" id="chat-list">
-                <!-- Chat items will be added dynamically -->
+                <!-- Chat items or empty unread state will be added dynamically -->
+            </div>
+
+            <!-- Bottom Desktop Promo Banner -->
+            <div class="wa-bottom-promo-banner" id="wa-promo-banner" title="Install QuickChat App">
+                <div class="wa-promo-icon">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <span class="wa-promo-text">Get QuickChat for Windows</span>
             </div>
             
             <div class="fab-btn" id="open-new-chat-btn" title="New Chat">
@@ -427,7 +504,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=35"></script>
+    <script src="script.js?v=36"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>

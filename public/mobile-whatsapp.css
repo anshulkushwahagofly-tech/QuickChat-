@@ -19,6 +19,14 @@
         display: none !important;
     }
 
+    .wa-nav-rail {
+        display: none !important;
+    }
+
+    .wa-bottom-promo-banner {
+        display: none !important;
+    }
+
     #app-container {
         width: 100vw !important;
         height: 100vh !important;

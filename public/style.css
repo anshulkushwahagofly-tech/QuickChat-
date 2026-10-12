@@ -1425,3 +1425,612 @@ body::before {
     font-size: 13px;
     color: #53bdeb; /* WhatsApp blue ticks */
 }
+
+/* ========================================================
+   MODERN 2024/2025 WHATSAPP WEB REDESIGN (Pixel-Perfect)
+   ======================================================== */
+
+/* --- FAR-LEFT VERTICAL NAVIGATION RAIL (DOCK) --- */
+.wa-nav-rail {
+    width: 60px;
+    height: 100%;
+    background-color: #202c33;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 14px 0;
+    border-right: 1px solid #2a3942;
+    flex-shrink: 0;
+    z-index: 20;
+    user-select: none;
+}
+
+.wa-rail-top, .wa-rail-bottom {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.wa-rail-item {
+    position: relative;
+    background: transparent;
+    border: none;
+    color: #aebac1;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.15s, color 0.15s;
+    outline: none;
+    padding: 0;
+}
+
+.wa-rail-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #e9edef;
+}
+
+.wa-rail-item.active {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #e9edef;
+}
+
+.wa-rail-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background-color: #00a884;
+    color: #111b21;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 1px 5px;
+    line-height: 14px;
+}
+
+.wa-rail-dot {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+    background-color: #00a884;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px #202c33;
+}
+
+.wa-meta-ai-btn {
+    margin-top: 4px;
+}
+
+.wa-meta-ai-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: conic-gradient(from 180deg at 50% 50%, #25d366 0deg, #34b7f1 120deg, #b93bf8 240deg, #25d366 360deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5px;
+    box-sizing: border-box;
+}
+
+.wa-meta-ai-icon .wa-ai-ring {
+    width: 100%;
+    height: 100%;
+    background-color: #202c33;
+    border-radius: 50%;
+    display: block;
+}
+
+.wa-rail-profile {
+    cursor: pointer;
+    margin-top: 4px;
+}
+
+.wa-rail-profile .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    margin: 0;
+}
+
+/* --- SIDEBAR HEADER (BOLD TITLE + GREEN PLUS + 3-DOTS) --- */
+.wa-modern-header {
+    height: 58px;
+    background-color: #111b21;
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #222e35;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.wa-header-brand {
+    display: flex;
+    align-items: center;
+}
+
+.wa-header-title {
+    font-size: 21px;
+    font-weight: 700;
+    color: #e9edef;
+    letter-spacing: 0.3px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+.wa-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.wa-header-green-plus {
+    background-color: #00a884;
+    color: #111b21;
+    border: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    cursor: pointer;
+    transition: transform 0.15s, background-color 0.15s;
+    outline: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.wa-header-green-plus:hover {
+    background-color: #029474;
+    transform: scale(1.05);
+}
+
+.wa-icon-action {
+    background: transparent;
+    border: none;
+    color: #aebac1;
+    font-size: 18px;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.wa-icon-action:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #e9edef;
+}
+
+/* --- FILTER PILLS ROW ([All], [Unread], [Favorites], [Groups], [+]) --- */
+.wa-filter-pills-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 10px 14px;
+    background-color: #111b21;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.wa-filter-pills-row::-webkit-scrollbar {
+    display: none;
+}
+
+.wa-pill {
+    background-color: #202c33;
+    color: #8696a0;
+    border: 1px solid transparent;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    outline: none;
+    line-height: 16px;
+}
+
+.wa-pill:hover {
+    background-color: #2a3942;
+    color: #e9edef;
+}
+
+.wa-pill.active {
+    background-color: #0a332c;
+    color: #00a884;
+    border: 1px solid #00a884;
+    font-weight: 600;
+}
+
+.wa-pill.wa-pill-add {
+    padding: 4px 10px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* --- EMPTY UNREAD STATE (Checkmark + Speech Bubble) --- */
+.wa-unread-empty-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 380px;
+    padding: 40px 20px;
+    text-align: center;
+    animation: fadeInUnread 0.25s ease-out;
+}
+
+@keyframes fadeInUnread {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.wa-unread-art {
+    position: relative;
+    width: 140px;
+    height: 120px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wa-unread-empty-title {
+    font-size: 21px;
+    font-weight: 600;
+    color: #e9edef;
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+}
+
+.wa-unread-empty-sub {
+    font-size: 14px;
+    color: #8696a0;
+    margin-bottom: 22px;
+}
+
+.wa-view-all-chats-btn {
+    background: transparent;
+    border: none;
+    color: #00a884;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.15s, color 0.15s;
+    outline: none;
+}
+
+.wa-view-all-chats-btn:hover {
+    background-color: rgba(0, 168, 132, 0.12);
+    text-decoration: underline;
+}
+
+/* --- BOTTOM PROMO BANNER (Get QuickChat for Windows) --- */
+.wa-bottom-promo-banner {
+    background-color: #111b21;
+    border-top: 1px solid #222e35;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    flex-shrink: 0;
+    user-select: none;
+}
+
+.wa-bottom-promo-banner:hover {
+    background-color: #182229;
+}
+
+.wa-promo-icon {
+    background-color: #25d366;
+    color: #ffffff;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+}
+
+.wa-promo-text {
+    color: #00a884;
+    font-size: 13.5px;
+    font-weight: 500;
+    letter-spacing: 0.2px;
+}
+
+/* ========================================================
+   FULL DARK MODE THEME SYSTEM (Official 2024/2025 WhatsApp)
+   ======================================================== */
+.dark-theme body,
+body.dark-theme {
+    background-color: #0c1317;
+}
+
+.dark-theme body::before,
+body.dark-theme::before {
+    display: none;
+}
+
+.dark-theme #app-container,
+body.dark-theme #app-container {
+    background-color: #0b141a;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.dark-theme .sidebar,
+body.dark-theme .sidebar {
+    background-color: #111b21;
+    border-right: 1px solid #222e35;
+}
+
+.dark-theme .search-container,
+body.dark-theme .search-container {
+    background-color: #111b21;
+    border-bottom: 1px solid #222e35;
+}
+
+.dark-theme .search-box,
+body.dark-theme .search-box {
+    background-color: #202c33;
+}
+
+.dark-theme .search-box input,
+body.dark-theme .search-box input {
+    color: #e9edef;
+}
+
+.dark-theme .search-box input::placeholder,
+body.dark-theme .search-box input::placeholder {
+    color: #8696a0;
+}
+
+.dark-theme .search-box i,
+body.dark-theme .search-box i {
+    color: #8696a0;
+}
+
+.dark-theme .chat-list,
+body.dark-theme .chat-list {
+    background-color: #111b21;
+}
+
+.dark-theme .chat-list-item,
+body.dark-theme .chat-list-item {
+    background-color: #111b21;
+}
+
+.dark-theme .chat-list-item:hover,
+body.dark-theme .chat-list-item:hover {
+    background-color: #202c33;
+}
+
+.dark-theme .chat-list-item.active,
+body.dark-theme .chat-list-item.active {
+    background-color: #2a3942;
+}
+
+.dark-theme .chat-title-row h4,
+body.dark-theme .chat-title-row h4 {
+    color: #e9edef;
+}
+
+.dark-theme .chat-title-row .time,
+body.dark-theme .chat-title-row .time {
+    color: #8696a0;
+}
+
+.dark-theme .chat-last-msg,
+body.dark-theme .chat-last-msg {
+    color: #8696a0;
+}
+
+.dark-theme .chat-info,
+body.dark-theme .chat-info {
+    border-bottom: 1px solid #222e35;
+}
+
+.dark-theme .dropdown-menu,
+body.dark-theme .dropdown-menu {
+    background-color: #233138;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.dark-theme .menu-item,
+body.dark-theme .menu-item {
+    color: #d1d7db;
+}
+
+.dark-theme .menu-item:hover,
+body.dark-theme .menu-item:hover {
+    background-color: #182229;
+}
+
+.dark-theme .menu-item i,
+body.dark-theme .menu-item i {
+    color: #8696a0;
+}
+
+.dark-theme .menu-divider,
+body.dark-theme .menu-divider {
+    background-color: #2a3942;
+}
+
+.dark-theme .chat-panel-header,
+body.dark-theme .chat-panel-header {
+    background-color: #202c33;
+    border-bottom: 1px solid #222e35;
+}
+
+.dark-theme .chat-title h3,
+body.dark-theme .chat-title h3 {
+    color: #e9edef;
+}
+
+.dark-theme .chat-title .status,
+body.dark-theme .chat-title .status {
+    color: #8696a0;
+}
+
+.dark-theme .chat-panel-messages,
+body.dark-theme .chat-panel-messages {
+    background-color: #0b141a;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+.dark-theme .message.sent,
+body.dark-theme .message.sent {
+    background-color: #005c4b !important;
+    color: #e9edef;
+}
+
+.dark-theme .message.received,
+body.dark-theme .message.received {
+    background-color: #202c33 !important;
+    color: #e9edef;
+}
+
+.dark-theme .message-content,
+body.dark-theme .message-content {
+    color: #e9edef;
+}
+
+.dark-theme .message-time,
+body.dark-theme .message-time {
+    color: #8696a0;
+}
+
+.dark-theme .chat-panel-input,
+body.dark-theme .chat-panel-input {
+    background-color: #202c33;
+}
+
+.dark-theme .input-pill-wrapper,
+body.dark-theme .input-pill-wrapper {
+    background-color: #2a3942;
+}
+
+.dark-theme .input-pill-wrapper input,
+body.dark-theme .input-pill-wrapper input {
+    color: #e9edef;
+}
+
+.dark-theme .input-pill-wrapper input::placeholder,
+body.dark-theme .input-pill-wrapper input::placeholder {
+    color: #8696a0;
+}
+
+.dark-theme .empty-chat-state,
+body.dark-theme .empty-chat-state {
+    background-color: #222e35;
+    border-bottom: 6px solid #00a884;
+}
+
+.dark-theme .empty-chat-state h2,
+body.dark-theme .empty-chat-state h2 {
+    color: #e9edef;
+}
+
+.dark-theme .empty-chat-state p,
+body.dark-theme .empty-chat-state p {
+    color: #8696a0;
+}
+
+.dark-theme .empty-state-lock,
+body.dark-theme .empty-state-lock {
+    color: #8696a0;
+}
+
+.dark-theme .wa-drawer-header,
+body.dark-theme .wa-drawer-header {
+    background-color: #202c33;
+    color: #e9edef;
+}
+
+.dark-theme .wa-drawer-body,
+body.dark-theme .wa-drawer-body {
+    background-color: #111b21;
+}
+
+.dark-theme .wa-profile-card,
+body.dark-theme .wa-profile-card {
+    background-color: #111b21;
+    border-bottom: 1px solid #222e35;
+}
+
+.dark-theme .wa-profile-val-row,
+body.dark-theme .wa-profile-val-row {
+    color: #e9edef;
+}
+
+.dark-theme .wa-profile-hint,
+body.dark-theme .wa-profile-hint {
+    color: #8696a0;
+}
+
+.dark-theme .wa-drawer-direct-add,
+body.dark-theme .wa-drawer-direct-add {
+    background-color: #111b21;
+    border-bottom: 1px solid #222e35;
+}
+
+.dark-theme .wa-direct-input-row,
+body.dark-theme .wa-direct-input-row {
+    background-color: #202c33;
+}
+
+.dark-theme .wa-direct-prefix,
+body.dark-theme .wa-direct-prefix {
+    color: #8696a0;
+}
+
+.dark-theme .wa-direct-input-row input,
+body.dark-theme .wa-direct-input-row input {
+    color: #e9edef;
+}
+
+.dark-theme .wa-emoji-picker,
+body.dark-theme .wa-emoji-picker {
+    background-color: #202c33;
+    border-top: 1px solid #222e35;
+}
+
+.dark-theme .wa-emoji-tabs,
+body.dark-theme .wa-emoji-tabs {
+    border-bottom: 1px solid #2a3942;
+}
+
+.dark-theme .wa-emoji-tab,
+body.dark-theme .wa-emoji-tab {
+    color: #00a884;
+}
+
+.dark-theme .wa-emoji-item:hover,
+body.dark-theme .wa-emoji-item:hover {
+    background-color: #2a3942;
+}

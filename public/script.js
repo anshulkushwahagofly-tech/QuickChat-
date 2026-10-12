@@ -572,13 +572,6 @@ if (headerStatusBtn) {
     });
 }
 
-const myProfileBtn = document.getElementById('my-profile-btn');
-if (myProfileBtn) {
-    myProfileBtn.addEventListener('click', () => {
-        alert("Aapka Registered Number: +91 " + (myNumber || ""));
-    });
-}
-
 // Window Resize Responsive Handler
 window.addEventListener('resize', () => {
     if (window.innerWidth > 900) {
@@ -913,11 +906,105 @@ function startChat(friendNumber) {
     openChat(friendNumber);
 }
 
+// --- MODERN CHAT FILTER & RENDERING LOGIC ---
+let currentChatFilter = 'unread'; // Matches WhatsApp Web screenshot state
+
+function setActiveFilter(filterName) {
+    currentChatFilter = filterName;
+    const pills = document.querySelectorAll('.wa-filter-pills-row .wa-pill');
+    pills.forEach(p => {
+        if (p.getAttribute('data-filter') === filterName) {
+            p.classList.add('active');
+        } else {
+            p.classList.remove('active');
+        }
+    });
+
+    if (newChatInput) {
+        if (filterName === 'unread') {
+            newChatInput.placeholder = 'Search unread chats';
+        } else {
+            newChatInput.placeholder = 'Search or start new chat';
+        }
+    }
+
+    renderChatList(newChatInput ? newChatInput.value.trim().toLowerCase() : '');
+}
+
 function renderChatList(filter = '') {
     chatList.innerHTML = '';
     
     const friendNumbers = Object.keys(chats);
-    const filteredFriends = friendNumbers.filter(num => num.includes(filter));
+    let filteredFriends = friendNumbers.filter(num => num.includes(filter));
+
+    // Handle Unread Filter
+    if (currentChatFilter === 'unread') {
+        filteredFriends = filteredFriends.filter(num => (unreadCounts[num] || 0) > 0);
+        
+        if (filteredFriends.length === 0) {
+            // Render exact WhatsApp Web empty unread state as shown in screenshot
+            const unreadEmptyState = document.createElement('div');
+            unreadEmptyState.className = 'wa-unread-empty-wrapper';
+            unreadEmptyState.innerHTML = `
+                <div class="wa-unread-art">
+                    <svg viewBox="0 0 160 140" width="140" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Outer green checkmark outline -->
+                        <path d="M42 75 L70 105 L132 38" stroke="#00a884" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Mint green speech bubble -->
+                        <rect x="40" y="24" width="76" height="52" rx="14" fill="#c4eed0" />
+                        <path d="M40 58 L28 66 L44 72 Z" fill="#c4eed0" />
+                        <!-- Horizontal message text lines inside bubble -->
+                        <rect x="52" y="38" width="44" height="5" rx="2.5" fill="#528362" />
+                        <rect x="52" y="50" width="28" height="5" rx="2.5" fill="#528362" />
+                        <!-- Foreground vibrant green checkmark over bubble -->
+                        <path d="M42 75 L70 105 L132 38" stroke="#25d366" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- White sparkles ✨ -->
+                        <path d="M135 24 Q135 30 141 30 Q135 30 135 36 Q135 30 129 30 Q135 30 135 24 Z" fill="#ffffff"/>
+                        <path d="M26 42 Q26 47 31 47 Q26 47 26 52 Q26 47 21 47 Q26 47 26 42 Z" fill="#ffffff"/>
+                        <circle cx="145" cy="50" r="1.8" fill="#ffffff"/>
+                    </svg>
+                </div>
+                <div class="wa-unread-empty-title">No unread chats</div>
+                <div class="wa-unread-empty-sub">You're all caught up.</div>
+                <button class="wa-view-all-chats-btn" id="wa-view-all-chats-btn">View all chats</button>
+            `;
+            chatList.appendChild(unreadEmptyState);
+
+            const viewAllBtn = document.getElementById('wa-view-all-chats-btn');
+            if (viewAllBtn) {
+                viewAllBtn.addEventListener('click', () => {
+                    setActiveFilter('all');
+                });
+            }
+            return;
+        }
+    } else if (currentChatFilter === 'favorites') {
+        const favEmptyState = document.createElement('div');
+        favEmptyState.className = 'wa-unread-empty-wrapper';
+        favEmptyState.innerHTML = `
+            <div style="font-size:46px; color:#8696a0; margin-bottom:16px;"><i class="far fa-star"></i></div>
+            <div class="wa-unread-empty-title">No favorite chats</div>
+            <div class="wa-unread-empty-sub">Add people and groups to favorites for quick access.</div>
+            <button class="wa-view-all-chats-btn" id="wa-fav-view-all-btn">View all chats</button>
+        `;
+        chatList.appendChild(favEmptyState);
+        const favViewAll = document.getElementById('wa-fav-view-all-btn');
+        if (favViewAll) favViewAll.onclick = () => setActiveFilter('all');
+        return;
+    } else if (currentChatFilter === 'groups') {
+        const groupEmptyState = document.createElement('div');
+        groupEmptyState.className = 'wa-unread-empty-wrapper';
+        groupEmptyState.innerHTML = `
+            <div style="font-size:46px; color:#8696a0; margin-bottom:16px;"><i class="fas fa-users"></i></div>
+            <div class="wa-unread-empty-title">No groups yet</div>
+            <div class="wa-unread-empty-sub">Stay connected with your communities and groups.</div>
+            <button class="wa-view-all-chats-btn" id="wa-group-view-all-btn">View all chats</button>
+        `;
+        chatList.appendChild(groupEmptyState);
+        const groupViewAll = document.getElementById('wa-group-view-all-btn');
+        if (groupViewAll) groupViewAll.onclick = () => setActiveFilter('all');
+        return;
+    }
 
     if (filteredFriends.length === 0 && friendNumbers.length === 0) {
         // WhatsApp interactive first-time state with contacts
@@ -948,8 +1035,8 @@ function renderChatList(filter = '') {
             <div style="width:52px; height:52px; border-radius:50%; background:#e8f5e9; color:#00a884; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto; font-size:24px;">
                 <i class="fas fa-comments"></i>
             </div>
-            <h4 style="color:#111b21; margin-bottom:6px; font-weight:600; font-size:15.5px;">Welcome to QuickChat</h4>
-            <p style="color:#667781; font-size:13px; line-height:1.45; margin-bottom:16px;">Apne kisi bhi dost ke sath chat shuru karein!</p>
+            <h4 style="color:#e9edef; margin-bottom:6px; font-weight:600; font-size:15.5px;">Welcome to QuickChat</h4>
+            <p style="color:#8696a0; font-size:13px; line-height:1.45; margin-bottom:16px;">Apne kisi bhi dost ke sath chat shuru karein!</p>
             <button id="start-first-chat-btn" style="background:#00a884; color:white; border:none; padding:9px 20px; border-radius:20px; font-size:13.5px; font-weight:600; cursor:pointer; box-shadow:0 2px 5px rgba(0,168,132,0.25);">
                 <i class="fas fa-plus" style="margin-right:6px;"></i> Start New Chat
             </button>
@@ -1216,3 +1303,194 @@ socket.on('user typing', (data) => {
         }
     }
 });
+
+// ========================================================
+// MODERN 2024/2025 WHATSAPP WEB CONTROLS & EVENT WIRING
+// ========================================================
+
+// 1. Green Circular "+" Button in Sidebar Header
+const newChatGreenBtn = document.getElementById('new-chat-green-btn');
+if (newChatGreenBtn) {
+    newChatGreenBtn.addEventListener('click', openNewChatDrawer);
+}
+
+// 2. Filter Pills Row Click Handlers
+const filterPillBtns = document.querySelectorAll('.wa-filter-pills-row .wa-pill');
+filterPillBtns.forEach(pill => {
+    pill.addEventListener('click', () => {
+        const filterType = pill.getAttribute('data-filter');
+        if (filterType) {
+            setActiveFilter(filterType);
+        } else if (pill.id === 'filter-add-btn') {
+            const listName = prompt("Create new custom filter list (e.g. Family, Work, College):");
+            if (listName) {
+                alert(`Filter list "${listName}" created!`);
+            }
+        }
+    });
+});
+
+// 3. Theme Toggle Engine (Dark Theme / Light Theme)
+function applyTheme(theme) {
+    const themeIcon = document.getElementById('theme-toggle-icon');
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark-theme');
+        document.body.classList.add('dark-theme');
+        if (themeIcon) {
+            themeIcon.className = 'fas fa-sun';
+            themeIcon.title = 'Switch to Light Theme';
+        }
+    } else {
+        document.documentElement.classList.remove('dark-theme');
+        document.body.classList.remove('dark-theme');
+        if (themeIcon) {
+            themeIcon.className = 'fas fa-moon';
+            themeIcon.title = 'Switch to Dark Theme';
+        }
+    }
+    localStorage.setItem('quickchat_theme', theme);
+}
+
+function toggleTheme() {
+    const isDark = document.documentElement.classList.contains('dark-theme') || document.body.classList.contains('dark-theme');
+    applyTheme(isDark ? 'light' : 'dark');
+}
+
+// Initialize theme on start
+const savedTheme = localStorage.getItem('quickchat_theme') || 'dark';
+applyTheme(savedTheme);
+
+const railThemeBtn = document.getElementById('rail-theme-btn');
+if (railThemeBtn) {
+    railThemeBtn.addEventListener('click', toggleTheme);
+}
+
+const menuThemeToggle = document.getElementById('menu-theme-toggle');
+if (menuThemeToggle) {
+    menuThemeToggle.addEventListener('click', () => {
+        if (dropdownMenu) dropdownMenu.style.display = 'none';
+        toggleTheme();
+    });
+}
+
+// 4. Far-Left Navigation Rail (Dock) Items
+const railChatsBtn = document.getElementById('rail-chats-btn');
+if (railChatsBtn) {
+    railChatsBtn.addEventListener('click', () => {
+        document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+        railChatsBtn.classList.add('active');
+        setActiveFilter('all');
+    });
+}
+
+const railCallsBtn = document.getElementById('rail-calls-btn');
+if (railCallsBtn) {
+    railCallsBtn.addEventListener('click', () => {
+        alert("QuickChat Calls:\n\nPlace crystal clear voice & video calls with anyone on QuickChat by tapping the phone or camera icon at the top of any chat!");
+    });
+}
+
+const railStatusBtn = document.getElementById('rail-status-btn');
+if (railStatusBtn) {
+    railStatusBtn.addEventListener('click', () => {
+        alert("QuickChat Status:\n\nShare photos, text, and voice status updates that disappear in 24 hours. (Coming soon)");
+    });
+}
+
+const railChannelsBtn = document.getElementById('rail-channels-btn');
+if (railChannelsBtn) {
+    railChannelsBtn.addEventListener('click', () => {
+        alert("QuickChat Channels:\n\nFollow public channels and get real-time updates from creators, news, and sports.");
+    });
+}
+
+const railCommunitiesBtn = document.getElementById('rail-communities-btn');
+if (railCommunitiesBtn) {
+    railCommunitiesBtn.addEventListener('click', () => {
+        alert("QuickChat Communities:\n\nEasily organize multiple related groups into unified spaces.");
+    });
+}
+
+// 5. QuickChat AI Assistant in Navigation Rail
+function openAiAssistant() {
+    const aiId = 'QuickChat AI';
+    if (!chats[aiId]) {
+        chats[aiId] = [
+            {
+                from: aiId,
+                text: 'Hello! I am your QuickChat AI Assistant. ✨ How can I help you today? You can ask me anything!',
+                time: formatTime(new Date())
+            }
+        ];
+    }
+    openChat(aiId);
+}
+
+const railAiBtn = document.getElementById('rail-ai-btn');
+if (railAiBtn) {
+    railAiBtn.addEventListener('click', openAiAssistant);
+}
+
+const railStarredBtn = document.getElementById('rail-starred-btn');
+if (railStarredBtn) {
+    railStarredBtn.addEventListener('click', () => {
+        alert("Starred Messages:\n\nSave important messages to review them later.");
+    });
+}
+
+const railSettingsBtn = document.getElementById('rail-settings-btn');
+if (railSettingsBtn) {
+    railSettingsBtn.addEventListener('click', openProfileDrawer);
+}
+
+const railProfileBtn = document.getElementById('rail-profile-btn');
+if (railProfileBtn) {
+    railProfileBtn.addEventListener('click', openProfileDrawer);
+}
+
+// 6. Bottom Desktop Promo Banner ("Get QuickChat for Windows")
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+});
+
+const promoBanner = document.getElementById('wa-promo-banner');
+if (promoBanner) {
+    promoBanner.addEventListener('click', () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => {
+                deferredPrompt = null;
+            });
+        } else {
+            alert("QuickChat for Windows:\n\nTo install QuickChat on your PC/Laptop:\n1. Click your browser menu (3-dots ⋮ at top right in Chrome or Edge).\n2. Select 'Install QuickChat' or 'Apps > Install this site as an app'.\n3. Enjoy QuickChat as a standalone Windows app!");
+        }
+    });
+}
+
+// 7. Interactive AI Response when chatting with QuickChat AI
+const originalSendMessage = sendMessage;
+sendMessage = function(imageStr = null) {
+    const currentChatTarget = activeChat;
+    const currentInputText = messageInput ? messageInput.value.trim() : '';
+    originalSendMessage(imageStr);
+
+    if (currentChatTarget === 'QuickChat AI' && currentInputText) {
+        setTimeout(() => {
+            const aiReplies = [
+                "I'm here to help! QuickChat features real-time messaging, HD voice/video calls, and end-to-end encryption. 🚀",
+                "Great question! You can click the green '+' button to start a chat with any 10-digit number.",
+                "QuickChat is fully responsive and supports Dark Mode, emoji reactions, and offline instant load! ✨",
+                "Did you know? You can click 'Get QuickChat for Windows' at the bottom to install QuickChat directly on your PC."
+            ];
+            const chosen = aiReplies[Math.floor(Math.random() * aiReplies.length)];
+            const timeNow = formatTime(new Date());
+            chats['QuickChat AI'].push({ from: 'QuickChat AI', text: chosen, time: timeNow });
+            renderMessages();
+            renderChatList();
+            saveLocalCache();
+            playReceivedSound();
+        }, 600);
+    }
+};
