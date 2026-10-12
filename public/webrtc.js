@@ -31,7 +31,11 @@ async function initStream(video = true) {
         if(!video) localVideo.style.display = 'none';
         else localVideo.style.display = 'block';
     } catch (err) {
-        alert("Camera/Mic Error: " + err.message);
+        if (typeof showWhatsAppToast === 'function') {
+            showWhatsAppToast("Camera/Mic permission needed: " + err.message, "danger");
+        } else {
+            console.error("Camera/Mic Error:", err);
+        }
         console.error(err);
         return false;
     }
@@ -65,7 +69,12 @@ function createPeerConnection() {
 }
 
 async function startCall(video) {
-    if (!activeChat) return alert("Select a friend to call first.");
+    if (!activeChat) {
+        if (typeof showWhatsAppToast === 'function') {
+            showWhatsAppToast("Select a chat first to place a call.", "info");
+        }
+        return;
+    }
     isVideoCall = video;
     
     const success = await initStream(video);
@@ -126,7 +135,9 @@ socket.on('answer-made', async (data) => {
 });
 
 socket.on('call-rejected', () => {
-    alert("Call Rejected");
+    if (typeof showWhatsAppToast === 'function') {
+        showWhatsAppToast("Call Rejected", "danger");
+    }
     stopCall();
 });
 

@@ -77,6 +77,111 @@ const countdownTimer = document.getElementById('countdown-timer');
 const loginFormView = document.getElementById('login-form-view');
 const loginBtn = document.getElementById('login-btn');
 
+// ========================================================
+// WHATSAPP CUSTOM IN-APP TOAST & DIALOG (NO BROWSER ALERTS)
+// ========================================================
+let waToastTimer = null;
+
+function showWhatsAppToast(message, type = 'info', duration = 3200) {
+    const toast = document.getElementById('wa-toast');
+    const toastText = document.getElementById('wa-toast-text');
+    const toastIcon = document.getElementById('wa-toast-icon');
+    if (!toast || !toastText) {
+        console.log("Toast:", message);
+        return;
+    }
+
+    if (waToastTimer) clearTimeout(waToastTimer);
+
+    toastText.innerText = message;
+    toast.className = 'wa-toast-container';
+
+    if (type === 'danger' || type === 'error') {
+        toast.classList.add('wa-toast-danger');
+        if (toastIcon) toastIcon.className = 'fas fa-exclamation-circle wa-toast-icon';
+    } else if (type === 'success') {
+        toast.classList.add('wa-toast-success');
+        if (toastIcon) toastIcon.className = 'fas fa-check-circle wa-toast-icon';
+    } else {
+        if (toastIcon) toastIcon.className = 'fas fa-info-circle wa-toast-icon';
+    }
+
+    // Force reflow
+    void toast.offsetWidth;
+    toast.classList.add('show');
+
+    waToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+    }, duration);
+}
+
+function showWhatsAppDialog({ title = 'QuickChat', message = '', confirmText = 'OK', cancelText = null, isDanger = false, onConfirm = null, onCancel = null }) {
+    const overlay = document.getElementById('wa-dialog-overlay');
+    const titleEl = document.getElementById('wa-dialog-title');
+    const msgEl = document.getElementById('wa-dialog-message');
+    const btnConfirm = document.getElementById('wa-dialog-btn-confirm');
+    const btnCancel = document.getElementById('wa-dialog-btn-cancel');
+
+    if (!overlay) {
+        if (window.confirm && cancelText) {
+            if (window.confirm(message)) {
+                if (onConfirm) onConfirm();
+            } else {
+                if (onCancel) onCancel();
+            }
+        }
+        return;
+    }
+
+    if (titleEl) titleEl.innerText = title;
+    if (msgEl) msgEl.innerText = message;
+
+    if (btnConfirm) {
+        btnConfirm.innerText = confirmText;
+        if (isDanger) {
+            btnConfirm.classList.add('wa-dialog-btn-danger');
+        } else {
+            btnConfirm.classList.remove('wa-dialog-btn-danger');
+        }
+        btnConfirm.onclick = () => {
+            overlay.classList.remove('active');
+            if (typeof onConfirm === 'function') onConfirm();
+        };
+    }
+
+    if (btnCancel) {
+        if (cancelText) {
+            btnCancel.style.display = 'inline-block';
+            btnCancel.innerText = cancelText;
+            btnCancel.onclick = () => {
+                overlay.classList.remove('active');
+                if (typeof onCancel === 'function') onCancel();
+            };
+        } else {
+            btnCancel.style.display = 'none';
+        }
+    }
+
+    overlay.classList.add('active');
+}
+
+function showInputError(elementId, message) {
+    const el = document.getElementById(elementId);
+    if (!el) return;
+    el.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>${message}</span>`;
+    el.style.display = 'flex';
+}
+
+function clearInputError(elementId) {
+    const el = document.getElementById(elementId);
+    if (el) el.style.display = 'none';
+}
+
+// Global safety net: override window.alert so no browser popup can appear anywhere
+window.alert = function(msg) {
+    showWhatsAppToast(msg);
+};
+
 // Robust Step Switcher to prevent overlapping screens/glitches
 function showStep(stepName) {
     const steps = [
@@ -213,14 +318,26 @@ function showOtpVerifyScreen(phoneNum) {
     startResendTimer();
 }
 
+const autofillOtp = () => {
+    if (otpCodeInput) {
+        otpCodeInput.value = window.currentDemoOtp || '123456';
+        clearInputError('otp-verify-error');
+        otpCodeInput.focus();
+        showWhatsAppToast("Verification code autofilled: 123456", "success", 2000);
+    }
+};
+
 const otpCopyCode = document.getElementById('otp-copy-code');
-if (otpCopyCode) {
-    otpCopyCode.addEventListener('click', () => {
-        if (otpCodeInput) {
-            otpCodeInput.value = '123456';
-            otpCodeInput.focus();
-        }
-    });
+if (otpCopyCode) otpCopyCode.addEventListener('click', autofillOtp);
+
+const otpAutofillAction = document.getElementById('otp-autofill-action');
+if (otpAutofillAction) otpAutofillAction.addEventListener('click', autofillOtp);
+
+if (otpPhoneInput) {
+    otpPhoneInput.addEventListener('input', () => clearInputError('otp-phone-error'));
+}
+if (otpCodeInput) {
+    otpCodeInput.addEventListener('input', () => clearInputError('otp-verify-error'));
 }
 
 function resetSendOtpBtn() {
@@ -254,9 +371,10 @@ function resetRecaptcha() {
 
 // 1. Send OTP Action
 function doSendOtp() {
+    clearInputError('otp-phone-error');
     const rawNum = otpPhoneInput ? otpPhoneInput.value.trim() : '';
     if (!rawNum || !/^[6-9]\d{9}$/.test(rawNum)) {
-        alert("Kripya ek valid 10-digit Indian mobile number dalein (6, 7, 8 ya 9 se shuru hona chahiye).");
+        showInputError('otp-phone-error', 'Please enter a valid 10-digit mobile number (6, 7, 8 or 9).');
         return;
     }
 
@@ -287,7 +405,7 @@ function doSendOtp() {
                     showOtpVerifyScreen(rawNum);
                 })
                 .catch((err) => {
-                    console.warn("Firebase SMS not available on this domain/region, using seamless Dev OTP:", err);
+                    console.warn("Firebase SMS daily limit reached or unconfigured, switching to instant code:", err);
                     resetSendOtpBtn();
                     resetRecaptcha();
 
@@ -297,11 +415,11 @@ function doSendOtp() {
                     showOtpVerifyScreen(rawNum);
 
                     const hint = document.getElementById('otp-fallback-hint');
-                    if (hint) hint.style.display = 'block';
+                    if (hint) hint.style.display = 'flex';
                     if (otpCodeInput) otpCodeInput.value = "123456";
                 });
         } catch (e) {
-            console.warn("Firebase exception, using seamless Dev OTP:", e);
+            console.warn("Firebase exception, switching to instant code:", e);
             resetRecaptcha();
             resetSendOtpBtn();
             window.currentDemoOtp = "123456";
@@ -309,7 +427,7 @@ function doSendOtp() {
             window.confirmationResult = null;
             showOtpVerifyScreen(rawNum);
             const hint = document.getElementById('otp-fallback-hint');
-            if (hint) hint.style.display = 'block';
+            if (hint) hint.style.display = 'flex';
             if (otpCodeInput) otpCodeInput.value = "123456";
         }
     } else {
@@ -318,16 +436,17 @@ function doSendOtp() {
         window.currentOtpPhone = rawNum;
         showOtpVerifyScreen(rawNum);
         const hint = document.getElementById('otp-fallback-hint');
-        if (hint) hint.style.display = 'block';
+        if (hint) hint.style.display = 'flex';
         if (otpCodeInput) otpCodeInput.value = "123456";
     }
 }
 
 // 2. Verify OTP Action
 function doVerifyOtp() {
+    clearInputError('otp-verify-error');
     const code = otpCodeInput ? otpCodeInput.value.trim() : '';
     if (!code || code.length !== 6) {
-        alert("Kripya 6-digit OTP code dalein.");
+        showInputError('otp-verify-error', 'Please enter a 6-digit verification code.');
         return;
     }
 
@@ -350,12 +469,11 @@ function doVerifyOtp() {
             })
             .catch((err) => {
                 console.warn("Firebase confirm error:", err);
-                // If code is 123456 (demo code fallback), allow login immediately
                 if (code === "123456" || code === window.currentDemoOtp) {
                     console.log("Fallback: logging in via 123456 test OTP");
                     completeLogin('test_' + Date.now());
                 } else {
-                    alert("Galat OTP code! Kripya SMS me aaya hua sahi OTP dalein (ya testing ke liye '123456' use karein).");
+                    showInputError('otp-verify-error', 'Incorrect code. Check SMS or tap Autofill (123456).');
                     resetVerifyOtpBtn();
                 }
             });
@@ -364,7 +482,7 @@ function doVerifyOtp() {
         if (code === "123456" || code === (window.currentDemoOtp || "123456")) {
             completeLogin('demo_' + Date.now());
         } else {
-            alert("Galat OTP code! Test OTP '123456' dalein.");
+            showInputError('otp-verify-error', 'Incorrect code. Tap Autofill to enter 123456.');
             resetVerifyOtpBtn();
         }
     }
@@ -405,14 +523,22 @@ if (menuSwitchPin) {
 if (menuHelp) {
     menuHelp.addEventListener('click', () => {
         if (onboardingMenu) onboardingMenu.style.display = 'none';
-        alert("QuickChat Help:\n\n1. Apna 10-digit mobile number enter karke 'Next' par tap karein.\n2. SMS mein 6-digit OTP code prapt hoga.\n3. OTP dalte hi QuickChat account activate ho jayega!");
+        showWhatsAppDialog({
+            title: 'QuickChat Help',
+            message: '1. Enter your 10-digit mobile number and tap "Next".\n2. Enter the 6-digit code received via SMS.\n3. Your account activates immediately with instant messaging!',
+            confirmText: 'Got It'
+        });
     });
 }
 
 if (whatsMyNumberBtn) {
     whatsMyNumberBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        alert("Aapka 10-digit mobile number aapke phone ke Settings > About Phone / SIM Status me check kar sakte hain.");
+        showWhatsAppDialog({
+            title: 'Find Mobile Number',
+            message: 'You can check your 10-digit mobile number in your phone Settings > About Phone / SIM Status.',
+            confirmText: 'OK'
+        });
     });
 }
 
@@ -489,7 +615,7 @@ function doPinLogin() {
         localStorage.setItem('quickchat_session_pin', pin);
         socket.emit('login', { number: num, pin: pin });
     } else {
-        alert("Kripya apna Number aur 4-digit PIN dono dalein.");
+        showWhatsAppToast("Please enter both 10-digit number and 4-digit PIN.", "danger");
     }
 }
 
@@ -526,7 +652,7 @@ if (menuNewChat) {
 if (menuMyNumber) {
     menuMyNumber.addEventListener('click', () => {
         if (dropdownMenu) dropdownMenu.style.display = 'none';
-        alert("Aapka Registered Number: +91 " + (myNumber || ""));
+        showWhatsAppToast("Registered Number: +91 " + (myNumber || ""), "info");
     });
 }
 
@@ -544,7 +670,7 @@ if (toggleSearchBtn && searchContainer) {
 const headerStatusBtn = document.getElementById('header-status-btn');
 if (headerStatusBtn) {
     headerStatusBtn.addEventListener('click', () => {
-        alert("Status Feature: Yahan aap status dekh/laga sakenge (Coming soon).");
+        showWhatsAppToast("Status updates coming soon!", "info");
     });
 }
 
@@ -579,9 +705,9 @@ waTabs.forEach(tab => {
         tab.classList.add('active');
         const txt = tab.innerText.trim();
         if (txt.includes('STATUS')) {
-            alert("Status Feature: Yahan WhatsApp status dekh/laga sakenge (Coming soon).");
+            showWhatsAppToast("Status updates coming soon!", "info");
         } else if (txt.includes('CALLS')) {
-            alert("Calls Feature: Voice ya Video call ke liye kisi bhi chat ko open karke call icon par tap karein!");
+            showWhatsAppToast("Tap the phone or camera icon in any chat to place a call.", "info");
         }
     });
 });
@@ -598,14 +724,24 @@ if (waTabCamera) {
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
     logoutBtn.addEventListener('click', () => {
-        if (confirm("Kya aap sach mein logout karna chahte hain?")) {
-            localStorage.removeItem('quickchat_session_num');
-            localStorage.removeItem('quickchat_session_pin');
-            localStorage.removeItem('quickchat_cached_chats');
-            localStorage.removeItem('quickchat_cached_users');
-            document.documentElement.classList.remove('user-logged-in');
-            window.location.reload();
-        }
+        showWhatsAppDialog({
+            title: 'Log out?',
+            message: 'Are you sure you want to log out from QuickChat?',
+            confirmText: 'Log Out',
+            cancelText: 'Cancel',
+            isDanger: true,
+            onConfirm: () => {
+                localStorage.removeItem('quickchat_session_num');
+                localStorage.removeItem('quickchat_session_pin');
+                if (myNumber) {
+                    localStorage.removeItem('quickchat_cached_chats_' + myNumber);
+                }
+                localStorage.removeItem('quickchat_cached_chats');
+                localStorage.removeItem('quickchat_cached_users');
+                document.documentElement.classList.remove('user-logged-in');
+                window.location.reload();
+            }
+        });
     });
 }
 
@@ -619,16 +755,21 @@ socket.on('login error', (msg) => {
     if (msg.includes('Galat PIN')) {
         localStorage.removeItem('quickchat_session_num');
         localStorage.removeItem('quickchat_session_pin');
-        const useOtp = confirm("Galat PIN!\n\nKya aap PIN bhool gaye hain? 'OK' dabayein taaki bina kisi password ke seedha Phone OTP se turant login kar sakein.");
-        if (useOtp) {
-            showStep('phone');
-            const pinNum = document.getElementById('login-number');
-            if (pinNum && otpPhoneInput && pinNum.value.trim()) {
-                otpPhoneInput.value = pinNum.value.trim();
+        showWhatsAppDialog({
+            title: 'Incorrect PIN',
+            message: 'Forgot your PIN? Log in directly with Phone OTP without entering a password.',
+            confirmText: 'Use Phone OTP',
+            cancelText: 'Try Again',
+            onConfirm: () => {
+                showStep('phone');
+                const pinNum = document.getElementById('login-number');
+                if (pinNum && otpPhoneInput && pinNum.value.trim()) {
+                    otpPhoneInput.value = pinNum.value.trim();
+                }
             }
-        }
+        });
     } else {
-        alert(msg);
+        showWhatsAppToast(msg, 'danger');
     }
 });
 
@@ -721,11 +862,11 @@ if (drawerStartChatBtn && drawerDirectPhone) {
     const doDrawerStart = () => {
         const num = drawerDirectPhone.value.trim();
         if (!num || num.length !== 10) {
-            alert("Kripya valid 10-digit number dalein.");
+            showWhatsAppToast("Please enter a valid 10-digit number.", "danger");
             return;
         }
         if (num === myNumber) {
-            alert("Aap apne hi number par chat nahi kar sakte!");
+            showWhatsAppToast("You cannot chat with your own number.", "danger");
             return;
         }
         closeNewChatDrawer();
@@ -1118,7 +1259,7 @@ if (micCircleWrapper) {
         if (messageInput.value.trim().length > 0) {
             sendMessage();
         } else {
-            alert("Voice recording feature coming soon! You can type a message or tap the camera/clip to send photos.");
+            showWhatsAppToast("Voice messages coming soon! Type a message or send photos.", "info");
         }
     });
 }
@@ -1276,10 +1417,7 @@ filterPillBtns.forEach(pill => {
         if (filterType) {
             setActiveFilter(filterType);
         } else if (pill.id === 'filter-add-btn') {
-            const listName = prompt("Create new custom filter list (e.g. Family, Work, College):");
-            if (listName) {
-                alert(`Filter list "${listName}" created!`);
-            }
+            showWhatsAppToast("Custom filter lists coming soon!", "info");
         }
     });
 });
@@ -1340,28 +1478,28 @@ if (railChatsBtn) {
 const railCallsBtn = document.getElementById('rail-calls-btn');
 if (railCallsBtn) {
     railCallsBtn.addEventListener('click', () => {
-        alert("QuickChat Calls:\n\nPlace crystal clear voice & video calls with anyone on QuickChat by tapping the phone or camera icon at the top of any chat!");
+        showWhatsAppToast("Tap the phone or camera icon in any chat to place a call.", "info");
     });
 }
 
 const railStatusBtn = document.getElementById('rail-status-btn');
 if (railStatusBtn) {
     railStatusBtn.addEventListener('click', () => {
-        alert("QuickChat Status:\n\nShare photos, text, and voice status updates that disappear in 24 hours. (Coming soon)");
+        showWhatsAppToast("Status updates coming soon!", "info");
     });
 }
 
 const railChannelsBtn = document.getElementById('rail-channels-btn');
 if (railChannelsBtn) {
     railChannelsBtn.addEventListener('click', () => {
-        alert("QuickChat Channels:\n\nFollow public channels and get real-time updates from creators, news, and sports.");
+        showWhatsAppToast("Channels coming soon!", "info");
     });
 }
 
 const railCommunitiesBtn = document.getElementById('rail-communities-btn');
 if (railCommunitiesBtn) {
     railCommunitiesBtn.addEventListener('click', () => {
-        alert("QuickChat Communities:\n\nEasily organize multiple related groups into unified spaces.");
+        showWhatsAppToast("Communities coming soon!", "info");
     });
 }
 
@@ -1388,7 +1526,7 @@ if (railAiBtn) {
 const railStarredBtn = document.getElementById('rail-starred-btn');
 if (railStarredBtn) {
     railStarredBtn.addEventListener('click', () => {
-        alert("Starred Messages:\n\nSave important messages to review them later.");
+        showWhatsAppToast("Starred messages coming soon!", "info");
     });
 }
 
@@ -1418,7 +1556,11 @@ if (promoBanner) {
                 deferredPrompt = null;
             });
         } else {
-            alert("QuickChat for Windows:\n\nTo install QuickChat on your PC/Laptop:\n1. Click your browser menu (3-dots ⋮ at top right in Chrome or Edge).\n2. Select 'Install QuickChat' or 'Apps > Install this site as an app'.\n3. Enjoy QuickChat as a standalone Windows app!");
+            showWhatsAppDialog({
+                title: 'QuickChat for Windows',
+                message: 'To install QuickChat on your PC:\n1. Click your browser menu (⋮ at top right in Chrome or Edge).\n2. Select "Install QuickChat" or "Apps > Install this site as an app".\n3. Enjoy QuickChat as a standalone Windows app!',
+                confirmText: 'Got It'
+            });
         }
     });
 }
