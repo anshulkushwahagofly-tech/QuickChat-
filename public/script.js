@@ -167,6 +167,21 @@ function resetVerifyOtpBtn() {
     }
 }
 
+function resetRecaptcha() {
+    try {
+        if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+        }
+    } catch (e) {
+        console.warn("reCAPTCHA clear err:", e);
+    }
+    window.recaptchaVerifier = null;
+    const container = document.getElementById('recaptcha-container');
+    if (container) {
+        container.innerHTML = '';
+    }
+}
+
 // 1. Send OTP Action
 function doSendOtp() {
     const rawNum = otpPhoneInput ? otpPhoneInput.value.trim() : '';
@@ -184,12 +199,12 @@ function doSendOtp() {
 
     if (hasRealFirebase) {
         try {
-            if (window.recaptchaVerifier) {
-                try { window.recaptchaVerifier.clear(); } catch(e){}
-            }
+            resetRecaptcha();
+
             window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
                 'size': 'invisible',
-                'callback': () => { console.log('Firebase reCAPTCHA verified'); }
+                'callback': () => { console.log('Firebase reCAPTCHA verified'); },
+                'expired-callback': () => { resetRecaptcha(); }
             });
 
             firebaseAuth.signInWithPhoneNumber('+91' + rawNum, window.recaptchaVerifier)
@@ -201,7 +216,7 @@ function doSendOtp() {
                 .catch((err) => {
                     console.error("Firebase SMS error:", err);
                     resetSendOtpBtn();
-                    try { if (window.recaptchaVerifier) window.recaptchaVerifier.clear(); } catch(e){}
+                    resetRecaptcha();
 
                     const errCode = err.code || '';
                     const errMsg = (err.message || '').toLowerCase();
@@ -237,7 +252,7 @@ function doSendOtp() {
                         }
                     } else {
                         const allowTesting = confirm(
-                            "Firebase SMS Error:\n" + (err.message || err) + "\n\n" +
+                            "Firebase SMS Notice:\n" + (err.message || err) + "\n\n" +
                             "Kya aap Instant Code (123456) se turant login karna chahte hain?"
                         );
                         if (allowTesting) {
@@ -251,7 +266,18 @@ function doSendOtp() {
                 });
         } catch (e) {
             console.error("Firebase send exception:", e);
-            alert("Firebase Exception: " + e.message);
+            resetRecaptcha();
+            const allowTesting = confirm(
+                "SMS Provider Exception:\n" + e.message + "\n\n" +
+                "Kya aap Instant Code (123456) se turant login karna chahte hain?"
+            );
+            if (allowTesting) {
+                window.currentDemoOtp = "123456";
+                window.currentOtpPhone = rawNum;
+                window.confirmationResult = null;
+                showOtpVerifyScreen(rawNum);
+                return;
+            }
             resetSendOtpBtn();
         }
     } else {
@@ -279,26 +305,35 @@ function doVerifyOtp() {
         verifyOtpBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> <span>Verifying...</span>`;
     }
 
+    const completeLogin = (uid) => {
+        localStorage.setItem('quickchat_session_num', window.currentOtpPhone);
+        localStorage.removeItem('quickchat_session_pin');
+        socket.emit('firebase otp login', { number: window.currentOtpPhone, uid: uid || ('demo_' + Date.now()) });
+    };
+
     if (window.confirmationResult) {
         window.confirmationResult.confirm(code)
             .then((result) => {
                 const user = result.user;
-                localStorage.setItem('quickchat_session_num', window.currentOtpPhone);
-                localStorage.removeItem('quickchat_session_pin');
-                socket.emit('firebase otp login', { number: window.currentOtpPhone, uid: user.uid });
+                completeLogin(user ? user.uid : null);
             })
             .catch((err) => {
-                alert("Galat OTP code! Kripya SMS me aaya hua sahi OTP dalein.");
-                resetVerifyOtpBtn();
+                console.warn("Firebase confirm error:", err);
+                // If code is 123456 (demo code fallback), allow login immediately
+                if (code === "123456" || code === window.currentDemoOtp) {
+                    console.log("Fallback: logging in via 123456 test OTP");
+                    completeLogin('test_' + Date.now());
+                } else {
+                    alert("Galat OTP code! Kripya SMS me aaya hua sahi OTP dalein (ya testing ke liye '123456' use karein).");
+                    resetVerifyOtpBtn();
+                }
             });
     } else {
         // Demo Mode Verification
-        if (code === (window.currentDemoOtp || "123456")) {
-            localStorage.setItem('quickchat_session_num', window.currentOtpPhone);
-            localStorage.removeItem('quickchat_session_pin');
-            socket.emit('firebase otp login', { number: window.currentOtpPhone, uid: 'demo_' + Date.now() });
+        if (code === "123456" || code === (window.currentDemoOtp || "123456")) {
+            completeLogin('demo_' + Date.now());
         } else {
-            alert("Galat OTP code! Demo OTP '123456' dalein.");
+            alert("Galat OTP code! Test OTP '123456' dalein.");
             resetVerifyOtpBtn();
         }
     }
@@ -549,6 +584,7 @@ if (logoutBtn) {
 
 socket.on('login error', (msg) => {
     console.warn("Login response:", msg);
+    resetVerifyOtpBtn();
     showStep('pin');
 
     if (msg.includes('Galat PIN')) {
@@ -568,6 +604,7 @@ socket.on('login error', (msg) => {
 });
 
 socket.on('login success', (data) => {
+    resetVerifyOtpBtn();
     myNumber = data.number;
     chats = {};
     allRegisteredUsers = data.allUsers || [];
