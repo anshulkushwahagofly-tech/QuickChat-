@@ -1,140 +1,340 @@
-/* EXACT WHATSAPP MOBILE FEEL */
+/* ========================================================
+   EXACT WHATSAPP MOBILE LAYOUT & EXPERIENCE
+   ======================================================== */
+
 @media screen and (max-width: 900px) {
-    /* Main Layout Rules */
-    body { background-color: #ece5dd; }
-    #app-container { width: 100vw; height: 100vh; overflow: hidden; position: relative; }
-    
-    /* Sidebar (Chat List Screen) */
-    .sidebar { width: 100% !important; min-width: 100% !important; border: none !important; z-index: 1; }
-    
-    .sidebar-header { 
-        background-color: #008069 !important; /* WhatsApp Green */
+    body {
+        background-color: #ece5dd;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+    }
+
+    body::before {
+        display: none !important;
+    }
+
+    #app-container {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw !important;
+        position: relative !important;
+        overflow: hidden !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+
+    /* --- LOGIN ON MOBILE --- */
+    #login-container {
+        padding: 0;
+        background-color: #ffffff;
+    }
+
+    #login-container::before {
+        height: 90px;
+        background-color: #008069;
+    }
+
+    .login-header {
+        padding: 20px 15px;
+    }
+
+    .login-box {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        box-shadow: none;
+        border-radius: 0;
+        padding: 25px 20px;
+        margin-top: 0;
+    }
+
+    /* --- SIDEBAR (FULL SCREEN CHATS LIST) --- */
+    .sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        border-right: none !important;
+        position: relative !important;
+        z-index: 10;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .sidebar-header {
+        background-color: #008069 !important;
         color: white !important;
-        justify-content: space-between;
-        padding: 15px;
-        height: 60px;
-    }
-    .sidebar-header .header-info { display: none !important; } /* Hide my avatar on mobile header */
-    .sidebar-header::before {
-        content: 'WhatsApp';
-        font-size: 22px;
-        font-weight: 500;
-    }
-    .sidebar-header .header-icons i { color: white !important; margin-left: 20px; font-size: 20px; }
-    
-    /* Fake Tabs */
-    .search-container { 
-        background-color: #008069 !important; 
-        padding: 0 !important; 
+        padding: 12px 16px !important;
+        height: 56px !important;
         border-bottom: none !important;
+    }
+
+    .sidebar-header .header-info {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+    }
+
+    .sidebar-header .header-info strong {
+        color: white !important;
+        font-size: 19px !important;
+        font-weight: 500 !important;
+    }
+
+    .sidebar-header .header-icons {
+        color: white !important;
+        gap: 15px !important;
+    }
+
+    .sidebar-header .header-icons i {
+        color: white !important;
+        font-size: 18px !important;
+    }
+
+    /* WhatsApp Tab Bar */
+    .wa-tabs-bar {
+        display: flex !important;
+        background-color: #008069 !important;
+        color: rgba(255, 255, 255, 0.75) !important;
+        border-bottom: none !important;
+        height: 44px;
+        align-items: center;
+    }
+
+    .wa-tab {
+        flex: 1;
+        text-align: center;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        padding: 10px 0;
+        cursor: pointer;
         position: relative;
     }
-    .search-container .search-box { display: none !important; } /* Hide old search box */
-    .search-container::after {
-        content: 'CHATS \A0\A0\A0\A0\A0\A0 STATUS \A0\A0\A0\A0\A0\A0 CALLS';
-        white-space: pre;
-        display: flex;
-        justify-content: space-around;
-        background-color: #008069;
-        color: rgba(255,255,255,0.7);
-        font-weight: bold;
-        font-size: 14px;
-        padding: 12px 0;
-        width: 100%;
+
+    .wa-tab.active {
+        color: #ffffff !important;
     }
-    /* Indicator under CHATS */
-    .search-container::before {
+
+    .wa-tab.active::after {
         content: '';
         position: absolute;
         bottom: 0;
         left: 0;
-        width: 33.33%;
-        height: 3px;
-        background-color: white;
-        z-index: 2;
+        width: 100%;
+        height: 3.5px;
+        background-color: #ffffff;
+        border-radius: 2px 2px 0 0;
     }
 
-    .chat-list { background-color: white; height: calc(100vh - 105px); }
-    
-    .chat-item { border-bottom: none !important; }
-    
-    /* Floating Action Button */
+    /* Search Container */
+    .search-container {
+        background-color: #ffffff !important;
+        padding: 8px 12px !important;
+        border-bottom: 1px solid #f0f2f5 !important;
+    }
+
+    .search-box {
+        background-color: #f0f2f5 !important;
+        border-radius: 20px !important;
+        padding: 7px 16px !important;
+    }
+
+    .search-box input {
+        font-size: 14.5px !important;
+    }
+
+    /* Chat List */
+    .chat-list {
+        flex: 1 !important;
+        background-color: #ffffff !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .chat-list-item {
+        padding: 0 16px !important;
+        border-bottom: none !important;
+    }
+
+    .chat-list-item .avatar {
+        width: 50px !important;
+        height: 50px !important;
+        margin: 10px 14px 10px 0 !important;
+    }
+
+    .chat-info {
+        padding: 14px 0 !important;
+        border-bottom: 1px solid #f0f2f5 !important;
+    }
+
+    .chat-title-row h4 {
+        font-size: 16.5px !important;
+        font-weight: 500 !important;
+    }
+
+    .chat-last-msg {
+        font-size: 13.5px !important;
+        color: #667781 !important;
+    }
+
+    /* WhatsApp Floating Action Button */
     .fab-btn {
-        position: absolute; bottom: 20px; right: 20px; 
-        background-color: #00a884 !important; /* WA FAB Green */
-        color: white; width: 60px; height: 60px;
-        border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 24px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 50;
+        position: fixed !important;
+        bottom: 24px !important;
+        right: 20px !important;
+        width: 58px !important;
+        height: 58px !important;
+        background-color: #00a884 !important;
+        color: white !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        font-size: 23px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        z-index: 150 !important;
     }
 
-    /* Chat Panel (Chat Screen) */
-    .chat-panel { 
-        display: none !important; 
-        width: 100% !important; 
-        position: absolute; top: 0; left: 0; right: 0; bottom: 0; 
-        z-index: 100; 
-        background-color: #ece5dd !important; /* WA chat bg */
-        transition: transform 0.3s ease;
+    /* --- CHAT SCREEN (FULL SCREEN COVERAGE) --- */
+    .chat-panel {
+        display: none !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 200 !important;
+        background-color: #efeae2 !important;
+        flex-direction: column !important;
     }
-    .chat-panel.active-mobile { display: flex !important; flex-direction: column; }
-    
+
+    .chat-panel.active-mobile {
+        display: flex !important;
+    }
+
+    .empty-chat-state {
+        display: none !important;
+    }
+
     /* Chat Header */
     .chat-panel-header {
         background-color: #008069 !important;
         color: white !important;
-        padding: 5px 10px !important;
-        height: 60px;
+        padding: 6px 12px !important;
+        height: 56px !important;
+        border-left: none !important;
+        z-index: 10 !important;
     }
-    .chat-panel-header * { color: white !important; }
-    #back-btn { margin-right: 5px !important; padding: 0 10px !important; font-size: 20px !important; }
-    
-    .chat-header-info { gap: 10px; }
-    .chat-header-info .avatar { width: 36px; height: 36px; }
-    #active-chat-title { font-size: 18px !important; font-weight: 500; }
-    .chat-header-info .status { font-size: 13px !important; color: rgba(255,255,255,0.8) !important; }
-    
-    /* Input Area */
+
+    .chat-header-info {
+        gap: 8px !important;
+    }
+
+    #back-btn {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: transparent !important;
+        border: none !important;
+        color: white !important;
+        font-size: 20px !important;
+        cursor: pointer !important;
+        padding: 6px 8px 6px 0 !important;
+    }
+
+    .chat-header-info .avatar {
+        width: 38px !important;
+        height: 38px !important;
+    }
+
+    .chat-title h3 {
+        color: white !important;
+        font-size: 16px !important;
+        font-weight: 500 !important;
+        margin: 0 !important;
+    }
+
+    .chat-title .status {
+        color: rgba(255, 255, 255, 0.82) !important;
+        font-size: 12px !important;
+    }
+
+    .chat-panel-header .header-icons {
+        color: white !important;
+        gap: 16px !important;
+    }
+
+    .chat-panel-header .header-icons i {
+        color: white !important;
+        font-size: 18px !important;
+    }
+
+    /* Chat Messages */
+    .chat-panel-messages {
+        flex: 1 !important;
+        padding: 12px 14px 10px 14px !important;
+        gap: 6px !important;
+    }
+
+    .message {
+        max-width: 84% !important;
+        padding: 6px 8px 7px 9px !important;
+        font-size: 14.5px !important;
+    }
+
+    .message.sent {
+        background-color: #d9fdd3 !important;
+    }
+
+    .message.received {
+        background-color: #ffffff !important;
+    }
+
+    /* Chat Input Bar on Mobile */
     .chat-panel-input {
         background: transparent !important;
-        padding: 5px 10px 10px 10px !important;
-        border: none !important;
-        gap: 5px;
+        padding: 6px 8px 10px 8px !important;
+        gap: 6px !important;
+        min-height: 54px !important;
+        z-index: 10 !important;
     }
-    
-    /* The white pill for input */
+
     .input-pill-wrapper {
-        display: flex;
-        flex: 1;
-        background: white;
-        border-radius: 25px;
-        padding: 5px 15px;
-        align-items: center;
-        gap: 15px;
+        background: #ffffff !important;
+        border-radius: 25px !important;
+        padding: 5px 12px !important;
+        gap: 10px !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15) !important;
     }
-    
+
+    .input-pill-wrapper .icon-btn {
+        color: #8696a0 !important;
+        font-size: 21px !important;
+        padding: 2px !important;
+    }
+
     #message-input {
-        background: transparent !important;
-        border: none !important;
-        border-radius: 0 !important;
-        padding: 8px 0 !important;
-        font-size: 16px;
+        font-size: 16px !important;
+        padding: 6px 0 !important;
     }
-    #message-input:focus { outline: none; }
-    
-    .icon-btn { font-size: 22px; color: #8696a0; }
-    
-    /* Mic / Send Button Circle */
+
     .mic-circle-wrapper {
-        background: #00a884;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        flex-shrink: 0;
+        background-color: #00a884 !important;
+        width: 46px !important;
+        height: 46px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
     }
-    .mic-circle-wrapper i { color: white; font-size: 20px; }
-    .mic-circle-wrapper #send-btn { color: white; font-size: 18px; margin-left: -2px; }
+
+    .mic-circle-wrapper i {
+        font-size: 19px !important;
+    }
+
+    /* Modal Mobile Adjustments */
+    .modal-content {
+        max-width: 95% !important;
+        border-radius: 14px !important;
+    }
 }

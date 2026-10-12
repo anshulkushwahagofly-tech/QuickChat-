@@ -88,6 +88,16 @@ async function getUserMessages(number) {
     }
 }
 
+async function getAllUsers() {
+    if (useMongo) {
+        const users = await User.find({}, 'number');
+        return users.map(u => u.number);
+    } else {
+        const db = loadDB();
+        return Object.keys(db.users);
+    }
+}
+
 // --- SOCKET.IO LOGIC ---
 let connectedUsers = {}; // { 'number': socket.id }
 let socketToPhone = {};
@@ -109,7 +119,9 @@ io.on('connection', (socket) => {
             socketToPhone[socket.id] = number;
             console.log(`User signed up: ${number}`);
             
-            socket.emit('login success', { number, history: [] });
+            const allUsers = await getAllUsers();
+            socket.emit('login success', { number, history: [], allUsers });
+            io.emit('all users', allUsers);
         } catch (err) {
             console.error("Signup error:", err);
             socket.emit('login error', 'Server error. Please try again.');
@@ -134,10 +146,21 @@ io.on('connection', (socket) => {
             console.log(`User logged in: ${number}`);
             
             const userMessages = await getUserMessages(number);
-            socket.emit('login success', { number, history: userMessages });
+            const allUsers = await getAllUsers();
+            socket.emit('login success', { number, history: userMessages, allUsers });
+            io.emit('all users', allUsers);
         } catch (err) {
             console.error("Login error:", err);
             socket.emit('login error', 'Server error. Please try again.');
+        }
+    });
+
+    socket.on('get all users', async () => {
+        try {
+            const allUsers = await getAllUsers();
+            socket.emit('all users', allUsers);
+        } catch (err) {
+            console.error("Error getting users:", err);
         }
     });
 

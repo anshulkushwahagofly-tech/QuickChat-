@@ -2,32 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QuickChat</title>
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#AFDCEC">
-    <link rel="stylesheet" href="style.css?v=11">
-    <link rel="stylesheet" href="mobile-whatsapp.css?v=1">
+    <meta name="theme-color" content="#008069">
+    <link rel="stylesheet" href="style.css?v=14">
+    <link rel="stylesheet" href="mobile-whatsapp.css?v=4">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <style>
-        /* Force Mobile View */
-        @media screen and (max-width: 900px) {
-            .sidebar { width: 100% !important; min-width: 100% !important; border: none !important; }
-            .chat-panel { display: none !important; width: 100% !important; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 100; }
-            .chat-panel.active-mobile { display: flex !important; }
-            #back-btn { display: inline-block !important; margin-right: 15px !important; }
-            .empty-chat-state { display: none !important; }
-        }
-        
-        /* Floating Action Button for New Chat */
-        .fab-btn {
-            position: absolute; bottom: 20px; right: 20px; background-color: #008bbf; color: white; width: 60px; height: 60px;
-            border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 26px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 50; transition: transform 0.2s;
-        }
-        .fab-btn:active { transform: scale(0.95); }
-    </style>
 </head>
 <body>
     <!-- Login Overlay -->
@@ -106,22 +88,28 @@
         <!-- Left Sidebar -->
         <div class="sidebar">
             <div class="sidebar-header">
-                <div class="header-info" style="display:flex; align-items:center; gap:15px;">
+                <div class="header-info" style="display:flex; align-items:center; gap:12px;">
                     <div class="avatar" id="my-avatar"></div>
-                    <strong id="my-display-number" style="color:#54656f; font-size:16px;"></strong>
+                    <strong id="my-display-number" style="font-size:17px; font-weight:600;">QuickChat</strong>
                 </div>
                 <div class="header-icons">
                     <i class="fas fa-camera" title="Camera"></i>
-                    <i class="fas fa-search" title="Search"></i>
-                    <i class="fas fa-ellipsis-v" title="Menu"></i>
-                    <i class="fas fa-sign-out-alt" title="Logout" id="logout-btn" style="color: #ff4d4d; cursor: pointer; margin-left:10px;"></i>
+                    <i class="fas fa-search" id="toggle-search-btn" title="Search"></i>
+                    <i class="fas fa-user-plus" id="header-new-chat-btn" title="New Chat"></i>
+                    <i class="fas fa-sign-out-alt" title="Logout" id="logout-btn" style="color: #ff4d4d; cursor: pointer; margin-left:6px;"></i>
                 </div>
             </div>
             
-            <div class="search-container">
+            <div class="wa-tabs-bar">
+                <div class="wa-tab active">CHATS</div>
+                <div class="wa-tab">STATUS</div>
+                <div class="wa-tab">CALLS</div>
+            </div>
+
+            <div class="search-container" id="search-container">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="new-chat-input" placeholder="Enter friend's number & press Enter">
+                    <input type="text" id="new-chat-input" placeholder="Search or type 10-digit number & Enter">
                 </div>
             </div>
             
@@ -129,7 +117,7 @@
                 <!-- Chat items will be added dynamically -->
             </div>
             
-            <div class="fab-btn" onclick="document.getElementById('new-chat-input').focus()">
+            <div class="fab-btn" id="open-new-chat-btn" title="New Chat">
                 <i class="fas fa-comment-dots"></i>
             </div>
         </div>
@@ -212,8 +200,33 @@
         }
     </style>
 
+    <!-- New Chat / Contacts Modal -->
+    <div id="new-chat-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Select Contact</h3>
+                <button id="close-new-chat-modal" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label style="font-size:13.5px; color:#54656f; font-weight:500;">Start chat with a phone number:</label>
+                <div class="new-chat-input-row">
+                    <span class="country-prefix">+91</span>
+                    <input type="text" id="modal-chat-number" placeholder="Enter 10-digit number" maxlength="10" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <button id="modal-start-chat-btn"><i class="fas fa-paper-plane"></i> Chat</button>
+                </div>
+                
+                <div class="contacts-section">
+                    <h4>QuickChat Users (Contacts)</h4>
+                    <div id="contacts-list" class="contacts-list">
+                        <p style="color:#8696a0; font-size:13px; text-align:center; padding:15px;">Loading users...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=11"></script>
-    <script src="webrtc.js?v=2"></script>
+    <script src="script.js?v=15"></script>
+    <script src="webrtc.js?v=3"></script>
 </body>
 </html>
