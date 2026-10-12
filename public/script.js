@@ -115,12 +115,13 @@ function showWhatsAppToast(message, type = 'info', duration = 3200) {
     }, duration);
 }
 
-function showWhatsAppDialog({ title = 'QuickChat', message = '', confirmText = 'OK', cancelText = null, isDanger = false, onConfirm = null, onCancel = null }) {
+function showWhatsAppDialog({ title = 'QuickChat', message = '', confirmText = 'OK', cancelText = null, extraText = null, isDanger = false, onConfirm = null, onCancel = null, onExtra = null }) {
     const overlay = document.getElementById('wa-dialog-overlay');
     const titleEl = document.getElementById('wa-dialog-title');
     const msgEl = document.getElementById('wa-dialog-message');
     const btnConfirm = document.getElementById('wa-dialog-btn-confirm');
     const btnCancel = document.getElementById('wa-dialog-btn-cancel');
+    const btnExtra = document.getElementById('wa-dialog-btn-extra');
 
     if (!overlay) {
         if (window.confirm && cancelText) {
@@ -147,6 +148,20 @@ function showWhatsAppDialog({ title = 'QuickChat', message = '', confirmText = '
             overlay.classList.remove('active');
             if (typeof onConfirm === 'function') onConfirm();
         };
+    }
+
+    if (btnExtra) {
+        if (extraText) {
+            btnExtra.style.display = 'inline-block';
+            btnExtra.innerText = extraText;
+            btnExtra.className = 'wa-dialog-btn wa-dialog-btn-extra';
+            btnExtra.onclick = () => {
+                overlay.classList.remove('active');
+                if (typeof onExtra === 'function') onExtra();
+            };
+        } else {
+            btnExtra.style.display = 'none';
+        }
     }
 
     if (btnCancel) {
@@ -653,6 +668,30 @@ if (menuNewChat) {
     });
 }
 
+const menuNewGroup = document.getElementById('menu-new-group');
+if (menuNewGroup) {
+    menuNewGroup.addEventListener('click', () => {
+        if (dropdownMenu) dropdownMenu.style.display = 'none';
+        openDrawer('communities-drawer');
+    });
+}
+
+const menuStarredMsgs = document.getElementById('menu-starred-msgs');
+if (menuStarredMsgs) {
+    menuStarredMsgs.addEventListener('click', () => {
+        if (dropdownMenu) dropdownMenu.style.display = 'none';
+        openDrawer('starred-messages-drawer');
+    });
+}
+
+const menuOpenSettings = document.getElementById('menu-open-settings');
+if (menuOpenSettings) {
+    menuOpenSettings.addEventListener('click', () => {
+        if (dropdownMenu) dropdownMenu.style.display = 'none';
+        openDrawer('settings-drawer');
+    });
+}
+
 if (menuMyNumber) {
     menuMyNumber.addEventListener('click', () => {
         if (dropdownMenu) dropdownMenu.style.display = 'none';
@@ -833,6 +872,13 @@ socket.on('login success', (data) => {
     const currentPin = (pinInput && pinInput.value.trim()) || localStorage.getItem('quickchat_session_pin');
     if (myNumber) localStorage.setItem('quickchat_session_num', myNumber);
     if (currentPin) localStorage.setItem('quickchat_session_pin', currentPin);
+
+    // Hydrate user-specific chat settings
+    try {
+        pinnedChats = JSON.parse(localStorage.getItem('quickchat_pinned_chats_' + myNumber) || '[]');
+        mutedChats = JSON.parse(localStorage.getItem('quickchat_muted_chats_' + myNumber) || '[]');
+        archivedChats = JSON.parse(localStorage.getItem('quickchat_archived_chats_' + myNumber) || '[]');
+    } catch(e) {}
 
     // Update UI previews
     if (myNumberPreview) myNumberPreview.innerText = '+91 ' + myNumber;
@@ -1097,23 +1143,17 @@ function renderChatList(filter = '') {
         filteredFriends = filteredFriends.filter(num => (unreadCounts[num] || 0) > 0);
         
         if (filteredFriends.length === 0) {
-            // Render exact WhatsApp Web empty unread state as shown in screenshot
             const unreadEmptyState = document.createElement('div');
             unreadEmptyState.className = 'wa-unread-empty-wrapper';
             unreadEmptyState.innerHTML = `
                 <div class="wa-unread-art">
                     <svg viewBox="0 0 160 140" width="140" height="120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Outer green checkmark outline -->
                         <path d="M42 75 L70 105 L132 38" stroke="#00a884" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
-                        <!-- Mint green speech bubble -->
                         <rect x="40" y="24" width="76" height="52" rx="14" fill="#c4eed0" />
                         <path d="M40 58 L28 66 L44 72 Z" fill="#c4eed0" />
-                        <!-- Horizontal message text lines inside bubble -->
                         <rect x="52" y="38" width="44" height="5" rx="2.5" fill="#528362" />
                         <rect x="52" y="50" width="28" height="5" rx="2.5" fill="#528362" />
-                        <!-- Foreground vibrant green checkmark over bubble -->
                         <path d="M42 75 L70 105 L132 38" stroke="#25d366" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-                        <!-- White sparkles ✨ -->
                         <path d="M135 24 Q135 30 141 30 Q135 30 135 36 Q135 30 129 30 Q135 30 135 24 Z" fill="#ffffff"/>
                         <path d="M26 42 Q26 47 31 47 Q26 47 26 52 Q26 47 21 47 Q26 47 26 42 Z" fill="#ffffff"/>
                         <circle cx="145" cy="50" r="1.8" fill="#ffffff"/>
@@ -1134,18 +1174,21 @@ function renderChatList(filter = '') {
             return;
         }
     } else if (currentChatFilter === 'favorites') {
-        const favEmptyState = document.createElement('div');
-        favEmptyState.className = 'wa-unread-empty-wrapper';
-        favEmptyState.innerHTML = `
-            <div style="font-size:46px; color:#8696a0; margin-bottom:16px;"><i class="far fa-star"></i></div>
-            <div class="wa-unread-empty-title">No favorite chats</div>
-            <div class="wa-unread-empty-sub">Add people and groups to favorites for quick access.</div>
-            <button class="wa-view-all-chats-btn" id="wa-fav-view-all-btn">View all chats</button>
-        `;
-        chatList.appendChild(favEmptyState);
-        const favViewAll = document.getElementById('wa-fav-view-all-btn');
-        if (favViewAll) favViewAll.onclick = () => setActiveFilter('all');
-        return;
+        filteredFriends = filteredFriends.filter(num => pinnedChats.includes(num));
+        if (filteredFriends.length === 0) {
+            const favEmptyState = document.createElement('div');
+            favEmptyState.className = 'wa-unread-empty-wrapper';
+            favEmptyState.innerHTML = `
+                <div style="font-size:46px; color:#8696a0; margin-bottom:16px;"><i class="far fa-star"></i></div>
+                <div class="wa-unread-empty-title">No favorite chats</div>
+                <div class="wa-unread-empty-sub">Add people and groups to favorites for quick access.</div>
+                <button class="wa-view-all-chats-btn" id="wa-fav-view-all-btn">View all chats</button>
+            `;
+            chatList.appendChild(favEmptyState);
+            const favViewAll = document.getElementById('wa-fav-view-all-btn');
+            if (favViewAll) favViewAll.onclick = () => setActiveFilter('all');
+            return;
+        }
     } else if (currentChatFilter === 'groups') {
         const groupEmptyState = document.createElement('div');
         groupEmptyState.className = 'wa-unread-empty-wrapper';
@@ -1162,7 +1205,6 @@ function renderChatList(filter = '') {
     }
 
     if (filteredFriends.length === 0 && friendNumbers.length === 0) {
-        // WhatsApp authentic clean empty chat state without leaking any contacts
         const emptyPrompt = document.createElement('div');
         emptyPrompt.className = 'wa-unread-empty-wrapper';
         emptyPrompt.innerHTML = `
@@ -1187,8 +1229,17 @@ function renderChatList(filter = '') {
         return;
     }
 
+    // Sort: Pinned chats on top, then most recent
+    filteredFriends.sort((a, b) => {
+        const aPinned = pinnedChats.includes(a);
+        const bPinned = pinnedChats.includes(b);
+        if (aPinned && !bPinned) return -1;
+        if (!aPinned && bPinned) return 1;
+        return 0;
+    });
+
     filteredFriends.forEach(friendNumber => {
-        const messages = chats[friendNumber];
+        const messages = chats[friendNumber] || [];
         const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
         let lastMsgPrefix = '';
         let lastMsgText = 'Tap to chat';
@@ -1196,8 +1247,14 @@ function renderChatList(filter = '') {
             if (lastMsg.from === myNumber) {
                 lastMsgPrefix = '<i class="fas fa-check-double" style="font-size:11px; color:#53bdeb; margin-right:4px;"></i>';
             }
-            if (lastMsg.image) {
+            if (lastMsg.isDeleted) {
+                lastMsgText = '<i class="fas fa-ban" style="font-size:11px; margin-right:4px; opacity:0.7;"></i> Deleted message';
+            } else if (lastMsg.image) {
                 lastMsgText = '<i class="fas fa-camera" style="font-size:12px; margin-right:4px; color:#8696a0;"></i> Photo';
+            } else if (lastMsg.audio) {
+                lastMsgText = '<i class="fas fa-microphone" style="font-size:12px; margin-right:4px; color:#8696a0;"></i> Voice message';
+            } else if (lastMsg.poll) {
+                lastMsgText = '<i class="fas fa-poll" style="font-size:12px; margin-right:4px; color:#8696a0;"></i> Poll';
             } else {
                 lastMsgText = escapeHtml(lastMsg.text || 'Message');
             }
@@ -1205,10 +1262,23 @@ function renderChatList(filter = '') {
         let lastMsgTime = lastMsg ? lastMsg.time : '';
         const unreadCount = unreadCounts[friendNumber] || 0;
         const unreadHTML = unreadCount > 0 ? `<div class="unread-badge">${unreadCount}</div>` : '';
+        const isPinned = pinnedChats.includes(friendNumber);
+        const isMuted = mutedChats.includes(friendNumber);
 
         const chatItem = document.createElement('div');
         chatItem.className = `chat-list-item ${activeChat === friendNumber ? 'active' : ''}`;
-        chatItem.onclick = () => openChat(friendNumber);
+        chatItem.setAttribute('data-chat', friendNumber);
+
+        chatItem.onclick = (e) => {
+            if (e.target.closest('.chat-item-chevron-btn')) return;
+            openChat(friendNumber);
+        };
+
+        chatItem.oncontextmenu = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openChatContextMenu(e, friendNumber);
+        };
         
         chatItem.innerHTML = `
             <div class="avatar"></div>
@@ -1219,12 +1289,208 @@ function renderChatList(filter = '') {
                 </div>
                 <div class="chat-subtitle-row">
                     <div class="chat-last-msg">${lastMsgPrefix}${lastMsgText}</div>
-                    ${unreadHTML}
+                    <div class="chat-icons-right">
+                        ${isMuted ? '<i class="fas fa-volume-mute wa-chat-indicator" title="Muted"></i>' : ''}
+                        ${isPinned ? '<i class="fas fa-thumbtack wa-chat-indicator" title="Pinned"></i>' : ''}
+                        ${unreadHTML}
+                        <button type="button" class="chat-item-chevron-btn" title="Chat menu" data-friend="${friendNumber}">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
+
+        const chevronBtn = chatItem.querySelector('.chat-item-chevron-btn');
+        if (chevronBtn) {
+            chevronBtn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openChatContextMenu(e, friendNumber);
+            };
+        }
+
         chatList.appendChild(chatItem);
     });
+}
+
+// ========================================================
+// CHAT ITEM CONTEXT MENU ENGINE (SIDEBAR)
+// ========================================================
+let currentContextMenuFriend = null;
+const chatItemContextMenu = document.getElementById('chat-item-context-menu');
+
+function openChatContextMenu(e, friendNumber) {
+    if (!chatItemContextMenu) return;
+    currentContextMenuFriend = friendNumber;
+
+    const isPinned = pinnedChats.includes(friendNumber);
+    const isMuted = mutedChats.includes(friendNumber);
+    const isArchived = archivedChats.includes(friendNumber);
+    const hasUnread = (unreadCounts[friendNumber] || 0) > 0;
+
+    const pinText = document.getElementById('ctx-chat-pin-text');
+    const muteText = document.getElementById('ctx-chat-mute-text');
+    const archiveText = document.getElementById('ctx-chat-archive-text');
+    const unreadText = document.getElementById('ctx-chat-unread-text');
+
+    if (pinText) pinText.innerText = isPinned ? 'Unpin chat' : 'Pin chat';
+    if (muteText) muteText.innerText = isMuted ? 'Unmute notifications' : 'Mute notifications';
+    if (archiveText) archiveText.innerText = isArchived ? 'Unarchive chat' : 'Archive chat';
+    if (unreadText) unreadText.innerText = hasUnread ? 'Mark as read' : 'Mark as unread';
+
+    chatItemContextMenu.style.display = 'block';
+
+    const menuWidth = 210;
+    const menuHeight = 260;
+    let x = e.clientX || 120;
+    let y = e.clientY || 120;
+
+    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 12;
+    if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 12;
+
+    chatItemContextMenu.style.left = `${Math.max(10, x)}px`;
+    chatItemContextMenu.style.top = `${Math.max(10, y)}px`;
+}
+
+function closeChatContextMenu() {
+    if (chatItemContextMenu) chatItemContextMenu.style.display = 'none';
+    currentContextMenuFriend = null;
+}
+
+document.addEventListener('click', (e) => {
+    if (chatItemContextMenu && !chatItemContextMenu.contains(e.target) && !e.target.closest('.chat-item-chevron-btn')) {
+        closeChatContextMenu();
+    }
+});
+
+const ctxChatPin = document.getElementById('ctx-chat-pin');
+if (ctxChatPin) {
+    ctxChatPin.onclick = () => {
+        const friend = currentContextMenuFriend;
+        closeChatContextMenu();
+        if (!friend) return;
+        if (pinnedChats.includes(friend)) {
+            pinnedChats = pinnedChats.filter(f => f !== friend);
+            showWhatsAppToast(`Unpinned +91 ${friend}`, 'info');
+        } else {
+            pinnedChats.push(friend);
+            showWhatsAppToast(`Pinned +91 ${friend} 📌`, 'info');
+        }
+        localStorage.setItem('quickchat_pinned_chats_' + (myNumber || ''), JSON.stringify(pinnedChats));
+        renderChatList();
+    };
+}
+
+const ctxChatMute = document.getElementById('ctx-chat-mute');
+if (ctxChatMute) {
+    ctxChatMute.onclick = () => {
+        const friend = currentContextMenuFriend;
+        closeChatContextMenu();
+        if (!friend) return;
+        if (mutedChats.includes(friend)) {
+            mutedChats = mutedChats.filter(f => f !== friend);
+            showWhatsAppToast(`Unmuted +91 ${friend}`, 'info');
+        } else {
+            mutedChats.push(friend);
+            showWhatsAppToast(`Muted notifications for +91 ${friend}`, 'info');
+        }
+        localStorage.setItem('quickchat_muted_chats_' + (myNumber || ''), JSON.stringify(mutedChats));
+        renderChatList();
+    };
+}
+
+const ctxChatArchive = document.getElementById('ctx-chat-archive');
+if (ctxChatArchive) {
+    ctxChatArchive.onclick = () => {
+        const friend = currentContextMenuFriend;
+        closeChatContextMenu();
+        if (!friend) return;
+        if (archivedChats.includes(friend)) {
+            archivedChats = archivedChats.filter(f => f !== friend);
+            showWhatsAppToast(`Unarchived +91 ${friend}`, 'info');
+        } else {
+            archivedChats.push(friend);
+            showWhatsAppToast(`Archived chat with +91 ${friend} 📦`, 'info');
+        }
+        localStorage.setItem('quickchat_archived_chats_' + (myNumber || ''), JSON.stringify(archivedChats));
+        renderChatList();
+    };
+}
+
+const ctxChatUnread = document.getElementById('ctx-chat-unread');
+if (ctxChatUnread) {
+    ctxChatUnread.onclick = () => {
+        const friend = currentContextMenuFriend;
+        closeChatContextMenu();
+        if (!friend) return;
+        if ((unreadCounts[friend] || 0) > 0) {
+            unreadCounts[friend] = 0;
+            showWhatsAppToast(`Marked as read`, 'info');
+        } else {
+            unreadCounts[friend] = 1;
+            showWhatsAppToast(`Marked as unread`, 'info');
+        }
+        renderChatList();
+    };
+}
+
+const ctxChatClear = document.getElementById('ctx-chat-clear');
+if (ctxChatClear) {
+    ctxChatClear.onclick = () => {
+        const friend = currentContextMenuFriend;
+        closeChatContextMenu();
+        if (!friend) return;
+        showWhatsAppDialog({
+            title: 'Clear this chat?',
+            message: `This will delete all messages in this chat with +91 ${friend} from your device.`,
+            confirmText: 'Clear messages',
+            cancelText: 'Cancel',
+            onConfirm: () => {
+                chats[friend] = [];
+                saveLocalCache();
+                if (activeChat === friend) renderMessages();
+                renderChatList();
+                showWhatsAppToast("Chat messages cleared.", "info");
+            }
+        });
+    };
+}
+
+const ctxChatDelete = document.getElementById('ctx-chat-delete');
+if (ctxChatDelete) {
+    ctxChatDelete.onclick = () => {
+        const friend = currentContextMenuFriend;
+        closeChatContextMenu();
+        if (!friend) return;
+        showWhatsAppDialog({
+            title: 'Delete this chat?',
+            message: `Delete chat with +91 ${friend}?\nMessages will only be removed from this device.`,
+            confirmText: 'Delete chat',
+            cancelText: 'Cancel',
+            isDanger: true,
+            onConfirm: () => {
+                delete chats[friend];
+                pinnedChats = pinnedChats.filter(f => f !== friend);
+                mutedChats = mutedChats.filter(f => f !== friend);
+                archivedChats = archivedChats.filter(f => f !== friend);
+                delete unreadCounts[friend];
+                localStorage.setItem('quickchat_pinned_chats_' + (myNumber || ''), JSON.stringify(pinnedChats));
+                localStorage.setItem('quickchat_muted_chats_' + (myNumber || ''), JSON.stringify(mutedChats));
+                localStorage.setItem('quickchat_archived_chats_' + (myNumber || ''), JSON.stringify(archivedChats));
+                saveLocalCache();
+
+                if (activeChat === friend) {
+                    activeChat = null;
+                    chatPanel.style.display = 'none';
+                    chatPanel.classList.remove('active-mobile');
+                    emptyState.style.display = 'flex';
+                }
+                renderChatList();
+                showWhatsAppToast("Chat deleted.", "info");
+            }
+        });
+    };
 }
 
 function openChat(friendNumber) {
@@ -1271,7 +1537,9 @@ let currentReplyTo = null; // { id, from, text }
 let activePlayingAudio = null;
 let currentPinnedMessage = null;
 let starredMessages = JSON.parse(localStorage.getItem('quickchat_starred_msgs') || '[]');
-let mutedChats = JSON.parse(localStorage.getItem('quickchat_muted_chats') || '[]');
+let mutedChats = JSON.parse((myNumber && localStorage.getItem('quickchat_muted_chats_' + myNumber)) || localStorage.getItem('quickchat_muted_chats') || '[]');
+let pinnedChats = JSON.parse((myNumber && localStorage.getItem('quickchat_pinned_chats_' + myNumber)) || localStorage.getItem('quickchat_pinned_chats') || '[]');
+let archivedChats = JSON.parse((myNumber && localStorage.getItem('quickchat_archived_chats_' + myNumber)) || localStorage.getItem('quickchat_archived_chats') || '[]');
 let userWallpaper = localStorage.getItem('quickchat_wallpaper') || 'default';
 
 // Apply saved wallpaper
@@ -1945,27 +2213,171 @@ function toggleReactionPicker(id) {
     }
 }
 
-function openMsgMenu(e, msgId, idx) {
-    e.stopPropagation();
-    const msg = chats[activeChat][idx];
-    if (!msg) return;
+let currentContextMenuMsg = null;
+const msgContextMenu = document.getElementById('msg-context-menu');
 
-    showWhatsAppDialog({
-        title: 'Message Options',
-        message: `Choose action for this message:\n"${(msg.text || 'Media').substring(0, 36)}"`,
-        confirmText: msg.starred ? 'Unstar ⭐' : 'Star ⭐',
-        cancelText: msg.from === myNumber ? 'Delete 🗑️' : 'Reply ↩️',
-        onConfirm: () => {
-            handleMessageAction('star', msgId);
-        },
-        onCancel: () => {
-            if (msg.from === myNumber) {
-                handleMessageAction('delete', msgId);
-            } else {
-                setReplyMessage(msg);
-            }
+function openMsgMenu(e, msgId, idx) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeChatContextMenu();
+    const msg = chats[activeChat] && chats[activeChat][idx];
+    if (!msg || !msgContextMenu) return;
+
+    currentContextMenuMsg = { msg, msgId, idx };
+
+    const isStarred = !!msg.starred;
+    const isPinned = !!msg.isPinned;
+    const isMe = msg.from === myNumber;
+    const hasText = !!msg.text && !msg.isDeleted;
+
+    const starText = document.getElementById('msg-ctx-star-text');
+    const pinText = document.getElementById('msg-ctx-pin-text');
+    const editItem = document.getElementById('msg-ctx-edit');
+    const copyItem = document.getElementById('msg-ctx-copy');
+
+    if (starText) starText.innerText = isStarred ? 'Unstar message' : 'Star message';
+    if (pinText) pinText.innerText = isPinned ? 'Unpin message' : 'Pin message';
+    if (editItem) editItem.style.display = (isMe && hasText) ? 'flex' : 'none';
+    if (copyItem) copyItem.style.display = hasText ? 'flex' : 'none';
+
+    msgContextMenu.style.display = 'block';
+
+    const menuWidth = 190;
+    const menuHeight = 230;
+    let x = e.clientX || 150;
+    let y = e.clientY || 150;
+
+    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 12;
+    if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 12;
+
+    msgContextMenu.style.left = `${Math.max(10, x)}px`;
+    msgContextMenu.style.top = `${Math.max(10, y)}px`;
+}
+
+function closeMsgContextMenu() {
+    if (msgContextMenu) msgContextMenu.style.display = 'none';
+    currentContextMenuMsg = null;
+}
+
+document.addEventListener('click', (e) => {
+    if (msgContextMenu && !msgContextMenu.contains(e.target) && !e.target.closest('.wa-msg-action-btn')) {
+        closeMsgContextMenu();
+    }
+});
+
+const msgCtxReply = document.getElementById('msg-ctx-reply');
+if (msgCtxReply) {
+    msgCtxReply.onclick = () => {
+        const target = currentContextMenuMsg;
+        closeMsgContextMenu();
+        if (target && target.msg) setReplyMessage(target.msg);
+    };
+}
+
+const msgCtxCopy = document.getElementById('msg-ctx-copy');
+if (msgCtxCopy) {
+    msgCtxCopy.onclick = () => {
+        const target = currentContextMenuMsg;
+        closeMsgContextMenu();
+        if (target && target.msg && target.msg.text) {
+            navigator.clipboard.writeText(target.msg.text).then(() => {
+                showWhatsAppToast("Message copied 📋", "success", 1800);
+            }).catch(() => {
+                showWhatsAppToast("Message copied 📋", "success", 1800);
+            });
         }
-    });
+    };
+}
+
+const msgCtxStar = document.getElementById('msg-ctx-star');
+if (msgCtxStar) {
+    msgCtxStar.onclick = () => {
+        const target = currentContextMenuMsg;
+        closeMsgContextMenu();
+        if (target) handleMessageAction('star', target.msgId);
+    };
+}
+
+const msgCtxPin = document.getElementById('msg-ctx-pin');
+if (msgCtxPin) {
+    msgCtxPin.onclick = () => {
+        const target = currentContextMenuMsg;
+        closeMsgContextMenu();
+        if (target) handleMessageAction('pin', target.msgId);
+    };
+}
+
+const msgCtxEdit = document.getElementById('msg-ctx-edit');
+if (msgCtxEdit) {
+    msgCtxEdit.onclick = () => {
+        const target = currentContextMenuMsg;
+        closeMsgContextMenu();
+        if (!target || !target.msg) return;
+        const oldText = target.msg.text;
+        const newText = window.prompt ? window.prompt("Edit message:", oldText) : null;
+        if (newText && newText.trim() && newText.trim() !== oldText) {
+            target.msg.text = newText.trim();
+            target.msg.isEdited = true;
+            socket.emit('message action', { action: 'edit', msgId: target.msgId, newText: target.msg.text, to: activeChat });
+            renderMessages();
+            saveLocalCache();
+            showWhatsAppToast("Message edited", "info");
+        }
+    };
+}
+
+const msgCtxDelete = document.getElementById('msg-ctx-delete');
+if (msgCtxDelete) {
+    msgCtxDelete.onclick = () => {
+        const target = currentContextMenuMsg;
+        closeMsgContextMenu();
+        if (!target || !target.msg) return;
+        const isMe = target.msg.from === myNumber;
+
+        if (isMe && !target.msg.isDeleted) {
+            showWhatsAppDialog({
+                title: 'Delete message?',
+                message: 'You can delete this message for everyone or delete it for yourself.',
+                confirmText: 'Delete for everyone',
+                extraText: 'Delete for me',
+                cancelText: 'Cancel',
+                isDanger: true,
+                onConfirm: () => {
+                    target.msg.isDeleted = true;
+                    target.msg.text = '🚫 This message was deleted';
+                    target.msg.image = null;
+                    target.msg.audio = null;
+                    socket.emit('message action', { action: 'delete', msgId: target.msgId, to: activeChat });
+                    saveLocalCache();
+                    renderMessages();
+                    renderChatList();
+                    showWhatsAppToast("Message deleted for everyone", "info");
+                },
+                onExtra: () => {
+                    chats[activeChat] = chats[activeChat].filter(m => m.id !== target.msgId);
+                    saveLocalCache();
+                    renderMessages();
+                    renderChatList();
+                    showWhatsAppToast("Message deleted for you", "info");
+                }
+            });
+        } else {
+            showWhatsAppDialog({
+                title: 'Delete message?',
+                message: 'Delete this message from your chat history?',
+                confirmText: 'Delete for me',
+                cancelText: 'Cancel',
+                isDanger: true,
+                onConfirm: () => {
+                    chats[activeChat] = chats[activeChat].filter(m => m.id !== target.msgId);
+                    saveLocalCache();
+                    renderMessages();
+                    renderChatList();
+                    showWhatsAppToast("Message deleted for you", "info");
+                }
+            });
+        }
+    };
 }
 
 // 11. Socket Listeners for Real-Time Messages & Actions
@@ -2827,7 +3239,17 @@ const chatHeaderMenu = document.getElementById('chat-header-menu');
 if (chatMoreBtn && chatHeaderMenu) {
     chatMoreBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        chatHeaderMenu.style.display = chatHeaderMenu.style.display === 'none' ? 'block' : 'none';
+        closeChatContextMenu();
+        closeMsgContextMenu();
+        const isClosed = chatHeaderMenu.style.display === 'none';
+        if (isClosed && activeChat) {
+            const isMuted = mutedChats.includes(activeChat);
+            const muteText = document.getElementById('chat-menu-mute-text');
+            const muteIcon = document.getElementById('chat-menu-mute-icon');
+            if (muteText) muteText.innerText = isMuted ? 'Unmute notifications' : 'Mute notifications';
+            if (muteIcon) muteIcon.className = isMuted ? 'fas fa-volume-up' : 'fas fa-volume-mute';
+        }
+        chatHeaderMenu.style.display = isClosed ? 'block' : 'none';
     });
     document.addEventListener('click', (e) => {
         if (chatHeaderMenu && !chatHeaderMenu.contains(e.target) && e.target !== chatMoreBtn) {
@@ -2845,7 +3267,8 @@ function toggleMuteActiveChat() {
         mutedChats.push(activeChat);
         showWhatsAppToast(`Muted notifications for +91 ${activeChat}`, 'info');
     }
-    localStorage.setItem('quickchat_muted_chats', JSON.stringify(mutedChats));
+    localStorage.setItem('quickchat_muted_chats_' + (myNumber || ''), JSON.stringify(mutedChats));
+    renderChatList();
 }
 
 const chatMenuContactInfo = document.getElementById('chat-menu-contact-info');
@@ -2909,6 +3332,18 @@ if (chatMenuExport) {
     };
 }
 
+const chatMenuClose = document.getElementById('chat-menu-close');
+if (chatMenuClose) {
+    chatMenuClose.onclick = () => {
+        if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
+        activeChat = null;
+        chatPanel.style.display = 'none';
+        chatPanel.classList.remove('active-mobile');
+        emptyState.style.display = 'flex';
+        renderChatList();
+    };
+}
+
 const chatMenuClear = document.getElementById('chat-menu-clear');
 if (chatMenuClear) {
     chatMenuClear.onclick = () => {
@@ -2935,15 +3370,24 @@ if (chatMenuDelete) {
     chatMenuDelete.onclick = () => {
         if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
         if (!activeChat) return;
+        const target = activeChat;
         showWhatsAppDialog({
             title: 'Delete this chat?',
-            message: `Delete chat with +91 ${activeChat}?`,
+            message: `Delete chat with +91 ${target}?\nMessages will only be removed from this device.`,
             confirmText: 'Delete chat',
             cancelText: 'Cancel',
+            isDanger: true,
             onConfirm: () => {
-                const target = activeChat;
                 delete chats[target];
+                pinnedChats = pinnedChats.filter(n => n !== target);
+                mutedChats = mutedChats.filter(n => n !== target);
+                archivedChats = archivedChats.filter(n => n !== target);
+                delete unreadCounts[target];
+                localStorage.setItem('quickchat_pinned_chats_' + (myNumber || ''), JSON.stringify(pinnedChats));
+                localStorage.setItem('quickchat_muted_chats_' + (myNumber || ''), JSON.stringify(mutedChats));
+                localStorage.setItem('quickchat_archived_chats_' + (myNumber || ''), JSON.stringify(archivedChats));
                 saveLocalCache();
+
                 activeChat = null;
                 chatPanel.style.display = 'none';
                 chatPanel.classList.remove('active-mobile');
