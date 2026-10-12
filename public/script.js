@@ -37,13 +37,14 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Auto-login from localStorage
-const savedNum = localStorage.getItem('quickchat_session_num');
-const savedPin = localStorage.getItem('quickchat_session_pin');
-
-if (savedNum && savedPin) {
-    socket.emit('login', { number: savedNum, pin: savedPin });
-}
+// Auto-login on socket connect and reconnect
+socket.on('connect', () => {
+    const num = myNumber || localStorage.getItem('quickchat_session_num');
+    const pin = localStorage.getItem('quickchat_session_pin');
+    if (num && pin) {
+        socket.emit('login', { number: num, pin: pin });
+    }
+});
 
 // Form view switching
 const loginFormView = document.getElementById('login-form-view');
@@ -113,9 +114,24 @@ if (logoutBtn) {
 }
 
 socket.on('login error', (msg) => {
-    alert(msg);
-    localStorage.removeItem('quickchat_session_num');
-    localStorage.removeItem('quickchat_session_pin');
+    console.warn("Login response:", msg);
+    if (msg.includes('Galat PIN')) {
+        alert(msg);
+        localStorage.removeItem('quickchat_session_num');
+        localStorage.removeItem('quickchat_session_pin');
+    } else if (msg.includes('Account nahi mila')) {
+        if (!myNumber) {
+            alert(msg);
+            localStorage.removeItem('quickchat_session_num');
+            localStorage.removeItem('quickchat_session_pin');
+        } else {
+            console.log("Ignored temporary re-auth error:", msg);
+        }
+    } else {
+        if (!myNumber) {
+            alert(msg);
+        }
+    }
 });
 
 socket.on('login success', (data) => {

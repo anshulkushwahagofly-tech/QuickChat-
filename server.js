@@ -53,14 +53,32 @@ function saveDB(db) {
     fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
 }
 
+// Ensure database connection is ready before querying
+async function ensureDBReady() {
+    if (MONGODB_URI && mongoose.connection.readyState !== 1) {
+        for (let i = 0; i < 30; i++) {
+            if (mongoose.connection.readyState === 1) {
+                useMongo = true;
+                return true;
+            }
+            await new Promise(r => setTimeout(r, 200));
+        }
+    }
+    return mongoose.connection.readyState === 1;
+}
+
 // Universal DB Functions
 async function getUser(number) {
-    if (useMongo) return await User.findOne({ number: number });
+    await ensureDBReady();
+    if (useMongo || mongoose.connection.readyState === 1) {
+        return await User.findOne({ number: number });
+    }
     return loadDB().users[number] ? { pin: loadDB().users[number].pin } : null;
 }
 
 async function createUser(number, pin) {
-    if (useMongo) {
+    await ensureDBReady();
+    if (useMongo || mongoose.connection.readyState === 1) {
         await User.create({ number, pin });
     } else {
         let db = loadDB();
@@ -70,7 +88,8 @@ async function createUser(number, pin) {
 }
 
 async function saveMessage(from, to, text, image, timestamp) {
-    if (useMongo) {
+    await ensureDBReady();
+    if (useMongo || mongoose.connection.readyState === 1) {
         await Message.create({ from, to, text, image, timestamp });
     } else {
         let db = loadDB();
@@ -80,7 +99,8 @@ async function saveMessage(from, to, text, image, timestamp) {
 }
 
 async function getUserMessages(number) {
-    if (useMongo) {
+    await ensureDBReady();
+    if (useMongo || mongoose.connection.readyState === 1) {
         const msgs = await Message.find({ $or: [{ from: number }, { to: number }] }).sort('timestamp');
         return msgs.map(m => ({ from: m.from, to: m.to, text: m.text, image: m.image, timestamp: m.timestamp.toISOString() }));
     } else {
@@ -89,7 +109,8 @@ async function getUserMessages(number) {
 }
 
 async function getAllUsers() {
-    if (useMongo) {
+    await ensureDBReady();
+    if (useMongo || mongoose.connection.readyState === 1) {
         const users = await User.find({}, 'number');
         return users.map(u => u.number);
     } else {
