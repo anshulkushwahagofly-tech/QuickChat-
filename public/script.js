@@ -146,6 +146,9 @@ if (savedNum) {
     }
 
     setConnectingState(true);
+    setTimeout(() => {
+        setConnectingState(false);
+    }, 2000);
 
     if (savedPin) {
         socket.emit('login', { number: savedNum, pin: savedPin });

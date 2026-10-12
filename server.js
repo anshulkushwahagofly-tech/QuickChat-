@@ -274,21 +274,26 @@ io.on('connection', (socket) => {
     // AUTO LOGIN (Session Persistence across reload)
     socket.on('auto login', async ({ number }) => {
         try {
-            if (!number) return;
+            if (!number) return socket.emit('login error', 'Invalid session number');
             const cleanNum = (number || '').trim();
-            const existingUser = await getUser(cleanNum);
-            if (existingUser) {
-                connectedUsers[cleanNum] = socket.id;
-                socketToPhone[socket.id] = cleanNum;
-                console.log(`User auto-reconnected: ${cleanNum}`);
-
-                const userMessages = await getUserMessages(cleanNum);
-                const allUsers = await getAllUsers();
-                socket.emit('login success', { number: cleanNum, history: userMessages, allUsers });
-                io.emit('all users', allUsers);
+            let existingUser = await getUser(cleanNum);
+            if (!existingUser) {
+                // If local storage has verified session but server restarted, re-create user
+                await createUser(cleanNum, 'OTP_VERIFIED_RECONNECT');
+                console.log(`Re-created user session on reconnect: ${cleanNum}`);
             }
+
+            connectedUsers[cleanNum] = socket.id;
+            socketToPhone[socket.id] = cleanNum;
+            console.log(`User auto-reconnected: ${cleanNum}`);
+
+            const userMessages = await getUserMessages(cleanNum);
+            const allUsers = await getAllUsers();
+            socket.emit('login success', { number: cleanNum, history: userMessages, allUsers });
+            io.emit('all users', allUsers);
         } catch (err) {
             console.error("Auto login error:", err);
+            socket.emit('login error', 'Auto login error');
         }
     });
 
