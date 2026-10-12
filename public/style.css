@@ -5,8 +5,188 @@
     font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
+/* ========================================================
+   THEME VARIABLES ENGINE (LIGHT MODE DEFAULT)
+   ======================================================== */
+:root {
+    --wa-bg-body: #eae6df;
+    --wa-bg-app: #ffffff;
+    --wa-bg-rail: #f0f2f5;
+    --wa-border-rail: #e9edef;
+    --wa-icon-rail: #54656f;
+    --wa-icon-rail-hover: #111b21;
+    --wa-rail-active-bg: rgba(0, 0, 0, 0.08);
+
+    --wa-bg-sidebar: #ffffff;
+    --wa-border-sidebar: #e9edef;
+    --wa-bg-header: #f0f2f5;
+    --wa-border-header: #e9edef;
+    --wa-title-header: #111b21;
+    --wa-icon-action: #54656f;
+
+    --wa-bg-search-wrap: #ffffff;
+    --wa-bg-search-box: #f0f2f5;
+    --wa-search-text: #111b21;
+    --wa-search-placeholder: #8696a0;
+    --wa-search-icon: #54656f;
+    --wa-border-search: #e9edef;
+
+    --wa-bg-pills-row: #ffffff;
+    --wa-bg-pill: #f0f2f5;
+    --wa-text-pill: #54656f;
+    --wa-bg-pill-hover: #e9edef;
+    --wa-bg-pill-active: #d9fdd3;
+    --wa-text-pill-active: #008069;
+    --wa-border-pill-active: #00a884;
+
+    --wa-bg-chat-list: #ffffff;
+    --wa-bg-chat-item: #ffffff;
+    --wa-bg-chat-hover: #f5f6f6;
+    --wa-bg-chat-active: #f0f2f5;
+    --wa-chat-title: #111b21;
+    --wa-chat-time: #667781;
+    --wa-chat-last-msg: #667781;
+    --wa-border-chat: #e9edef;
+
+    --wa-bg-promo: #f0f2f5;
+    --wa-border-promo: #e9edef;
+    --wa-text-promo: #008069;
+
+    --wa-bg-chat-panel: #efeae2;
+    --wa-bg-chat-header: #f0f2f5;
+    --wa-border-chat-header: #e9edef;
+    --wa-chat-header-title: #111b21;
+    --wa-chat-header-status: #667781;
+    --wa-chat-header-icons: #54656f;
+
+    --wa-bubble-sent: #d9fdd3;
+    --wa-bubble-sent-text: #111b21;
+    --wa-bubble-sent-time: #667781;
+    --wa-bubble-recv: #ffffff;
+    --wa-bubble-recv-text: #111b21;
+    --wa-bubble-recv-time: #667781;
+
+    --wa-bg-chat-input: #f0f2f5;
+    --wa-bg-input-pill: #ffffff;
+    --wa-input-text: #111b21;
+    --wa-input-placeholder: #8696a0;
+    --wa-input-icon: #54656f;
+
+    --wa-bg-empty-state: #f0f2f5;
+    --wa-title-empty-state: #41525d;
+    --wa-sub-empty-state: #667781;
+
+    --wa-bg-drawer-header: #008069;
+    --wa-text-drawer-header: #ffffff;
+    --wa-bg-drawer-body: #f0f2f5;
+    --wa-bg-drawer-card: #ffffff;
+    --wa-text-drawer-card: #111b21;
+    --wa-border-drawer: #e9edef;
+
+    --wa-bg-dropdown: #ffffff;
+    --wa-text-dropdown: #3b4a54;
+    --wa-bg-dropdown-hover: #f5f6f6;
+    --wa-border-dropdown: #e9edef;
+
+    --wa-bg-emoji: #ffffff;
+    --wa-border-emoji: #e9edef;
+    --wa-tab-emoji: #008069;
+    --wa-hover-emoji: #f0f2f5;
+}
+
+/* ========================================================
+   THEME VARIABLES ENGINE (DARK MODE - OFFICIAL WHATSAPP)
+   ======================================================== */
+html.dark-theme,
+body.dark-theme,
+.dark-theme {
+    --wa-bg-body: #0c1317;
+    --wa-bg-app: #0b141a;
+    --wa-bg-rail: #202c33;
+    --wa-border-rail: #2a3942;
+    --wa-icon-rail: #aebac1;
+    --wa-icon-rail-hover: #e9edef;
+    --wa-rail-active-bg: rgba(255, 255, 255, 0.12);
+
+    --wa-bg-sidebar: #111b21;
+    --wa-border-sidebar: #222e35;
+    --wa-bg-header: #111b21;
+    --wa-border-header: #222e35;
+    --wa-title-header: #e9edef;
+    --wa-icon-action: #aebac1;
+
+    --wa-bg-search-wrap: #111b21;
+    --wa-bg-search-box: #202c33;
+    --wa-search-text: #e9edef;
+    --wa-search-placeholder: #8696a0;
+    --wa-search-icon: #8696a0;
+    --wa-border-search: #222e35;
+
+    --wa-bg-pills-row: #111b21;
+    --wa-bg-pill: #202c33;
+    --wa-text-pill: #8696a0;
+    --wa-bg-pill-hover: #2a3942;
+    --wa-bg-pill-active: #0a332c;
+    --wa-text-pill-active: #00a884;
+    --wa-border-pill-active: #00a884;
+
+    --wa-bg-chat-list: #111b21;
+    --wa-bg-chat-item: #111b21;
+    --wa-bg-chat-hover: #202c33;
+    --wa-bg-chat-active: #2a3942;
+    --wa-chat-title: #e9edef;
+    --wa-chat-time: #8696a0;
+    --wa-chat-last-msg: #8696a0;
+    --wa-border-chat: #222e35;
+
+    --wa-bg-promo: #111b21;
+    --wa-border-promo: #222e35;
+    --wa-text-promo: #00a884;
+
+    --wa-bg-chat-panel: #0b141a;
+    --wa-bg-chat-header: #202c33;
+    --wa-border-chat-header: #222e35;
+    --wa-chat-header-title: #e9edef;
+    --wa-chat-header-status: #8696a0;
+    --wa-chat-header-icons: #aebac1;
+
+    --wa-bubble-sent: #005c4b;
+    --wa-bubble-sent-text: #e9edef;
+    --wa-bubble-sent-time: #8696a0;
+    --wa-bubble-recv: #202c33;
+    --wa-bubble-recv-text: #e9edef;
+    --wa-bubble-recv-time: #8696a0;
+
+    --wa-bg-chat-input: #202c33;
+    --wa-bg-input-pill: #2a3942;
+    --wa-input-text: #e9edef;
+    --wa-input-placeholder: #8696a0;
+    --wa-input-icon: #8696a0;
+
+    --wa-bg-empty-state: #222e35;
+    --wa-title-empty-state: #e9edef;
+    --wa-sub-empty-state: #8696a0;
+
+    --wa-bg-drawer-header: #202c33;
+    --wa-text-drawer-header: #e9edef;
+    --wa-bg-drawer-body: #111b21;
+    --wa-bg-drawer-card: #111b21;
+    --wa-text-drawer-card: #e9edef;
+    --wa-border-drawer: #222e35;
+
+    --wa-bg-dropdown: #233138;
+    --wa-text-dropdown: #d1d7db;
+    --wa-bg-dropdown-hover: #182229;
+    --wa-border-dropdown: #2a3942;
+
+    --wa-bg-emoji: #202c33;
+    --wa-border-emoji: #222e35;
+    --wa-tab-emoji: #00a884;
+    --wa-hover-emoji: #2a3942;
+}
+
 body {
-    background-color: #d1d7db;
+    background-color: var(--wa-bg-body);
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -452,31 +632,45 @@ body::before {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- APP CONTAINER (WHATSAPP WEB DESKTOP FRAME) --- */
+/* --- APP CONTAINER (WHATSAPP WEB FULL SCREEN FRAME) --- */
 #app-container {
-    width: 100%;
-    height: 100vh;
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
     display: flex;
-    background: #fff;
+    background: var(--wa-bg-app);
     position: relative;
     overflow: hidden;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
 }
 
 @media (min-width: 900px) {
     body {
-        background-color: #eae6df;
+        background-color: var(--wa-bg-body);
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        overflow: hidden !important;
     }
     body::before {
-        height: 127px;
-        background-color: #00a884;
+        display: none !important;
     }
     #app-container {
-        width: calc(100% - 38px);
-        max-width: 1600px;
-        height: calc(100vh - 38px);
-        box-shadow: 0 6px 18px rgba(11,20,26,.12);
-        border-radius: 0;
-        margin: 0 auto;
+        width: 100vw !important;
+        max-width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
     }
 }
 
@@ -1434,16 +1628,17 @@ body::before {
 .wa-nav-rail {
     width: 60px;
     height: 100%;
-    background-color: #202c33;
+    background-color: var(--wa-bg-rail);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
     padding: 10px 0 14px 0;
-    border-right: 1px solid #2a3942;
+    border-right: 1px solid var(--wa-border-rail);
     flex-shrink: 0;
     z-index: 20;
     user-select: none;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 .wa-rail-top, .wa-rail-bottom {
@@ -1458,7 +1653,7 @@ body::before {
     position: relative;
     background: transparent;
     border: none;
-    color: #aebac1;
+    color: var(--wa-icon-rail);
     width: 40px;
     height: 40px;
     border-radius: 50%;
@@ -1472,13 +1667,13 @@ body::before {
 }
 
 .wa-rail-item:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #e9edef;
+    background-color: var(--wa-rail-active-bg);
+    color: var(--wa-icon-rail-hover);
 }
 
 .wa-rail-item.active {
-    background-color: rgba(255, 255, 255, 0.12);
-    color: #e9edef;
+    background-color: var(--wa-rail-active-bg);
+    color: var(--wa-icon-rail-hover);
 }
 
 .wa-rail-badge {
@@ -1502,7 +1697,7 @@ body::before {
     height: 8px;
     background-color: #00a884;
     border-radius: 50%;
-    box-shadow: 0 0 0 2px #202c33;
+    box-shadow: 0 0 0 2px var(--wa-bg-rail);
 }
 
 .wa-meta-ai-btn {
@@ -1524,7 +1719,7 @@ body::before {
 .wa-meta-ai-icon .wa-ai-ring {
     width: 100%;
     height: 100%;
-    background-color: #202c33;
+    background-color: var(--wa-bg-rail);
     border-radius: 50%;
     display: block;
 }
@@ -1544,14 +1739,15 @@ body::before {
 /* --- SIDEBAR HEADER (BOLD TITLE + GREEN PLUS + 3-DOTS) --- */
 .wa-modern-header {
     height: 58px;
-    background-color: #111b21;
+    background-color: var(--wa-bg-header);
     padding: 10px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #222e35;
+    border-bottom: 1px solid var(--wa-border-header);
     position: relative;
     box-sizing: border-box;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 .wa-header-brand {
@@ -1562,9 +1758,10 @@ body::before {
 .wa-header-title {
     font-size: 21px;
     font-weight: 700;
-    color: #e9edef;
+    color: var(--wa-title-header);
     letter-spacing: 0.3px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    transition: color 0.2s;
 }
 
 .wa-header-actions {
@@ -1575,7 +1772,7 @@ body::before {
 
 .wa-header-green-plus {
     background-color: #00a884;
-    color: #111b21;
+    color: #ffffff;
     border: none;
     width: 36px;
     height: 36px;
@@ -1587,7 +1784,7 @@ body::before {
     cursor: pointer;
     transition: transform 0.15s, background-color 0.15s;
     outline: none;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .wa-header-green-plus:hover {
@@ -1598,7 +1795,7 @@ body::before {
 .wa-icon-action {
     background: transparent;
     border: none;
-    color: #aebac1;
+    color: var(--wa-icon-action);
     font-size: 18px;
     cursor: pointer;
     width: 36px;
@@ -1612,8 +1809,44 @@ body::before {
 }
 
 .wa-icon-action:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #e9edef;
+    background-color: var(--wa-rail-active-bg);
+    color: var(--wa-icon-rail-hover);
+}
+
+/* --- SEARCH CONTAINER & BOX --- */
+.search-container {
+    padding: 8px 12px;
+    background-color: var(--wa-bg-search-wrap);
+    border-bottom: 1px solid var(--wa-border-search);
+    display: block !important;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.search-box {
+    background-color: var(--wa-bg-search-box);
+    border-radius: 8px;
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: background-color 0.2s;
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    width: 100%;
+    outline: none;
+    font-size: 14px;
+    color: var(--wa-search-text);
+}
+
+.search-box input::placeholder {
+    color: var(--wa-search-placeholder);
+}
+
+.search-box i {
+    color: var(--wa-search-icon);
 }
 
 /* --- FILTER PILLS ROW ([All], [Unread], [Favorites], [Groups], [+]) --- */
@@ -1622,9 +1855,10 @@ body::before {
     align-items: center;
     gap: 8px;
     padding: 8px 14px 10px 14px;
-    background-color: #111b21;
+    background-color: var(--wa-bg-pills-row);
     overflow-x: auto;
     scrollbar-width: none;
+    transition: background-color 0.2s;
 }
 
 .wa-filter-pills-row::-webkit-scrollbar {
@@ -1632,8 +1866,8 @@ body::before {
 }
 
 .wa-pill {
-    background-color: #202c33;
-    color: #8696a0;
+    background-color: var(--wa-bg-pill);
+    color: var(--wa-text-pill);
     border: 1px solid transparent;
     border-radius: 20px;
     padding: 6px 14px;
@@ -1647,14 +1881,13 @@ body::before {
 }
 
 .wa-pill:hover {
-    background-color: #2a3942;
-    color: #e9edef;
+    background-color: var(--wa-bg-pill-hover);
 }
 
 .wa-pill.active {
-    background-color: #0a332c;
-    color: #00a884;
-    border: 1px solid #00a884;
+    background-color: var(--wa-bg-pill-active);
+    color: var(--wa-text-pill-active);
+    border: 1px solid var(--wa-border-pill-active);
     font-weight: 600;
 }
 
@@ -1662,6 +1895,67 @@ body::before {
     padding: 4px 10px;
     font-size: 16px;
     font-weight: 600;
+}
+
+/* --- SIDEBAR & CHAT LIST --- */
+.sidebar {
+    width: 400px;
+    min-width: 320px;
+    max-width: 460px;
+    height: 100%;
+    border-right: 1px solid var(--wa-border-sidebar);
+    display: flex;
+    flex-direction: column;
+    background: var(--wa-bg-sidebar);
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+    background-color: var(--wa-bg-chat-list);
+    transition: background-color 0.2s;
+}
+
+.chat-list-item {
+    display: flex;
+    padding: 0 16px;
+    cursor: pointer;
+    background-color: var(--wa-bg-chat-item);
+    transition: background 0.15s;
+    align-items: center;
+}
+
+.chat-list-item:hover {
+    background-color: var(--wa-bg-chat-hover);
+}
+
+.chat-list-item.active {
+    background-color: var(--wa-bg-chat-active);
+}
+
+.chat-title-row h4 {
+    color: var(--wa-chat-title);
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.chat-title-row .time {
+    font-size: 12px;
+    color: var(--wa-chat-time);
+}
+
+.chat-last-msg {
+    font-size: 13.5px;
+    color: var(--wa-chat-last-msg);
+}
+
+.chat-info {
+    flex: 1;
+    border-bottom: 1px solid var(--wa-border-chat);
 }
 
 /* --- EMPTY UNREAD STATE (Checkmark + Speech Bubble) --- */
@@ -1695,14 +1989,14 @@ body::before {
 .wa-unread-empty-title {
     font-size: 21px;
     font-weight: 600;
-    color: #e9edef;
+    color: var(--wa-title-header);
     margin-bottom: 6px;
     letter-spacing: 0.2px;
 }
 
 .wa-unread-empty-sub {
     font-size: 14px;
-    color: #8696a0;
+    color: var(--wa-text-pill);
     margin-bottom: 22px;
 }
 
@@ -1727,8 +2021,8 @@ body::before {
 
 /* --- BOTTOM PROMO BANNER (Get QuickChat for Windows) --- */
 .wa-bottom-promo-banner {
-    background-color: #111b21;
-    border-top: 1px solid #222e35;
+    background-color: var(--wa-bg-promo);
+    border-top: 1px solid var(--wa-border-promo);
     padding: 10px 16px;
     display: flex;
     align-items: center;
@@ -1741,7 +2035,7 @@ body::before {
 }
 
 .wa-bottom-promo-banner:hover {
-    background-color: #182229;
+    background-color: var(--wa-bg-chat-hover);
 }
 
 .wa-promo-icon {
@@ -1757,280 +2051,230 @@ body::before {
 }
 
 .wa-promo-text {
-    color: #00a884;
+    color: var(--wa-text-promo);
     font-size: 13.5px;
     font-weight: 500;
     letter-spacing: 0.2px;
 }
 
-/* ========================================================
-   FULL DARK MODE THEME SYSTEM (Official 2024/2025 WhatsApp)
-   ======================================================== */
-.dark-theme body,
-body.dark-theme {
-    background-color: #0c1317;
+/* --- CHAT PANEL (RIGHT ACTIVE CHAT) --- */
+.chat-panel {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--wa-bg-chat-panel);
+    position: relative;
+    overflow: hidden;
+    transition: background-color 0.2s;
 }
 
-.dark-theme body::before,
-body.dark-theme::before {
-    display: none;
+.chat-panel-header {
+    height: 58px;
+    background-color: var(--wa-bg-chat-header);
+    padding: 10px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--wa-border-chat-header);
+    z-index: 10;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
-.dark-theme #app-container,
-body.dark-theme #app-container {
-    background-color: #0b141a;
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+.chat-title h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wa-chat-header-title);
 }
 
-.dark-theme .sidebar,
-body.dark-theme .sidebar {
-    background-color: #111b21;
-    border-right: 1px solid #222e35;
+.chat-title .status {
+    font-size: 13px;
+    color: var(--wa-chat-header-status);
 }
 
-.dark-theme .search-container,
-body.dark-theme .search-container {
-    background-color: #111b21;
-    border-bottom: 1px solid #222e35;
+.chat-panel-header .header-icons i {
+    color: var(--wa-chat-header-icons);
 }
 
-.dark-theme .search-box,
-body.dark-theme .search-box {
-    background-color: #202c33;
+.chat-panel-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 5%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background-color: var(--wa-bg-chat-panel);
+    transition: background-color 0.2s;
 }
 
-.dark-theme .search-box input,
-body.dark-theme .search-box input {
-    color: #e9edef;
+.message.sent {
+    background-color: var(--wa-bubble-sent) !important;
+    color: var(--wa-bubble-sent-text) !important;
+    align-self: flex-end;
+    border-radius: 8px 8px 0px 8px !important;
 }
 
-.dark-theme .search-box input::placeholder,
-body.dark-theme .search-box input::placeholder {
-    color: #8696a0;
+.message.received {
+    background-color: var(--wa-bubble-recv) !important;
+    color: var(--wa-bubble-recv-text) !important;
+    align-self: flex-start;
+    border-radius: 8px 8px 8px 0px !important;
 }
 
-.dark-theme .search-box i,
-body.dark-theme .search-box i {
-    color: #8696a0;
+.message-time {
+    font-size: 11px;
+    color: var(--wa-bubble-sent-time);
 }
 
-.dark-theme .chat-list,
-body.dark-theme .chat-list {
-    background-color: #111b21;
+.chat-panel-input {
+    min-height: 62px;
+    background-color: var(--wa-bg-chat-input);
+    padding: 5px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 10;
+    transition: background-color 0.2s;
 }
 
-.dark-theme .chat-list-item,
-body.dark-theme .chat-list-item {
-    background-color: #111b21;
+.input-pill-wrapper {
+    flex: 1;
+    background-color: var(--wa-bg-input-pill);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+    transition: background-color 0.2s;
 }
 
-.dark-theme .chat-list-item:hover,
-body.dark-theme .chat-list-item:hover {
-    background-color: #202c33;
+.input-pill-wrapper input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 9px 12px;
+    font-size: 15px;
+    background: transparent;
+    color: var(--wa-input-text);
 }
 
-.dark-theme .chat-list-item.active,
-body.dark-theme .chat-list-item.active {
-    background-color: #2a3942;
+.input-pill-wrapper input::placeholder {
+    color: var(--wa-input-placeholder);
 }
 
-.dark-theme .chat-title-row h4,
-body.dark-theme .chat-title-row h4 {
-    color: #e9edef;
+.input-pill-wrapper .icon-btn {
+    color: var(--wa-input-icon);
 }
 
-.dark-theme .chat-title-row .time,
-body.dark-theme .chat-title-row .time {
-    color: #8696a0;
-}
-
-.dark-theme .chat-last-msg,
-body.dark-theme .chat-last-msg {
-    color: #8696a0;
-}
-
-.dark-theme .chat-info,
-body.dark-theme .chat-info {
-    border-bottom: 1px solid #222e35;
-}
-
-.dark-theme .dropdown-menu,
-body.dark-theme .dropdown-menu {
-    background-color: #233138;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
-}
-
-.dark-theme .menu-item,
-body.dark-theme .menu-item {
-    color: #d1d7db;
-}
-
-.dark-theme .menu-item:hover,
-body.dark-theme .menu-item:hover {
-    background-color: #182229;
-}
-
-.dark-theme .menu-item i,
-body.dark-theme .menu-item i {
-    color: #8696a0;
-}
-
-.dark-theme .menu-divider,
-body.dark-theme .menu-divider {
-    background-color: #2a3942;
-}
-
-.dark-theme .chat-panel-header,
-body.dark-theme .chat-panel-header {
-    background-color: #202c33;
-    border-bottom: 1px solid #222e35;
-}
-
-.dark-theme .chat-title h3,
-body.dark-theme .chat-title h3 {
-    color: #e9edef;
-}
-
-.dark-theme .chat-title .status,
-body.dark-theme .chat-title .status {
-    color: #8696a0;
-}
-
-.dark-theme .chat-panel-messages,
-body.dark-theme .chat-panel-messages {
-    background-color: #0b141a;
-    background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 20px 20px;
-}
-
-.dark-theme .message.sent,
-body.dark-theme .message.sent {
-    background-color: #005c4b !important;
-    color: #e9edef;
-}
-
-.dark-theme .message.received,
-body.dark-theme .message.received {
-    background-color: #202c33 !important;
-    color: #e9edef;
-}
-
-.dark-theme .message-content,
-body.dark-theme .message-content {
-    color: #e9edef;
-}
-
-.dark-theme .message-time,
-body.dark-theme .message-time {
-    color: #8696a0;
-}
-
-.dark-theme .chat-panel-input,
-body.dark-theme .chat-panel-input {
-    background-color: #202c33;
-}
-
-.dark-theme .input-pill-wrapper,
-body.dark-theme .input-pill-wrapper {
-    background-color: #2a3942;
-}
-
-.dark-theme .input-pill-wrapper input,
-body.dark-theme .input-pill-wrapper input {
-    color: #e9edef;
-}
-
-.dark-theme .input-pill-wrapper input::placeholder,
-body.dark-theme .input-pill-wrapper input::placeholder {
-    color: #8696a0;
-}
-
-.dark-theme .empty-chat-state,
-body.dark-theme .empty-chat-state {
-    background-color: #222e35;
+/* --- EMPTY CHAT STATE (DEFAULT DESKTOP RIGHT PANEL) --- */
+.empty-chat-state {
+    flex: 1;
+    height: 100%;
+    background-color: var(--wa-bg-empty-state);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     border-bottom: 6px solid #00a884;
+    text-align: center;
+    padding: 28px;
+    transition: background-color 0.2s;
 }
 
-.dark-theme .empty-chat-state h2,
-body.dark-theme .empty-chat-state h2 {
-    color: #e9edef;
+.empty-chat-state h2 {
+    color: var(--wa-title-empty-state);
 }
 
-.dark-theme .empty-chat-state p,
-body.dark-theme .empty-chat-state p {
-    color: #8696a0;
+.empty-chat-state p {
+    color: var(--wa-sub-empty-state);
 }
 
-.dark-theme .empty-state-lock,
-body.dark-theme .empty-state-lock {
-    color: #8696a0;
+.empty-state-lock {
+    color: var(--wa-sub-empty-state);
 }
 
-.dark-theme .wa-drawer-header,
-body.dark-theme .wa-drawer-header {
-    background-color: #202c33;
-    color: #e9edef;
+/* --- DROPDOWN MENU --- */
+.dropdown-menu {
+    position: absolute;
+    top: 54px;
+    right: 12px;
+    background: var(--wa-bg-dropdown);
+    border: 1px solid var(--wa-border-dropdown);
+    border-radius: 6px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    min-width: 200px;
+    z-index: 1000;
+    padding: 8px 0;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
-.dark-theme .wa-drawer-body,
-body.dark-theme .wa-drawer-body {
-    background-color: #111b21;
+.menu-item {
+    color: var(--wa-text-dropdown);
 }
 
-.dark-theme .wa-profile-card,
-body.dark-theme .wa-profile-card {
-    background-color: #111b21;
-    border-bottom: 1px solid #222e35;
+.menu-item:hover {
+    background-color: var(--wa-bg-dropdown-hover);
 }
 
-.dark-theme .wa-profile-val-row,
-body.dark-theme .wa-profile-val-row {
-    color: #e9edef;
+.menu-divider {
+    height: 1px;
+    background-color: var(--wa-border-dropdown);
+    margin: 6px 0;
 }
 
-.dark-theme .wa-profile-hint,
-body.dark-theme .wa-profile-hint {
-    color: #8696a0;
+/* --- WHATSAPP DRAWERS --- */
+.wa-drawer-header {
+    background-color: var(--wa-bg-drawer-header);
+    color: var(--wa-text-drawer-header);
 }
 
-.dark-theme .wa-drawer-direct-add,
-body.dark-theme .wa-drawer-direct-add {
-    background-color: #111b21;
-    border-bottom: 1px solid #222e35;
+.wa-drawer-body {
+    background-color: var(--wa-bg-drawer-body);
 }
 
-.dark-theme .wa-direct-input-row,
-body.dark-theme .wa-direct-input-row {
-    background-color: #202c33;
+.wa-profile-card {
+    background: var(--wa-bg-drawer-card);
+    border-bottom: 1px solid var(--wa-border-drawer);
 }
 
-.dark-theme .wa-direct-prefix,
-body.dark-theme .wa-direct-prefix {
-    color: #8696a0;
+.wa-profile-val-row {
+    color: var(--wa-text-drawer-card);
 }
 
-.dark-theme .wa-direct-input-row input,
-body.dark-theme .wa-direct-input-row input {
-    color: #e9edef;
+.wa-profile-hint {
+    color: var(--wa-text-pill);
 }
 
-.dark-theme .wa-emoji-picker,
-body.dark-theme .wa-emoji-picker {
-    background-color: #202c33;
-    border-top: 1px solid #222e35;
+.wa-drawer-direct-add {
+    background-color: var(--wa-bg-sidebar);
+    border-bottom: 1px solid var(--wa-border-sidebar);
 }
 
-.dark-theme .wa-emoji-tabs,
-body.dark-theme .wa-emoji-tabs {
-    border-bottom: 1px solid #2a3942;
+.wa-direct-input-row {
+    background-color: var(--wa-bg-search-box);
 }
 
-.dark-theme .wa-emoji-tab,
-body.dark-theme .wa-emoji-tab {
-    color: #00a884;
+.wa-direct-prefix {
+    color: var(--wa-text-pill);
 }
 
-.dark-theme .wa-emoji-item:hover,
-body.dark-theme .wa-emoji-item:hover {
-    background-color: #2a3942;
+.wa-direct-input-row input {
+    color: var(--wa-search-text);
+}
+
+/* --- EMOJI PICKER POPUP --- */
+.wa-emoji-picker {
+    background: var(--wa-bg-emoji);
+    border-top: 1px solid var(--wa-border-emoji);
+}
+
+.wa-emoji-tabs {
+    border-bottom: 1px solid var(--wa-border-emoji);
+}
+
+.wa-emoji-tab {
+    color: var(--wa-tab-emoji);
+}
+
+.wa-emoji-item:hover {
+    background-color: var(--wa-hover-emoji);
 }

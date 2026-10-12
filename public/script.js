@@ -110,14 +110,21 @@ function setConnectingState(isConnecting) {
 
 function saveLocalCache() {
     try {
-        localStorage.setItem('quickchat_cached_chats', JSON.stringify(chats));
-        localStorage.setItem('quickchat_cached_users', JSON.stringify(allRegisteredUsers));
+        if (myNumber) {
+            localStorage.setItem('quickchat_cached_chats_' + myNumber, JSON.stringify(chats));
+        }
     } catch(e) {}
 }
 
 // Instant Session Restoration (0ms delay, no white flash or connecting screen on reload)
 const savedNum = localStorage.getItem('quickchat_session_num');
 const savedPin = localStorage.getItem('quickchat_session_pin');
+
+// Clear obsolete legacy shared cache keys
+try {
+    localStorage.removeItem('quickchat_cached_chats');
+    localStorage.removeItem('quickchat_cached_users');
+} catch(e) {}
 
 if (savedNum) {
     myNumber = savedNum;
@@ -130,16 +137,14 @@ if (savedNum) {
     if (myNumberPreview) myNumberPreview.innerText = '+91 ' + myNumber;
     if (myDisplayNumber) myDisplayNumber.innerText = "QuickChat";
 
-    // Load cached chats and contacts immediately (Instant 0ms display)
+    // Load private cached chats for this specific user
     try {
-        const cachedChats = localStorage.getItem('quickchat_cached_chats');
+        const cachedChats = localStorage.getItem('quickchat_cached_chats_' + savedNum);
         if (cachedChats) {
             chats = JSON.parse(cachedChats);
             renderChatList();
-        }
-        const cachedUsers = localStorage.getItem('quickchat_cached_users');
-        if (cachedUsers) {
-            allRegisteredUsers = JSON.parse(cachedUsers);
+        } else {
+            chats = {};
         }
     } catch (e) {
         console.warn("Local cache parse err:", e);
@@ -978,40 +983,18 @@ function renderChatList(filter = '') {
     }
 
     if (filteredFriends.length === 0 && friendNumbers.length === 0) {
-        // WhatsApp interactive first-time state with contacts
+        // WhatsApp authentic clean empty chat state without leaking any contacts
         const emptyPrompt = document.createElement('div');
-        emptyPrompt.style.padding = '24px 16px';
-        emptyPrompt.style.textAlign = 'center';
-        
-        const otherUsers = allRegisteredUsers.filter(u => u !== myNumber);
-        let contactsSnippet = '';
-        if (otherUsers.length > 0) {
-            contactsSnippet = `
-                <div style="text-align:left; margin-top:20px; border-top:1px solid #f0f2f5; padding-top:14px;">
-                    <div style="font-size:12px; font-weight:600; color:#008069; margin-bottom:8px; text-transform:uppercase;">QuickChat Contacts:</div>
-                    ${otherUsers.slice(0, 5).map(u => `
-                        <div class="contact-card" style="padding:8px 6px;" onclick="startChat('${u}')">
-                            <div class="avatar" style="width:38px; height:38px;"></div>
-                            <div class="contact-info">
-                                <div class="contact-number">+91 ${u}</div>
-                            </div>
-                            <span class="chat-action-badge"><i class="fas fa-comment"></i> Chat</span>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
+        emptyPrompt.className = 'wa-unread-empty-wrapper';
         emptyPrompt.innerHTML = `
-            <div style="width:52px; height:52px; border-radius:50%; background:#e8f5e9; color:#00a884; display:flex; align-items:center; justify-content:center; margin:0 auto 12px auto; font-size:24px;">
-                <i class="fas fa-comments"></i>
+            <div style="width:60px; height:60px; border-radius:50%; background:var(--wa-bg-pill-active); color:var(--wa-text-pill-active); display:flex; align-items:center; justify-content:center; margin:0 auto 16px auto; font-size:26px;">
+                <i class="far fa-comments"></i>
             </div>
-            <h4 style="color:#e9edef; margin-bottom:6px; font-weight:600; font-size:15.5px;">Welcome to QuickChat</h4>
-            <p style="color:#8696a0; font-size:13px; line-height:1.45; margin-bottom:16px;">Apne kisi bhi dost ke sath chat shuru karein!</p>
-            <button id="start-first-chat-btn" style="background:#00a884; color:white; border:none; padding:9px 20px; border-radius:20px; font-size:13.5px; font-weight:600; cursor:pointer; box-shadow:0 2px 5px rgba(0,168,132,0.25);">
+            <div class="wa-unread-empty-title">No chats yet</div>
+            <div class="wa-unread-empty-sub">Tap the green + button to start a conversation with any number.</div>
+            <button class="wa-view-all-chats-btn" id="start-first-chat-btn" style="background:#00a884; color:white; padding:8px 22px; border-radius:20px; margin-top:10px; text-decoration:none; font-weight:600;">
                 <i class="fas fa-plus" style="margin-right:6px;"></i> Start New Chat
             </button>
-            ${contactsSnippet}
         `;
         chatList.appendChild(emptyPrompt);
 
