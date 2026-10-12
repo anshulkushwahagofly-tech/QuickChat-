@@ -68,6 +68,24 @@ function createPeerConnection() {
     };
 }
 
+function recordCallLog(contactNumber, isOutgoing, isVideo) {
+    const num = (typeof myNumber !== 'undefined' && myNumber) ? myNumber : localStorage.getItem('quickchat_session_num');
+    if (!num || !contactNumber) return;
+    try {
+        const key = 'quickchat_call_history_' + num;
+        const history = JSON.parse(localStorage.getItem(key) || '[]');
+        const timeNow = (typeof formatTime === 'function') ? formatTime(new Date()) : new Date().toLocaleTimeString();
+        history.unshift({
+            name: '+91 ' + contactNumber,
+            type: isOutgoing ? 'outgoing' : 'incoming',
+            time: timeNow,
+            isVideo: !!isVideo
+        });
+        if (history.length > 50) history.pop();
+        localStorage.setItem(key, JSON.stringify(history));
+    } catch(e) {}
+}
+
 async function startCall(video) {
     if (!activeChat) {
         if (typeof showWhatsAppToast === 'function') {
@@ -76,6 +94,7 @@ async function startCall(video) {
         return;
     }
     isVideoCall = video;
+    recordCallLog(activeChat, true, video);
     
     const success = await initStream(video);
     if (!success) return;
@@ -101,6 +120,7 @@ if(audioCallBtn) audioCallBtn.addEventListener('click', () => startCall(false));
 socket.on('call-made', async (data) => {
     currentCaller = data.from;
     isVideoCall = data.isVideo;
+    recordCallLog(data.from, false, data.isVideo);
     callerNameDisplay.innerText = data.from;
     incomingCallModal.style.display = 'flex';
     

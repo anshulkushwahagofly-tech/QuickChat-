@@ -456,6 +456,8 @@ function doVerifyOtp() {
     }
 
     const completeLogin = (uid) => {
+        chats = {};
+        activeChat = null;
         localStorage.setItem('quickchat_session_num', window.currentOtpPhone);
         localStorage.removeItem('quickchat_session_pin');
         socket.emit('firebase otp login', { number: window.currentOtpPhone, uid: uid || ('demo_' + Date.now()) });
@@ -611,6 +613,8 @@ function doPinLogin() {
     const num = document.getElementById('login-number').value.trim();
     const pin = document.getElementById('login-pin').value.trim();
     if (num && pin) {
+        chats = {};
+        activeChat = null;
         localStorage.setItem('quickchat_session_num', num);
         localStorage.setItem('quickchat_session_pin', pin);
         socket.emit('login', { number: num, pin: pin });
@@ -731,6 +735,8 @@ if (logoutBtn) {
             cancelText: 'Cancel',
             isDanger: true,
             onConfirm: () => {
+                chats = {};
+                activeChat = null;
                 localStorage.removeItem('quickchat_session_num');
                 localStorage.removeItem('quickchat_session_pin');
                 if (myNumber) {
@@ -779,48 +785,48 @@ socket.on('login success', (data) => {
     document.documentElement.classList.add('user-logged-in');
 
     myNumber = data.number;
-    allRegisteredUsers = data.allUsers || [];
-    
-    // Preserve any existing / cached contacts so added numbers are NEVER wiped out
-    const mergedChats = {};
+    chats = {}; // Fresh isolated chat store for this specific user session
+
+    // Load this user's private cached chats (if any)
     try {
         const raw = localStorage.getItem('quickchat_cached_chats_' + myNumber);
-        if (raw) Object.assign(mergedChats, JSON.parse(raw));
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === 'object') {
+                Object.assign(chats, parsed);
+            }
+        }
     } catch(e) {}
-    if (chats && typeof chats === 'object') {
-        Object.keys(chats).forEach(k => {
-            if (!mergedChats[k]) mergedChats[k] = chats[k];
+
+    // Load history from database strictly belonging to this user
+    if (Array.isArray(data.history)) {
+        data.history.forEach(msg => {
+            const friend = (msg.from === myNumber) ? msg.to : msg.from;
+            if (!friend) return;
+            if (!chats[friend]) chats[friend] = [];
+            const timeStr = formatTime(new Date(msg.timestamp));
+            const exists = chats[friend].some(m => m.id === msg.id || (m.time === timeStr && m.text === msg.text && m.from === msg.from));
+            if (!exists) {
+                chats[friend].push({
+                    id: msg.id || ('msg_' + Date.now()),
+                    from: msg.from,
+                    to: msg.to,
+                    text: msg.text,
+                    image: msg.image,
+                    audio: msg.audio,
+                    location: msg.location,
+                    poll: msg.poll,
+                    replyTo: msg.replyTo,
+                    reactions: msg.reactions || {},
+                    isEdited: msg.isEdited || false,
+                    isDeleted: msg.isDeleted || false,
+                    isPinned: msg.isPinned || false,
+                    starred: msg.starred || false,
+                    time: timeStr
+                });
+            }
         });
     }
-
-    // Load history from database and merge
-    data.history.forEach(msg => {
-        const friend = (msg.from === myNumber) ? msg.to : msg.from;
-        if (!mergedChats[friend]) mergedChats[friend] = [];
-        const timeStr = formatTime(new Date(msg.timestamp));
-        const exists = mergedChats[friend].some(m => m.id === msg.id || (m.time === timeStr && m.text === msg.text && m.from === msg.from));
-        if (!exists) {
-            mergedChats[friend].push({
-                id: msg.id || ('msg_' + Date.now()),
-                from: msg.from,
-                to: msg.to,
-                text: msg.text,
-                image: msg.image,
-                audio: msg.audio,
-                location: msg.location,
-                poll: msg.poll,
-                replyTo: msg.replyTo,
-                reactions: msg.reactions || {},
-                isEdited: msg.isEdited || false,
-                isDeleted: msg.isDeleted || false,
-                isPinned: msg.isPinned || false,
-                starred: msg.starred || false,
-                time: timeStr
-            });
-        }
-    });
-
-    chats = mergedChats;
 
     // Ensure session credentials remain safely saved in localStorage
     const pinInput = document.getElementById('login-pin');
@@ -840,10 +846,8 @@ socket.on('login success', (data) => {
     saveLocalCache();
 });
 
-socket.on('all users', (users) => {
-    allRegisteredUsers = users || [];
-    saveLocalCache();
-    renderDrawerContacts();
+socket.on('all users', () => {
+    // Ignored - private data isolation enabled
 });
 
 // --- WHATSAPP SLIDING DRAWERS (NEW CHAT & PROFILE) ---
@@ -914,25 +918,25 @@ if (drawerStartChatBtn && drawerDirectPhone) {
 function renderDrawerContacts(filter = '') {
     if (!drawerContactsList) return;
     drawerContactsList.innerHTML = '';
-    const otherUsers = allRegisteredUsers.filter(u => u !== myNumber && u.includes(filter));
+    const myContacts = Object.keys(chats).filter(u => u !== myNumber && u.includes(filter));
 
-    if (otherUsers.length === 0) {
+    if (myContacts.length === 0) {
         drawerContactsList.innerHTML = `
-            <div style="padding: 30px 20px; text-align: center; color: #8696a0; font-size: 13.5px;">
-                <p>Abhi koi aur user nahi mila.<br>Aap upar number daal kar seedha chat shuru karein!</p>
+            <div style="padding: 24px 16px; text-align: center; color: var(--wa-text-pill); font-size: 13.5px;">
+                <p>Type any 10-digit mobile number above to start a direct chat.</p>
             </div>
         `;
         return;
     }
 
-    otherUsers.forEach(num => {
+    myContacts.forEach(num => {
         const item = document.createElement('div');
         item.className = 'contact-card';
         item.innerHTML = `
             <div class="avatar" style="width:44px; height:44px;"></div>
             <div class="contact-info">
                 <div class="contact-number">+91 ${num}</div>
-                <div class="contact-sub">Available on QuickChat</div>
+                <div class="contact-sub">Direct Chat</div>
             </div>
             <span class="chat-action-badge"><i class="fas fa-comment"></i> Chat</span>
         `;
@@ -2457,13 +2461,24 @@ function renderCallsDrawer() {
     if (!container) return;
     container.innerHTML = '';
 
-    const mockCalls = [
-        { name: '+91 9876543210', type: 'outgoing', time: 'Yesterday, 8:15 pm', isVideo: false },
-        { name: '+91 9123456789', type: 'incoming', time: '10 October, 11:20 am', isVideo: true },
-        { name: '+91 9988776655', type: 'outgoing', time: '8 October, 5:45 pm', isVideo: false }
-    ];
+    let userCalls = [];
+    try {
+        const raw = localStorage.getItem('quickchat_call_history_' + myNumber);
+        if (raw) userCalls = JSON.parse(raw);
+    } catch(e) {}
 
-    mockCalls.forEach(call => {
+    if (!userCalls || userCalls.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 40px 16px; text-align: center; color: var(--wa-text-pill); font-size: 13.5px;">
+                <div style="font-size: 38px; color: #8696a0; margin-bottom: 12px;"><i class="fas fa-phone-slash"></i></div>
+                <div style="font-weight:600; font-size:16px; margin-bottom:6px; color:var(--wa-text-drawer-card);">No call history yet</div>
+                <p>To place a call, open a chat with any contact and tap the phone or camera icon.</p>
+            </div>
+        `;
+        return;
+    }
+
+    userCalls.forEach(call => {
         const item = document.createElement('div');
         item.className = 'wa-call-item';
         const arrowIcon = call.type === 'outgoing' 
@@ -2474,13 +2489,23 @@ function renderCallsDrawer() {
         item.innerHTML = `
             <div class="avatar" style="width:44px; height:44px;"></div>
             <div style="flex:1;">
-                <div style="font-size:15px; font-weight:600; color:var(--wa-text-drawer-card);">${call.name}</div>
-                <div style="font-size:12.5px; color:var(--wa-text-pill); margin-top:2px;">${arrowIcon} ${call.time}</div>
+                <div style="font-size:15px; font-weight:600; color:var(--wa-text-drawer-card);">${escapeHtml(call.name)}</div>
+                <div style="font-size:12.5px; color:var(--wa-text-pill); margin-top:2px;">${arrowIcon} ${escapeHtml(call.time)}</div>
             </div>
             <button class="icon-btn" style="color:#00a884; font-size:16px;" title="Call back">
                 <i class="fas ${callActionIcon}"></i>
             </button>
         `;
+        const callBtn = item.querySelector('.icon-btn');
+        if (callBtn) {
+            callBtn.onclick = () => {
+                const num = (call.name || '').replace(/[^0-9]/g, '');
+                if (num) {
+                    startChat(num);
+                    if (typeof startCall === 'function') startCall(call.isVideo);
+                }
+            };
+        }
         container.appendChild(item);
     });
 }

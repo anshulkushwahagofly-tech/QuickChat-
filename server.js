@@ -244,9 +244,7 @@ io.on('connection', (socket) => {
             socketToPhone[socket.id] = cleanNum;
             console.log(`Real user signed up: ${cleanNum}`);
             
-            const allUsers = await getAllUsers();
-            socket.emit('login success', { number: cleanNum, history: [], allUsers });
-            io.emit('all users', allUsers);
+            socket.emit('login success', { number: cleanNum, history: [] });
         } catch (err) {
             console.error("Signup error:", err);
             socket.emit('login error', 'Server error. Please try again.');
@@ -271,9 +269,7 @@ io.on('connection', (socket) => {
             console.log(`User logged in: ${number}`);
             
             const userMessages = await getUserMessages(number);
-            const allUsers = await getAllUsers();
-            socket.emit('login success', { number, history: userMessages, allUsers });
-            io.emit('all users', allUsers);
+            socket.emit('login success', { number, history: userMessages });
         } catch (err) {
             console.error("Login error:", err);
             socket.emit('login error', 'Server error. Please try again.');
@@ -302,9 +298,7 @@ io.on('connection', (socket) => {
             socketToPhone[socket.id] = cleanNum;
 
             const userMessages = await getUserMessages(cleanNum);
-            const allUsers = await getAllUsers();
-            socket.emit('login success', { number: cleanNum, history: userMessages, allUsers });
-            io.emit('all users', allUsers);
+            socket.emit('login success', { number: cleanNum, history: userMessages });
         } catch (err) {
             console.error("Firebase OTP Login error:", err);
             socket.emit('login error', 'OTP verification server error.');
@@ -328,9 +322,7 @@ io.on('connection', (socket) => {
             console.log(`User auto-reconnected: ${cleanNum}`);
 
             const userMessages = await getUserMessages(cleanNum);
-            const allUsers = await getAllUsers();
-            socket.emit('login success', { number: cleanNum, history: userMessages, allUsers });
-            io.emit('all users', allUsers);
+            socket.emit('login success', { number: cleanNum, history: userMessages });
         } catch (err) {
             console.error("Auto login error:", err);
             socket.emit('login error', 'Auto login error');
@@ -338,12 +330,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('get all users', async () => {
-        try {
-            const allUsers = await getAllUsers();
-            socket.emit('all users', allUsers);
-        } catch (err) {
-            console.error("Error getting users:", err);
-        }
+        socket.emit('all users', []);
     });
 
     // Handle rich private messages (text, image, audio voice message, location, poll, replyTo)

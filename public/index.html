@@ -348,7 +348,7 @@
                             <button id="drawer-start-chat-btn"><i class="fas fa-arrow-right"></i></button>
                         </div>
                     </div>
-                    <div class="wa-drawer-contacts-title">CONTACTS ON QUICKCHAT</div>
+                    <div class="wa-drawer-contacts-title">YOUR CONTACTS</div>
                     <div class="wa-drawer-contacts-list" id="drawer-contacts-list">
                         <!-- Loaded dynamically -->
                     </div>
@@ -747,14 +747,12 @@
                     <input type="text" id="modal-chat-number" placeholder="Enter 10-digit number" maxlength="10" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                     <button id="modal-start-chat-btn"><i class="fas fa-paper-plane"></i> Chat</button>
                 </div>
-                
-                <div class="contacts-section">
-                    <h4>QuickChat Users (Contacts)</h4>
-                    <div id="contacts-list" class="contacts-list">
-                        <p style="color:#8696a0; font-size:13px; text-align:center; padding:15px;">Loading users...</p>
-                    </div>
+                <div class="contacts-section" style="display:none;">
+                    <div id="contacts-list" class="contacts-list"></div>
                 </div>
             </div>
+        </div>
+    </div>
     <!-- WhatsApp Fullscreen Status Stories Viewer Modal -->
     <div id="status-viewer-modal" class="wa-status-viewer-overlay" style="display:none;">
         <div class="wa-status-viewer-container">
@@ -889,7 +887,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=41"></script>
-    <script src="webrtc.js?v=4"></script>
+    <script src="script.js?v=42"></script>
+    <script src="webrtc.js?v=5"></script>
 </body>
 </html>
