@@ -71,22 +71,42 @@ const countdownTimer = document.getElementById('countdown-timer');
 const loginFormView = document.getElementById('login-form-view');
 const loginBtn = document.getElementById('login-btn');
 
+// Robust Step Switcher to prevent overlapping screens/glitches
+function showStep(stepName) {
+    const steps = [
+        { el: onboardingWelcomeView, name: 'welcome' },
+        { el: otpPhoneView, name: 'phone' },
+        { el: otpVerifyView, name: 'verify' },
+        { el: loginFormView, name: 'pin' },
+        { el: loginLoadingView, name: 'loading' }
+    ];
+
+    steps.forEach(s => {
+        if (s.el) {
+            if (s.name === stepName) {
+                s.el.classList.add('active');
+                s.el.style.display = (s.name === 'loading') ? 'block' : 'flex';
+            } else {
+                s.el.classList.remove('active');
+                s.el.style.display = 'none';
+            }
+        }
+    });
+}
+
 // Check saved session immediately to prevent flashing login form on reload
 const savedNum = localStorage.getItem('quickchat_session_num');
 const savedPin = localStorage.getItem('quickchat_session_pin');
 
 if (savedNum) {
-    if (onboardingWelcomeView) onboardingWelcomeView.style.display = 'none';
-    if (otpPhoneView) otpPhoneView.style.display = 'none';
-    if (otpVerifyView) otpVerifyView.style.display = 'none';
-    if (loginFormView) loginFormView.style.display = 'none';
-    if (loginLoadingView) loginLoadingView.style.display = 'block';
-
+    showStep('loading');
     if (savedPin) {
         socket.emit('login', { number: savedNum, pin: savedPin });
     } else {
         socket.emit('auto login', { number: savedNum });
     }
+} else {
+    showStep('welcome');
 }
 
 // Auto-login on socket connect and reconnect
@@ -123,8 +143,7 @@ function startResendTimer() {
 }
 
 function showOtpVerifyScreen(phoneNum) {
-    if (otpPhoneView) otpPhoneView.style.display = 'none';
-    if (otpVerifyView) otpVerifyView.style.display = 'block';
+    showStep('verify');
     if (otpTargetDisplay) otpTargetDisplay.innerText = '+91 ' + phoneNum;
     if (otpCodeInput) {
         otpCodeInput.value = '';
@@ -240,11 +259,10 @@ function doVerifyOtp() {
     }
 }
 
-// WhatsApp Onboarding Handlers
+// QuickChat Onboarding Handlers
 if (agreeContinueBtn) {
     agreeContinueBtn.addEventListener('click', () => {
-        if (onboardingWelcomeView) onboardingWelcomeView.style.display = 'none';
-        if (otpPhoneView) otpPhoneView.style.display = 'block';
+        showStep('phone');
         if (otpPhoneInput) otpPhoneInput.focus();
     });
 }
@@ -266,10 +284,7 @@ if (onboardingDotsBtn && onboardingMenu) {
 if (menuSwitchPin) {
     menuSwitchPin.addEventListener('click', () => {
         if (onboardingMenu) onboardingMenu.style.display = 'none';
-        if (onboardingWelcomeView) onboardingWelcomeView.style.display = 'none';
-        if (otpPhoneView) otpPhoneView.style.display = 'none';
-        if (otpVerifyView) otpVerifyView.style.display = 'none';
-        if (loginFormView) loginFormView.style.display = 'block';
+        showStep('pin');
         const enteredNum = otpPhoneInput ? otpPhoneInput.value.trim() : '';
         const pinNumInput = document.getElementById('login-number');
         if (enteredNum && pinNumInput) pinNumInput.value = enteredNum;
@@ -316,8 +331,7 @@ if (otpCodeInput) {
 if (changeNumberBtn) {
     changeNumberBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        if (otpVerifyView) otpVerifyView.style.display = 'none';
-        if (otpPhoneView) otpPhoneView.style.display = 'block';
+        showStep('phone');
         if (otpPhoneInput) otpPhoneInput.focus();
     });
 }
@@ -326,8 +340,7 @@ if (changeNumberBtn) {
 if (showPinViewBtn) {
     showPinViewBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        if (otpPhoneView) otpPhoneView.style.display = 'none';
-        if (loginFormView) loginFormView.style.display = 'block';
+        showStep('pin');
         const enteredNum = otpPhoneInput ? otpPhoneInput.value.trim() : '';
         const pinNumInput = document.getElementById('login-number');
         if (enteredNum && pinNumInput) pinNumInput.value = enteredNum;
@@ -338,8 +351,7 @@ const forgotPinBtn = document.getElementById('forgot-pin-btn');
 if (forgotPinBtn) {
     forgotPinBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        if (loginFormView) loginFormView.style.display = 'none';
-        if (otpPhoneView) otpPhoneView.style.display = 'block';
+        showStep('phone');
         const pinNumInput = document.getElementById('login-number');
         if (pinNumInput && otpPhoneInput && pinNumInput.value.trim()) {
             otpPhoneInput.value = pinNumInput.value.trim();
@@ -350,8 +362,7 @@ if (forgotPinBtn) {
 if (backToOtpBtn) {
     backToOtpBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        if (loginFormView) loginFormView.style.display = 'none';
-        if (otpPhoneView) otpPhoneView.style.display = 'block';
+        showStep('phone');
         const pinNumInput = document.getElementById('login-number');
         if (pinNumInput && otpPhoneInput && pinNumInput.value.trim()) {
             otpPhoneInput.value = pinNumInput.value.trim();
@@ -493,20 +504,14 @@ if (logoutBtn) {
 
 socket.on('login error', (msg) => {
     console.warn("Login response:", msg);
-    if (loginLoadingView) loginLoadingView.style.display = 'none';
-    if (loginFormView) loginFormView.style.display = 'block';
-    if (signupBtn) {
-        signupBtn.disabled = false;
-        signupBtn.innerText = "Sign Up";
-    }
+    showStep('pin');
 
     if (msg.includes('Galat PIN')) {
         localStorage.removeItem('quickchat_session_num');
         localStorage.removeItem('quickchat_session_pin');
         const useOtp = confirm("Galat PIN!\n\nKya aap PIN bhool gaye hain? 'OK' dabayein taaki bina kisi password ke seedha Phone OTP se turant login kar sakein.");
         if (useOtp) {
-            if (loginFormView) loginFormView.style.display = 'none';
-            if (otpPhoneView) otpPhoneView.style.display = 'block';
+            showStep('phone');
             const pinNum = document.getElementById('login-number');
             if (pinNum && otpPhoneInput && pinNum.value.trim()) {
                 otpPhoneInput.value = pinNum.value.trim();

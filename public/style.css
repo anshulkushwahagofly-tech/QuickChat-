@@ -134,10 +134,18 @@ body::before {
 }
 
 .wa-onboarding-step {
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     width: 100%;
+}
+
+.wa-onboarding-step.active {
+    display: flex !important;
+}
+
+[style*="display: none"], [style*="display:none"] {
+    display: none !important;
 }
 
 .wa-doodle-container {

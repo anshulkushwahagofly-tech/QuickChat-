@@ -663,8 +663,8 @@
         border-radius: 0 !important;
         width: 100% !important;
         max-width: 100% !important;
-        height: calc(100% - 52px) !important;
-        min-height: calc(100dvh - 52px) !important;
+        height: auto !important;
+        min-height: calc(100% - 52px) !important;
         padding: 0 24px 28px 24px !important;
         margin: 0 !important;
         display: flex !important;
@@ -678,17 +678,24 @@
         max-width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
-        justify-content: space-between !important;
-        height: 100% !important;
+        min-height: 100% !important;
     }
 
     .wa-onboarding-step {
-        flex: 1 !important;
+        display: none !important;
+        flex: 1;
+        flex-direction: column;
+        justify-content: space-between;
+        width: 100%;
+        min-height: 100%;
+    }
+
+    .wa-onboarding-step.active {
         display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
-        width: 100% !important;
-        min-height: 100% !important;
+    }
+
+    [style*="display: none"], [style*="display:none"] {
+        display: none !important;
     }
 
     .wa-doodle-container {
