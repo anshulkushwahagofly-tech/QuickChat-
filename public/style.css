@@ -28,7 +28,7 @@ body::before {
     z-index: -1;
 }
 
-/* --- LOGIN SCREEN --- */
+/* --- LOGIN SCREEN (WhatsApp Native Onboarding) --- */
 #login-container {
     position: fixed;
     top: 0;
@@ -39,6 +39,7 @@ body::before {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     z-index: 100;
 }
 
@@ -53,126 +54,354 @@ body::before {
     z-index: -1;
 }
 
-.login-header {
+.onboarding-top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
-    max-width: 1000px;
-    padding: 30px 20px;
+    height: 56px;
     display: flex;
+    justify-content: flex-end;
     align-items: center;
+    padding: 0 20px;
+    z-index: 110;
 }
 
-.logo-wrapper {
+.onboarding-menu-wrapper {
+    position: relative;
+}
+
+#onboarding-dots-btn {
+    font-size: 19px;
+    color: #54656f;
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+}
+
+#onboarding-dots-btn:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.onboarding-dropdown {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(11, 20, 26, 0.2);
+    border-radius: 4px;
+    padding: 6px 0;
+    min-width: 180px;
+    z-index: 120;
+}
+
+.onboarding-menu-item {
+    padding: 10px 18px;
+    font-size: 14px;
+    color: #111b21;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #ffffff;
-    font-size: 18px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    transition: background 0.15s;
+}
+
+.onboarding-menu-item:hover {
+    background-color: #f5f6f6;
 }
 
 .login-box {
     background: white;
-    padding: 50px 40px;
+    padding: 40px 36px 36px 36px;
     border-radius: 8px;
     box-shadow: 0 17px 50px 0 rgba(11,20,26,.19), 0 12px 15px 0 rgba(11,20,26,.24);
     text-align: center;
     width: 90%;
-    max-width: 500px;
-    margin-top: 15px;
+    max-width: 480px;
+    margin: auto;
     display: flex;
     justify-content: center;
+    position: relative;
+    max-height: 92vh;
+    overflow-y: auto;
 }
 
 .login-content {
-    max-width: 380px;
     width: 100%;
-}
-
-.login-content h2 {
-    color: #41525d;
-    font-weight: 400;
-    font-size: 26px;
-    margin-bottom: 10px;
-}
-
-.login-subtitle {
-    color: #667781;
-    font-size: 14px;
-    margin-bottom: 30px;
-}
-
-.input-group {
-    text-align: left;
-    margin-bottom: 20px;
-}
-
-.input-group label {
-    display: block;
-    color: #111b21;
-    font-size: 14px;
-    margin-bottom: 8px;
-    font-weight: 500;
-}
-
-.input-wrapper {
     display: flex;
+    flex-direction: column;
+}
+
+.wa-onboarding-step {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    border: 1px solid #d1d7db;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #fff;
-    transition: border-color 0.2s;
-}
-
-.input-wrapper:focus-within {
-    border-color: #00a884;
-    box-shadow: 0 0 0 1px #00a884;
-}
-
-.country-code {
-    background-color: #f0f2f5;
-    padding: 12px 14px;
-    color: #54656f;
-    border-right: 1px solid #d1d7db;
-    font-size: 15px;
-    font-weight: 500;
-}
-
-.input-wrapper input {
-    flex: 1;
-    border: none;
-    padding: 12px 14px;
-    font-size: 16px;
-    outline: none;
-    color: #111b21;
-}
-
-#login-btn, #signup-btn {
-    background-color: #00a884;
-    color: #ffffff;
-    border: none;
-    padding: 14px 20px;
-    border-radius: 24px;
-    font-size: 16px;
-    cursor: pointer;
     width: 100%;
-    font-weight: 600;
+}
+
+.wa-doodle-container {
+    margin: 0 auto 20px auto;
     display: flex;
     justify-content: center;
+}
+
+.wa-welcome-doodle {
+    width: 230px;
+    height: 230px;
+    max-width: 65vw;
+    max-height: 65vw;
+    object-fit: contain;
+}
+
+.wa-welcome-title {
+    font-size: 26px;
+    font-weight: 600;
+    color: #111b21;
+    margin-bottom: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    text-align: center;
+}
+
+.wa-welcome-terms {
+    font-size: 13.5px;
+    color: #54656f;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    text-align: center;
+    max-width: 380px;
+}
+
+.wa-welcome-subterms {
+    font-size: 12.5px;
+    color: #8696a0;
+    line-height: 1.45;
+    margin-bottom: 22px;
+    text-align: center;
+    max-width: 360px;
+}
+
+.wa-green-link {
+    color: #008069;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.wa-green-link:hover {
+    text-decoration: underline;
+}
+
+.wa-lang-wrapper {
+    margin-bottom: 26px;
+    display: flex;
+    justify-content: center;
+}
+
+.wa-lang-pill {
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    border: 1px solid #e9edef;
+    border-radius: 20px;
+    padding: 6px 16px;
+    color: #008069;
+    font-size: 13.5px;
+    font-weight: 500;
+    background: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.wa-bottom-btn-area {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.wa-pill-btn {
+    background-color: #008069;
+    color: #ffffff;
+    border: none;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 28px;
+    width: 100%;
+    max-width: 330px;
+    cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
-    box-shadow: 0 4px 12px rgba(0, 168, 132, 0.4);
+    letter-spacing: 0.2px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 128, 105, 0.3);
 }
 
-#login-btn:hover, #signup-btn:hover {
-    background-color: #008f6f;
+.wa-pill-btn:hover {
+    background-color: #017560;
 }
 
-#login-btn:active, #signup-btn:active {
+.wa-pill-btn:active {
     transform: scale(0.98);
+}
+
+.wa-screen-title {
+    color: #008069;
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.wa-screen-desc {
+    color: #54656f;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 28px;
+    text-align: center;
+    max-width: 380px;
+}
+
+.wa-input-section {
+    width: 100%;
+    max-width: 290px;
+    margin: 0 auto 24px auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wa-country-row {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px;
+    border-bottom: 1.5px solid #00a884;
+    font-size: 16px;
+    color: #111b21;
+    cursor: pointer;
+    margin-bottom: 14px;
+}
+
+.wa-country-row i {
+    color: #008069;
+    font-size: 14px;
+}
+
+.wa-phone-row {
+    width: 100%;
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+}
+
+.wa-country-code-box {
+    border-bottom: 1.5px solid #00a884;
+    padding: 8px 4px;
+    font-size: 16px;
+    color: #111b21;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 55px;
+}
+
+.wa-plus {
+    color: #54656f;
+    font-size: 15px;
+}
+
+.wa-dial-code {
+    color: #111b21;
+    font-size: 16px;
+}
+
+.wa-number-input-box {
+    flex: 1;
+    border-bottom: 1.5px solid #00a884;
+    display: flex;
+    align-items: center;
+}
+
+.wa-number-input-box input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    color: #111b21;
+    padding: 8px 4px;
+    background: transparent;
+    font-family: inherit;
+}
+
+.wa-input-hint {
+    font-size: 12px;
+    color: #8696a0;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.wa-alt-auth-link {
+    margin-top: 14px;
+    font-size: 13.5px;
+    text-align: center;
+}
+
+.wa-otp-section {
+    width: 100%;
+    max-width: 240px;
+    margin: 15px auto 16px auto;
+    text-align: center;
+}
+
+.wa-otp-input-wrapper {
+    border-bottom: 2px solid #00a884;
+    padding: 4px 0;
+    margin-bottom: 6px;
+}
+
+.wa-otp-input-wrapper input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 26px;
+    letter-spacing: 8px;
+    font-weight: bold;
+    text-align: center;
+    color: #111b21;
+    width: 100%;
+}
+
+.wa-otp-hint {
+    font-size: 13px;
+    color: #8696a0;
+}
+
+.wa-resend-section {
+    font-size: 13.5px;
+    color: #54656f;
+    margin-bottom: 26px;
+    text-align: center;
+}
+
+.wa-pin-row {
+    width: 100%;
+    border-bottom: 1.5px solid #00a884;
+    padding: 6px 4px;
+    text-align: center;
+}
+
+.wa-pin-row input {
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 20px;
+    letter-spacing: 6px;
+    text-align: center;
+    color: #111b21;
+    width: 100%;
 }
 
 .secure-badge {

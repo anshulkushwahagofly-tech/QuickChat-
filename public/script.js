@@ -46,6 +46,14 @@ if ('serviceWorker' in navigator) {
 }
 
 const loginLoadingView = document.getElementById('login-loading-view');
+const onboardingWelcomeView = document.getElementById('onboarding-welcome-view');
+const agreeContinueBtn = document.getElementById('agree-continue-btn');
+const onboardingDotsBtn = document.getElementById('onboarding-dots-btn');
+const onboardingMenu = document.getElementById('onboarding-menu');
+const menuSwitchPin = document.getElementById('menu-switch-pin');
+const menuHelp = document.getElementById('menu-help');
+const whatsMyNumberBtn = document.getElementById('whats-my-number-btn');
+
 const otpPhoneView = document.getElementById('otp-phone-view');
 const otpVerifyView = document.getElementById('otp-verify-view');
 const otpPhoneInput = document.getElementById('otp-phone-input');
@@ -68,6 +76,7 @@ const savedNum = localStorage.getItem('quickchat_session_num');
 const savedPin = localStorage.getItem('quickchat_session_pin');
 
 if (savedNum) {
+    if (onboardingWelcomeView) onboardingWelcomeView.style.display = 'none';
     if (otpPhoneView) otpPhoneView.style.display = 'none';
     if (otpVerifyView) otpVerifyView.style.display = 'none';
     if (loginFormView) loginFormView.style.display = 'none';
@@ -128,14 +137,14 @@ function showOtpVerifyScreen(phoneNum) {
 function resetSendOtpBtn() {
     if (sendOtpBtn) {
         sendOtpBtn.disabled = false;
-        sendOtpBtn.innerHTML = `<span>Send OTP</span> <i class="fas fa-arrow-right"></i>`;
+        sendOtpBtn.innerHTML = `<span>Next</span>`;
     }
 }
 
 function resetVerifyOtpBtn() {
     if (verifyOtpBtn) {
         verifyOtpBtn.disabled = false;
-        verifyOtpBtn.innerHTML = `<span>Verify & Login</span> <i class="fas fa-check"></i>`;
+        verifyOtpBtn.innerHTML = `<span>Verify & Continue</span>`;
     }
 }
 
@@ -229,6 +238,56 @@ function doVerifyOtp() {
             resetVerifyOtpBtn();
         }
     }
+}
+
+// WhatsApp Onboarding Handlers
+if (agreeContinueBtn) {
+    agreeContinueBtn.addEventListener('click', () => {
+        if (onboardingWelcomeView) onboardingWelcomeView.style.display = 'none';
+        if (otpPhoneView) otpPhoneView.style.display = 'block';
+        if (otpPhoneInput) otpPhoneInput.focus();
+    });
+}
+
+if (onboardingDotsBtn && onboardingMenu) {
+    onboardingDotsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = onboardingMenu.style.display === 'block';
+        onboardingMenu.style.display = isVisible ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', (e) => {
+        if (onboardingMenu && !onboardingMenu.contains(e.target) && e.target !== onboardingDotsBtn) {
+            onboardingMenu.style.display = 'none';
+        }
+    });
+}
+
+if (menuSwitchPin) {
+    menuSwitchPin.addEventListener('click', () => {
+        if (onboardingMenu) onboardingMenu.style.display = 'none';
+        if (onboardingWelcomeView) onboardingWelcomeView.style.display = 'none';
+        if (otpPhoneView) otpPhoneView.style.display = 'none';
+        if (otpVerifyView) otpVerifyView.style.display = 'none';
+        if (loginFormView) loginFormView.style.display = 'block';
+        const enteredNum = otpPhoneInput ? otpPhoneInput.value.trim() : '';
+        const pinNumInput = document.getElementById('login-number');
+        if (enteredNum && pinNumInput) pinNumInput.value = enteredNum;
+    });
+}
+
+if (menuHelp) {
+    menuHelp.addEventListener('click', () => {
+        if (onboardingMenu) onboardingMenu.style.display = 'none';
+        alert("QuickChat Help:\n\n1. Apna 10-digit mobile number enter karke 'Next' par tap karein.\n2. SMS mein 6-digit OTP code prapt hoga.\n3. OTP dalte hi WhatsApp account activate ho jayega!");
+    });
+}
+
+if (whatsMyNumberBtn) {
+    whatsMyNumberBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        alert("Aapka 10-digit mobile number aapke phone ke Settings > About Phone / SIM Status me check kar sakte hain.");
+    });
 }
 
 if (sendOtpBtn) sendOtpBtn.addEventListener('click', doSendOtp);
