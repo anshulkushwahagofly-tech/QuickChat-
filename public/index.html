@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="logo.png?v=4">
     <link rel="manifest" href="manifest.json?v=4">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=26">
+    <link rel="stylesheet" href="style.css?v=27">
     <link rel="stylesheet" href="mobile-whatsapp.css?v=12">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script>
@@ -385,9 +385,177 @@
                     <div class="wa-profile-card">
                         <span class="wa-profile-label">Phone number</span>
                         <div class="wa-profile-val-row">
-                            <span id="profile-display-phone" style="font-weight:600; color:#111b21;">+91 ...</span>
+                            <span id="profile-display-phone" style="font-weight:600; color:var(--wa-chat-header-title, #111b21);">+91 ...</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Drawer: Settings -->
+            <div id="settings-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-settings-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Settings</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-settings-profile-card" id="settings-open-profile-btn">
+                        <div class="avatar" id="settings-avatar-preview"></div>
+                        <div class="wa-settings-user-info">
+                            <div class="wa-settings-user-name" id="settings-profile-name">QuickChat User</div>
+                            <div class="wa-settings-user-about" id="settings-profile-about">Hey there! I am using QuickChat.</div>
+                        </div>
+                    </div>
+                    <div class="wa-settings-list">
+                        <div class="wa-settings-item" id="setting-item-notifications">
+                            <i class="fas fa-bell wa-settings-item-icon"></i>
+                            <div class="wa-settings-item-content">
+                                <div class="wa-settings-item-title">Notifications</div>
+                                <div class="wa-settings-item-desc">Messages tone, preview, high priority</div>
+                            </div>
+                        </div>
+                        <div class="wa-settings-item" id="setting-item-privacy">
+                            <i class="fas fa-lock wa-settings-item-icon"></i>
+                            <div class="wa-settings-item-content">
+                                <div class="wa-settings-item-title">Privacy</div>
+                                <div class="wa-settings-item-desc">Last seen, profile photo, disappearing messages</div>
+                            </div>
+                        </div>
+                        <div class="wa-settings-item" id="setting-item-chats">
+                            <i class="fas fa-comment-dots wa-settings-item-icon"></i>
+                            <div class="wa-settings-item-content">
+                                <div class="wa-settings-item-title">Chats</div>
+                                <div class="wa-settings-item-desc">Theme, wallpaper, chat history</div>
+                            </div>
+                        </div>
+                        <div class="wa-settings-item" id="setting-item-storage">
+                            <i class="fas fa-database wa-settings-item-icon"></i>
+                            <div class="wa-settings-item-content">
+                                <div class="wa-settings-item-title">Storage and data</div>
+                                <div class="wa-settings-item-desc">Network usage, auto-download</div>
+                            </div>
+                        </div>
+                        <div class="wa-settings-item" id="setting-item-shortcuts">
+                            <i class="fas fa-keyboard wa-settings-item-icon"></i>
+                            <div class="wa-settings-item-content">
+                                <div class="wa-settings-item-title">Keyboard shortcuts</div>
+                                <div class="wa-settings-item-desc">Quick actions and navigation</div>
+                            </div>
+                        </div>
+                        <div class="wa-settings-item" id="setting-item-help">
+                            <i class="fas fa-question-circle wa-settings-item-icon"></i>
+                            <div class="wa-settings-item-content">
+                                <div class="wa-settings-item-title">Help & App Info</div>
+                                <div class="wa-settings-item-desc">Help centre, terms and privacy policy, v2.5.0</div>
+                            </div>
+                        </div>
+                        <div class="wa-settings-item logout" id="settings-logout-btn">
+                            <i class="fas fa-sign-out-alt wa-settings-item-icon" style="color:#ea4335;"></i>
+                            <div class="wa-settings-item-content">
+                                <div class="wa-settings-item-title" style="color:#ea4335;">Log out</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Drawer: Status -->
+            <div id="status-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-status-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Status</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-my-status-card" id="open-add-status-btn">
+                        <div class="wa-status-avatar-wrapper">
+                            <div class="avatar" id="my-status-avatar"></div>
+                            <div class="wa-status-add-badge"><i class="fas fa-plus"></i></div>
+                        </div>
+                        <div class="wa-status-info">
+                            <div class="wa-status-title">My Status</div>
+                            <div class="wa-status-subtitle">Click to add status update</div>
+                        </div>
+                    </div>
+                    <div class="wa-drawer-contacts-title">RECENT UPDATES</div>
+                    <div class="wa-status-list" id="status-list-container">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Drawer: Calls -->
+            <div id="calls-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-calls-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Calls</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-call-link-banner" id="create-call-link-btn">
+                        <div class="wa-call-link-icon"><i class="fas fa-link"></i></div>
+                        <div class="wa-call-link-info">
+                            <div class="wa-call-link-title">Create call link</div>
+                            <div class="wa-call-link-desc">Share a link for your QuickChat call</div>
+                        </div>
+                    </div>
+                    <div class="wa-drawer-contacts-title">RECENT CALLS</div>
+                    <div class="wa-calls-list" id="calls-list-container">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Drawer: Channels -->
+            <div id="channels-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-channels-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Channels</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-channels-desc">Stay updated on topics you care about. Find channels to follow below.</div>
+                    <div class="wa-channels-list" id="channels-list-container">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Drawer: Communities -->
+            <div id="communities-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-communities-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Communities</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-new-community-btn" id="create-community-btn">
+                        <div class="wa-community-icon"><i class="fas fa-users"></i></div>
+                        <div class="wa-community-btn-text">New community</div>
+                    </div>
+                    <div class="wa-drawer-contacts-title">YOUR COMMUNITIES</div>
+                    <div class="wa-communities-list" id="communities-list-container">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Drawer: Starred Messages -->
+            <div id="starred-messages-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-starred-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Starred messages</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-starred-list" id="starred-messages-list">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Drawer: Contact Info -->
+            <div id="contact-info-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-contact-info-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Contact info</h3>
+                </div>
+                <div class="wa-drawer-body" id="contact-info-body">
+                    <!-- Loaded dynamically -->
                 </div>
             </div>
         </div>
@@ -395,7 +563,7 @@
         <!-- Right Chat Panel (Active Chat) -->
         <div class="chat-panel" id="chat-panel" style="display: none;">
             <div class="chat-panel-header">
-                <div class="chat-header-info">
+                <div class="chat-header-info" id="chat-header-info-clickable">
                     <button id="back-btn" class="icon-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
                     <div class="avatar" id="active-chat-avatar"></div>
                     <div class="chat-title">
@@ -404,10 +572,40 @@
                     </div>
                 </div>
                 <div class="header-icons">
-                    <i class="fas fa-video" id="video-call-btn" title="Video call"></i>
-                    <i class="fas fa-phone-alt" id="audio-call-btn" title="Voice call"></i>
-                    <i class="fas fa-ellipsis-v" title="More"></i>
+                    <i class="fas fa-search icon-btn" id="chat-search-btn" title="Search in chat"></i>
+                    <i class="fas fa-video icon-btn" id="video-call-btn" title="Video call"></i>
+                    <i class="fas fa-phone-alt icon-btn" id="audio-call-btn" title="Voice call"></i>
+                    <i class="fas fa-ellipsis-v icon-btn" id="chat-more-btn" title="Menu"></i>
+
+                    <!-- Chat Header Dropdown Menu -->
+                    <div id="chat-header-menu" class="dropdown-menu" style="display:none; right:12px; top:54px;">
+                        <div class="menu-item" id="chat-menu-contact-info"><i class="fas fa-user"></i> Contact info</div>
+                        <div class="menu-item" id="chat-menu-mute"><i class="fas fa-volume-mute"></i> Mute notifications</div>
+                        <div class="menu-item" id="chat-menu-disappearing"><i class="fas fa-stopwatch"></i> Disappearing messages</div>
+                        <div class="menu-item" id="chat-menu-wallpaper"><i class="fas fa-image"></i> Change wallpaper</div>
+                        <div class="menu-item" id="chat-menu-export"><i class="fas fa-file-download"></i> Export chat</div>
+                        <div class="menu-divider"></div>
+                        <div class="menu-item" id="chat-menu-clear"><i class="fas fa-broom"></i> Clear messages</div>
+                        <div class="menu-item logout" id="chat-menu-delete"><i class="fas fa-trash-alt"></i> Delete chat</div>
+                    </div>
                 </div>
+            </div>
+
+            <!-- In-Chat Search Bar -->
+            <div id="inchat-search-bar" class="wa-inchat-search-bar" style="display:none;">
+                <i class="fas fa-search"></i>
+                <input type="text" id="inchat-search-input" placeholder="Search in chat...">
+                <button type="button" id="close-inchat-search" class="wa-inchat-search-close" title="Close"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Pinned Message Banner -->
+            <div id="pinned-message-banner" class="wa-pinned-banner" style="display:none;">
+                <i class="fas fa-thumbtack wa-pinned-icon"></i>
+                <div class="wa-pinned-content">
+                    <span class="wa-pinned-label">Pinned message</span>
+                    <span id="pinned-banner-text" class="wa-pinned-text"></span>
+                </div>
+                <button type="button" id="unpin-btn" class="wa-pinned-close" title="Unpin"><i class="fas fa-times"></i></button>
             </div>
 
             <div class="chat-panel-messages" id="messages-container">
@@ -424,18 +622,69 @@
                 </div>
             </div>
 
+            <!-- Quoted Reply Bar -->
+            <div id="reply-preview-bar" class="wa-reply-bar" style="display:none;">
+                <div class="wa-reply-bar-border"></div>
+                <div class="wa-reply-bar-content">
+                    <span id="reply-author" class="wa-reply-author">+91 ...</span>
+                    <span id="reply-snippet" class="wa-reply-snippet">Message preview</span>
+                </div>
+                <button type="button" id="cancel-reply-btn" class="wa-reply-cancel-btn" title="Cancel reply"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Attachment Menu Popup -->
+            <div id="attach-menu-popup" class="wa-attach-menu" style="display:none;">
+                <div class="wa-attach-item" id="attach-item-doc">
+                    <div class="wa-attach-icon" style="background:#7f66ff;"><i class="fas fa-file-alt"></i></div>
+                    <span>Document</span>
+                </div>
+                <div class="wa-attach-item" id="attach-item-photo">
+                    <div class="wa-attach-icon" style="background:#007bfc;"><i class="fas fa-images"></i></div>
+                    <span>Photos & videos</span>
+                </div>
+                <div class="wa-attach-item" id="attach-item-camera">
+                    <div class="wa-attach-icon" style="background:#ff2e74;"><i class="fas fa-camera"></i></div>
+                    <span>Camera</span>
+                </div>
+                <div class="wa-attach-item" id="attach-item-poll">
+                    <div class="wa-attach-icon" style="background:#ffbc38;"><i class="fas fa-poll"></i></div>
+                    <span>Poll</span>
+                </div>
+                <div class="wa-attach-item" id="attach-item-contact">
+                    <div class="wa-attach-icon" style="background:#009de2;"><i class="fas fa-user"></i></div>
+                    <span>Contact</span>
+                </div>
+                <div class="wa-attach-item" id="attach-item-location">
+                    <div class="wa-attach-icon" style="background:#02a698;"><i class="fas fa-map-marker-alt"></i></div>
+                    <span>Location</span>
+                </div>
+            </div>
+
             <div class="chat-panel-input">
-                <div class="input-pill-wrapper">
+                <!-- Standard Input Pill Wrapper -->
+                <div class="input-pill-wrapper" id="normal-input-bar">
                     <i class="far fa-smile icon-btn" id="emoji-toggle-btn" title="Emojis"></i>
+                    <i class="fas fa-paperclip icon-btn" id="attach-menu-btn" title="Attach"></i>
                     <input type="text" id="message-input" placeholder="Type a message" autocomplete="off">
-                    <input type="file" id="image-upload" accept="image/*" style="display:none;">
-                    <label for="image-upload" style="margin:0; display:flex; align-items:center;">
-                        <i class="fas fa-paperclip icon-btn" id="attach-btn" title="Attach file/photo"></i>
-                    </label>
+                    <input type="file" id="image-upload" accept="image/*,video/*,application/pdf" style="display:none;">
                     <i class="fas fa-camera icon-btn" id="camera-btn" title="Camera"></i>
                 </div>
-                <div class="mic-circle-wrapper">
-                    <i class="fas fa-microphone" id="mic-btn" title="Voice message"></i>
+
+                <!-- Voice Recording Live Bar -->
+                <div id="voice-recording-ui" class="wa-voice-record-ui" style="display:none;">
+                    <div class="wa-rec-indicator">
+                        <span class="wa-rec-dot"></span>
+                        <span id="voice-rec-timer">0:00</span>
+                    </div>
+                    <div class="wa-rec-wave">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <button type="button" id="cancel-voice-btn" class="wa-rec-btn wa-rec-cancel" title="Discard voice message"><i class="fas fa-trash"></i></button>
+                    <button type="button" id="send-voice-btn" class="wa-rec-btn wa-rec-send" title="Send voice message"><i class="fas fa-paper-plane"></i></button>
+                </div>
+
+                <div class="mic-circle-wrapper" id="mic-circle-wrapper">
+                    <i class="fas fa-microphone" id="mic-btn" title="Hold/tap to record voice message"></i>
                     <button id="send-btn" style="display: none; border: none; background: transparent;"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -506,7 +755,117 @@
                     </div>
                 </div>
             </div>
+    <!-- WhatsApp Fullscreen Status Stories Viewer Modal -->
+    <div id="status-viewer-modal" class="wa-status-viewer-overlay" style="display:none;">
+        <div class="wa-status-viewer-container">
+            <div class="wa-status-progress-bar" id="status-progress-bar">
+                <div class="wa-status-progress-fill" id="status-progress-fill"></div>
+            </div>
+            <div class="wa-status-viewer-header">
+                <div class="avatar" id="status-viewer-avatar" style="width:40px; height:40px;"></div>
+                <div class="wa-status-viewer-meta">
+                    <span id="status-viewer-author" class="wa-status-viewer-name">+91 ...</span>
+                    <span id="status-viewer-time" class="wa-status-viewer-time">Just now</span>
+                </div>
+                <button type="button" id="close-status-viewer-btn" class="wa-status-viewer-close"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="wa-status-viewer-content" id="status-viewer-body">
+                <div id="status-viewer-text" class="wa-status-viewer-text"></div>
+                <img id="status-viewer-img" class="wa-status-viewer-img" style="display:none;" alt="Status">
+            </div>
         </div>
+    </div>
+
+    <!-- WhatsApp Add Status Modal -->
+    <div id="add-status-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:440px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-circle-notch"></i> Add Status</h3>
+                <button type="button" id="close-add-status-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <textarea id="new-status-text" class="wa-status-compose-input" placeholder="Type a status update..." rows="4"></textarea>
+                <div class="wa-status-color-row">
+                    <span class="wa-status-color-dot active" data-color="#00a884" style="background:#00a884;"></span>
+                    <span class="wa-status-color-dot" data-color="#128c7e" style="background:#128c7e;"></span>
+                    <span class="wa-status-color-dot" data-color="#075e54" style="background:#075e54;"></span>
+                    <span class="wa-status-color-dot" data-color="#34b7f1" style="background:#34b7f1;"></span>
+                    <span class="wa-status-color-dot" data-color="#9c27b0" style="background:#9c27b0;"></span>
+                    <span class="wa-status-color-dot" data-color="#e91e63" style="background:#e91e63;"></span>
+                </div>
+                <button type="button" id="publish-status-btn" class="wa-pill-btn" style="margin-top:14px; width:100%;">
+                    <i class="fas fa-paper-plane" style="margin-right:6px;"></i> Post Status
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Poll Creation Modal -->
+    <div id="poll-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:460px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-poll"></i> Create Poll</h3>
+                <button type="button" id="close-poll-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label style="font-size:13px; font-weight:600; color:var(--wa-chat-header-title);">Question</label>
+                <input type="text" id="poll-question-input" class="wa-direct-input" placeholder="Ask a question..." style="width:100%; margin:6px 0 14px 0; padding:10px 12px; border-radius:8px; border:1px solid var(--wa-border-search); background:var(--wa-bg-search-box); color:var(--wa-search-text);">
+                
+                <label style="font-size:13px; font-weight:600; color:var(--wa-chat-header-title);">Options</label>
+                <div id="poll-options-container">
+                    <input type="text" class="poll-option-input wa-direct-input" placeholder="Option 1" style="width:100%; margin:4px 0 8px 0; padding:9px 12px; border-radius:8px; border:1px solid var(--wa-border-search); background:var(--wa-bg-search-box); color:var(--wa-search-text);">
+                    <input type="text" class="poll-option-input wa-direct-input" placeholder="Option 2" style="width:100%; margin:4px 0 8px 0; padding:9px 12px; border-radius:8px; border:1px solid var(--wa-border-search); background:var(--wa-bg-search-box); color:var(--wa-search-text);">
+                </div>
+                <button type="button" id="poll-add-option-btn" class="wa-plain-btn" style="font-size:13px; color:#00a884; font-weight:600; margin:4px 0 16px 0; cursor:pointer; background:none; border:none;">
+                    <i class="fas fa-plus"></i> Add option
+                </button>
+
+                <button type="button" id="submit-poll-btn" class="wa-pill-btn" style="width:100%;">
+                    Create Poll
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Chat Wallpaper Modal -->
+    <div id="wallpaper-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:440px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-image"></i> Chat Wallpaper</h3>
+                <button type="button" id="close-wallpaper-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:13.5px; color:var(--wa-sub-empty-state); margin-bottom:14px;">Select a wallpaper color for your chat window:</p>
+                <div class="wa-wallpaper-grid">
+                    <div class="wa-wallpaper-choice active" data-wall="default" style="background:#0b141a;"><span>Default</span></div>
+                    <div class="wa-wallpaper-choice" data-wall="#0d261e" style="background:#0d261e;"><span>Dark Emerald</span></div>
+                    <div class="wa-wallpaper-choice" data-wall="#132435" style="background:#132435;"><span>Midnight Blue</span></div>
+                    <div class="wa-wallpaper-choice" data-wall="#2b1b22" style="background:#2b1b22;"><span>Deep Plum</span></div>
+                    <div class="wa-wallpaper-choice" data-wall="#23211e" style="background:#23211e;"><span>Warm Slate</span></div>
+                    <div class="wa-wallpaper-choice" data-wall="#1a1a1a" style="background:#1a1a1a;"><span>Classic Black</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Keyboard Shortcuts Modal -->
+    <div id="shortcuts-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content" style="max-width:460px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-keyboard"></i> Keyboard Shortcuts</h3>
+                <button type="button" id="close-shortcuts-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="wa-shortcut-row"><span>New chat</span><kbd>Ctrl + Alt + N</kbd></div>
+                <div class="wa-shortcut-row"><span>Next chat</span><kbd>Ctrl + Alt + Tab</kbd></div>
+                <div class="wa-shortcut-row"><span>Search in chat</span><kbd>Ctrl + Alt + Shift + F</kbd></div>
+                <div class="wa-shortcut-row"><span>Close chat</span><kbd>Escape</kbd></div>
+                <div class="wa-shortcut-row"><span>Toggle Mute</span><kbd>Ctrl + Alt + Shift + M</kbd></div>
+                <div class="wa-shortcut-row"><span>Settings</span><kbd>Ctrl + Alt + ,</kbd></div>
+            </div>
+        </div>
+    </div>
+
     <!-- WhatsApp In-App Toast Notification -->
     <div id="wa-toast" class="wa-toast-container" role="status" aria-live="polite">
         <i id="wa-toast-icon" class="fas fa-info-circle wa-toast-icon"></i>
@@ -530,7 +889,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=39"></script>
+    <script src="script.js?v=40"></script>
     <script src="webrtc.js?v=4"></script>
 </body>
 </html>

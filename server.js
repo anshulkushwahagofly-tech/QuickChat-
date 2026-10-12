@@ -47,12 +47,35 @@ const User = mongoose.model('User', new mongoose.Schema({
     pin: String 
 }));
 const Message = mongoose.model('Message', new mongoose.Schema({ 
+    id: String,
     from: String, 
     to: String, 
     text: String, 
     image: String,
+    audio: String,
+    location: Object,
+    poll: Object,
+    replyTo: Object,
+    reactions: Object,
+    type: { type: String, default: 'text' },
+    isEdited: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    isPinned: { type: Boolean, default: false },
+    starredBy: { type: Array, default: [] },
     timestamp: Date 
-}));
+}, { strict: false }));
+
+// In-Memory Status Stories Store
+let activeStatuses = [
+    {
+        id: 'status_welcome',
+        user: 'QuickChat Team',
+        text: 'Welcome to QuickChat! Enjoy full WhatsApp Web experience ✨',
+        bg: '#00a884',
+        timestamp: new Date().toISOString(),
+        viewers: []
+    }
+];
 
 // Fallback JSON Helpers
 function loadDB() {
@@ -106,13 +129,13 @@ async function createUser(number, pin) {
     }
 }
 
-async function saveMessage(from, to, text, image, timestamp) {
+async function saveMessage(msgObj) {
     await ensureDBReady();
     if (useMongo || mongoose.connection.readyState === 1) {
-        await Message.create({ from, to, text, image, timestamp });
+        await Message.create(msgObj);
     } else {
         let db = loadDB();
-        db.messages.push({ from, to, text, image, timestamp: timestamp.toISOString() });
+        db.messages.push(msgObj);
         saveDB(db);
     }
 }
@@ -120,8 +143,25 @@ async function saveMessage(from, to, text, image, timestamp) {
 async function getUserMessages(number) {
     await ensureDBReady();
     if (useMongo || mongoose.connection.readyState === 1) {
-        const msgs = await Message.find({ $or: [{ from: number }, { to: number }] }).sort('timestamp');
-        return msgs.map(m => ({ from: m.from, to: m.to, text: m.text, image: m.image, timestamp: m.timestamp.toISOString() }));
+        const msgs = await Message.find({ $or: [{ from: number }, { to: number }] }).sort('timestamp').lean();
+        return msgs.map(m => ({
+            id: m.id || ('msg_' + (m._id || Date.now())),
+            from: m.from,
+            to: m.to,
+            text: m.text,
+            image: m.image,
+            audio: m.audio,
+            location: m.location,
+            poll: m.poll,
+            replyTo: m.replyTo,
+            reactions: m.reactions || {},
+            type: m.type || (m.image ? 'image' : (m.audio ? 'audio' : 'text')),
+            isEdited: m.isEdited || false,
+            isDeleted: m.isDeleted || false,
+            isPinned: m.isPinned || false,
+            starredBy: m.starredBy || [],
+            timestamp: m.timestamp ? (typeof m.timestamp.toISOString === 'function' ? m.timestamp.toISOString() : m.timestamp) : new Date().toISOString()
+        }));
     } else {
         return loadDB().messages.filter(m => m.from === number || m.to === number);
     }
@@ -306,26 +346,39 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Handle private messages
+    // Handle rich private messages (text, image, audio voice message, location, poll, replyTo)
     socket.on('private message', async (data) => {
         try {
             const senderNumber = socketToPhone[socket.id];
             if (!senderNumber) return;
 
             const timestamp = new Date();
-            const textToSave = data.text || '';
-            const imageToSave = data.image || '';
-            
-            // Save to DB
-            await saveMessage(senderNumber, data.to, textToSave, imageToSave, timestamp);
+            const msgId = data.id || ('msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
 
             const messageObj = {
+                id: msgId,
                 from: senderNumber,
                 to: data.to,
-                text: textToSave,
-                image: imageToSave,
+                text: data.text || '',
+                image: data.image || '',
+                audio: data.audio || '',
+                location: data.location || null,
+                poll: data.poll || null,
+                replyTo: data.replyTo || null,
+                reactions: data.reactions || {},
+                type: data.type || (data.image ? 'image' : (data.audio ? 'audio' : (data.location ? 'location' : (data.poll ? 'poll' : 'text')))),
+                isEdited: false,
+                isDeleted: false,
+                isPinned: false,
+                starredBy: [],
                 timestamp: timestamp.toISOString()
             };
+
+            // Save to DB
+            await saveMessage(messageObj);
+
+            // Echo back to sender with confirmed ID
+            socket.emit('message sent', messageObj);
 
             // Send to receiver if online
             const receiverSocketId = connectedUsers[data.to];
@@ -335,6 +388,74 @@ io.on('connection', (socket) => {
         } catch (err) {
             console.error("Message error:", err);
         }
+    });
+
+    // Handle real-time message actions (reactions, edit, delete, poll vote, pin)
+    socket.on('message action', async (actionData) => {
+        try {
+            const senderNumber = socketToPhone[socket.id];
+            if (!senderNumber) return;
+
+            const payload = { ...actionData, by: senderNumber };
+
+            // Update in DB if applicable
+            if (actionData.msgId) {
+                if (useMongo || mongoose.connection.readyState === 1) {
+                    if (actionData.action === 'delete') {
+                        await Message.updateOne({ id: actionData.msgId }, { $set: { isDeleted: true, text: '🚫 This message was deleted', image: '', audio: '' } });
+                    } else if (actionData.action === 'edit') {
+                        await Message.updateOne({ id: actionData.msgId }, { $set: { text: actionData.newText, isEdited: true } });
+                    } else if (actionData.action === 'pin') {
+                        await Message.updateOne({ id: actionData.msgId }, { $set: { isPinned: !!actionData.isPinned } });
+                    }
+                }
+            }
+
+            // Broadcast to receiver if online
+            if (actionData.to) {
+                const receiverSocketId = connectedUsers[actionData.to];
+                if (receiverSocketId) {
+                    io.to(receiverSocketId).emit('message action', payload);
+                }
+            }
+            // Echo back to sender
+            socket.emit('message action', payload);
+        } catch (err) {
+            console.error("Message action error:", err);
+        }
+    });
+
+    // Read Receipts (Blue Ticks)
+    socket.on('mark read', ({ from }) => {
+        const myNumber = socketToPhone[socket.id];
+        if (!myNumber || !from) return;
+        const senderSocketId = connectedUsers[from];
+        if (senderSocketId) {
+            io.to(senderSocketId).emit('messages read', { by: myNumber });
+        }
+    });
+
+    // Status Stories
+    socket.on('get statuses', () => {
+        socket.emit('all statuses', activeStatuses);
+    });
+
+    socket.on('post status', (statusData) => {
+        const myNumber = socketToPhone[socket.id];
+        if (!myNumber) return;
+        const newStatus = {
+            id: 'status_' + Date.now(),
+            user: myNumber,
+            text: statusData.text || '',
+            image: statusData.image || '',
+            bg: statusData.bg || '#00a884',
+            timestamp: new Date().toISOString(),
+            viewers: []
+        };
+        activeStatuses.unshift(newStatus);
+        // Keep last 30 statuses
+        if (activeStatuses.length > 30) activeStatuses.pop();
+        io.emit('all statuses', activeStatuses);
     });
 
     // Real-time typing indicator

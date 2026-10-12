@@ -1220,7 +1220,22 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// --- MESSAGING LOGIC ---
+// ========================================================
+// ADVANCED WHATSAPP MESSAGING ENGINE
+// ========================================================
+
+let currentReplyTo = null; // { id, from, text }
+let activePlayingAudio = null;
+let currentPinnedMessage = null;
+let starredMessages = JSON.parse(localStorage.getItem('quickchat_starred_msgs') || '[]');
+let mutedChats = JSON.parse(localStorage.getItem('quickchat_muted_chats') || '[]');
+let userWallpaper = localStorage.getItem('quickchat_wallpaper') || 'default';
+
+// Apply saved wallpaper
+if (userWallpaper && userWallpaper !== 'default') {
+    document.documentElement.style.setProperty('--wa-bg-chat-panel', userWallpaper);
+}
+
 function formatTime(date) {
     let hours = date.getHours();
     let minutes = date.getMinutes();
@@ -1231,6 +1246,109 @@ function formatTime(date) {
     return hours + ':' + minutes + ' ' + ampm;
 }
 
+// 1. Quoted Reply Handlers
+function setReplyMessage(msg) {
+    currentReplyTo = {
+        id: msg.id,
+        from: msg.from,
+        text: msg.text || (msg.image ? 'Photo' : (msg.audio ? 'Voice message' : (msg.poll ? 'Poll' : 'Message')))
+    };
+    const bar = document.getElementById('reply-preview-bar');
+    const authorEl = document.getElementById('reply-author');
+    const snippetEl = document.getElementById('reply-snippet');
+    if (bar && authorEl && snippetEl) {
+        authorEl.innerText = (msg.from === myNumber ? 'You' : '+91 ' + msg.from);
+        snippetEl.innerText = currentReplyTo.text;
+        bar.style.display = 'flex';
+    }
+    if (messageInput) messageInput.focus();
+}
+
+const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+if (cancelReplyBtn) {
+    cancelReplyBtn.addEventListener('click', () => {
+        currentReplyTo = null;
+        const bar = document.getElementById('reply-preview-bar');
+        if (bar) bar.style.display = 'none';
+    });
+}
+
+// 2. Real Voice Recording Engine
+let mediaRecorder = null;
+let audioChunks = [];
+let voiceTimerInterval = null;
+let voiceSeconds = 0;
+
+async function startVoiceRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        mediaRecorder.start();
+
+        const normalBar = document.getElementById('normal-input-bar');
+        const voiceUi = document.getElementById('voice-recording-ui');
+        const timerEl = document.getElementById('voice-rec-timer');
+        if (normalBar) normalBar.style.display = 'none';
+        if (voiceUi) voiceUi.style.display = 'flex';
+
+        voiceSeconds = 0;
+        if (timerEl) timerEl.innerText = '0:00';
+        clearInterval(voiceTimerInterval);
+        voiceTimerInterval = setInterval(() => {
+            voiceSeconds++;
+            const m = Math.floor(voiceSeconds / 60);
+            const s = voiceSeconds % 60;
+            if (timerEl) timerEl.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+        }, 1000);
+    } catch(err) {
+        console.warn("Microphone access error:", err);
+        showWhatsAppToast("Microphone permission needed to record voice message.", "danger");
+    }
+}
+
+function cancelVoiceRecording() {
+    clearInterval(voiceTimerInterval);
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+    }
+    const normalBar = document.getElementById('normal-input-bar');
+    const voiceUi = document.getElementById('voice-recording-ui');
+    if (normalBar) normalBar.style.display = 'flex';
+    if (voiceUi) voiceUi.style.display = 'none';
+    audioChunks = [];
+}
+
+function finishAndSendVoiceRecording() {
+    clearInterval(voiceTimerInterval);
+    if (!mediaRecorder) return;
+    mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64Audio = reader.result;
+            sendMessage(null, base64Audio, 'audio');
+        };
+        reader.readAsDataURL(audioBlob);
+    };
+    mediaRecorder.stop();
+
+    const normalBar = document.getElementById('normal-input-bar');
+    const voiceUi = document.getElementById('voice-recording-ui');
+    if (normalBar) normalBar.style.display = 'flex';
+    if (voiceUi) voiceUi.style.display = 'none';
+}
+
+const cancelVoiceBtn = document.getElementById('cancel-voice-btn');
+if (cancelVoiceBtn) cancelVoiceBtn.addEventListener('click', cancelVoiceRecording);
+
+const sendVoiceBtn = document.getElementById('send-voice-btn');
+if (sendVoiceBtn) sendVoiceBtn.addEventListener('click', finishAndSendVoiceRecording);
+
+// 3. Typing and Mic/Send toggles
 let typingTimer = null;
 if (messageInput) {
     messageInput.addEventListener('input', () => {
@@ -1252,19 +1370,162 @@ if (messageInput) {
     });
 }
 
-// Mic or Send wrapper click
 const micCircleWrapper = document.querySelector('.mic-circle-wrapper');
 if (micCircleWrapper) {
     micCircleWrapper.addEventListener('click', () => {
-        if (messageInput.value.trim().length > 0) {
+        if (messageInput && messageInput.value.trim().length > 0) {
             sendMessage();
         } else {
-            showWhatsAppToast("Voice messages coming soon! Type a message or send photos.", "info");
+            startVoiceRecording();
         }
     });
 }
 
-// --- IMAGE COMPRESSION & UPLOAD ---
+// 4. Attachments Menu (📎)
+const attachMenuBtn = document.getElementById('attach-menu-btn');
+const attachMenuPopup = document.getElementById('attach-menu-popup');
+if (attachMenuBtn && attachMenuPopup) {
+    attachMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        attachMenuPopup.style.display = attachMenuPopup.style.display === 'none' ? 'flex' : 'none';
+    });
+    document.addEventListener('click', (e) => {
+        if (attachMenuPopup && !attachMenuPopup.contains(e.target) && e.target !== attachMenuBtn) {
+            attachMenuPopup.style.display = 'none';
+        }
+    });
+}
+
+const attachItemPhoto = document.getElementById('attach-item-photo');
+if (attachItemPhoto) {
+    attachItemPhoto.addEventListener('click', () => {
+        if (attachMenuPopup) attachMenuPopup.style.display = 'none';
+        const imgInput = document.getElementById('image-upload');
+        if (imgInput) imgInput.click();
+    });
+}
+
+const attachItemDoc = document.getElementById('attach-item-doc');
+if (attachItemDoc) {
+    attachItemDoc.addEventListener('click', () => {
+        if (attachMenuPopup) attachMenuPopup.style.display = 'none';
+        const imgInput = document.getElementById('image-upload');
+        if (imgInput) imgInput.click();
+    });
+}
+
+const attachItemCamera = document.getElementById('attach-item-camera');
+if (attachItemCamera) {
+    attachItemCamera.addEventListener('click', () => {
+        if (attachMenuPopup) attachMenuPopup.style.display = 'none';
+        const imgInput = document.getElementById('image-upload');
+        if (imgInput) imgInput.click();
+    });
+}
+
+const attachItemPoll = document.getElementById('attach-item-poll');
+if (attachItemPoll) {
+    attachItemPoll.addEventListener('click', () => {
+        if (attachMenuPopup) attachMenuPopup.style.display = 'none';
+        const pollModal = document.getElementById('poll-modal');
+        if (pollModal) pollModal.style.display = 'flex';
+    });
+}
+
+const attachItemContact = document.getElementById('attach-item-contact');
+if (attachItemContact) {
+    attachItemContact.addEventListener('click', () => {
+        if (attachMenuPopup) attachMenuPopup.style.display = 'none';
+        const contactNum = window.prompt ? window.prompt("Enter contact phone number to share:") : null;
+        if (contactNum && /^\d{10}$/.test(contactNum.trim())) {
+            sendMessage(`👤 Contact: +91 ${contactNum.trim()}`);
+        } else if (contactNum) {
+            showWhatsAppToast("Please enter a valid 10-digit number.", "danger");
+        }
+    });
+}
+
+const attachItemLocation = document.getElementById('attach-item-location');
+if (attachItemLocation) {
+    attachItemLocation.addEventListener('click', () => {
+        if (attachMenuPopup) attachMenuPopup.style.display = 'none';
+        if (navigator.geolocation) {
+            showWhatsAppToast("Getting current location...", "info");
+            navigator.geolocation.getCurrentPosition((pos) => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                const mapUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                sendMessage(`📍 Current Location: ${mapUrl}`, null, 'location', { lat, lng, mapUrl });
+            }, () => {
+                showWhatsAppToast("Location access denied or unavailable.", "danger");
+            });
+        } else {
+            showWhatsAppToast("Geolocation is not supported by your browser.", "danger");
+        }
+    });
+}
+
+// 5. Poll Creation Modal Handlers
+const closePollModalBtn = document.getElementById('close-poll-modal-btn');
+if (closePollModalBtn) {
+    closePollModalBtn.addEventListener('click', () => {
+        const pollModal = document.getElementById('poll-modal');
+        if (pollModal) pollModal.style.display = 'none';
+    });
+}
+
+const pollAddOptionBtn = document.getElementById('poll-add-option-btn');
+if (pollAddOptionBtn) {
+    pollAddOptionBtn.addEventListener('click', () => {
+        const container = document.getElementById('poll-options-container');
+        if (container) {
+            const count = container.querySelectorAll('.poll-option-input').length + 1;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'poll-option-input wa-direct-input';
+            input.placeholder = 'Option ' + count;
+            input.style = 'width:100%; margin:4px 0 8px 0; padding:9px 12px; border-radius:8px; border:1px solid var(--wa-border-search); background:var(--wa-bg-search-box); color:var(--wa-search-text);';
+            container.appendChild(input);
+        }
+    });
+}
+
+const submitPollBtn = document.getElementById('submit-poll-btn');
+if (submitPollBtn) {
+    submitPollBtn.addEventListener('click', () => {
+        const qInput = document.getElementById('poll-question-input');
+        const question = qInput ? qInput.value.trim() : '';
+        if (!question) {
+            showWhatsAppToast("Please enter a poll question.", "danger");
+            return;
+        }
+
+        const optionInputs = document.querySelectorAll('#poll-options-container .poll-option-input');
+        const options = [];
+        optionInputs.forEach(opt => {
+            if (opt.value.trim()) options.push({ text: opt.value.trim(), votes: [] });
+        });
+
+        if (options.length < 2) {
+            showWhatsAppToast("Please add at least 2 options.", "danger");
+            return;
+        }
+
+        const pollData = {
+            id: 'poll_' + Date.now(),
+            question: question,
+            options: options
+        };
+
+        sendMessage(null, null, 'poll', null, pollData);
+
+        const pollModal = document.getElementById('poll-modal');
+        if (pollModal) pollModal.style.display = 'none';
+        if (qInput) qInput.value = '';
+    });
+}
+
+// 6. Image Compression & File Upload
 const imageUpload = document.getElementById('image-upload');
 if (imageUpload) {
     imageUpload.addEventListener('change', (e) => {
@@ -1273,116 +1534,473 @@ if (imageUpload) {
 
         const reader = new FileReader();
         reader.onload = (event) => {
-            const img = new Image();
-            img.src = event.target.result;
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 800;
-                const scaleSize = Math.min(1, MAX_WIDTH / img.width);
-                canvas.width = img.width * scaleSize;
-                canvas.height = img.height * scaleSize;
+            if (file.type.startsWith('image/')) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 900;
+                    const scaleSize = Math.min(1, MAX_WIDTH / img.width);
+                    canvas.width = img.width * scaleSize;
+                    canvas.height = img.height * scaleSize;
 
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                
-                // Compress and get Base64
-                const base64Str = canvas.toDataURL('image/jpeg', 0.6);
-                sendMessage(base64Str);
-            };
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const base64Str = canvas.toDataURL('image/jpeg', 0.65);
+                    sendMessage(base64Str, null, 'image');
+                };
+            } else {
+                sendMessage(null, null, 'file', null, null, file.name);
+            }
         };
         reader.readAsDataURL(file);
-        e.target.value = ''; // Reset input
+        e.target.value = '';
     });
 }
 
-function sendMessage(imageStr = null) {
+// 7. Core Send Message Function
+function sendMessage(imageStr = null, audioStr = null, msgType = 'text', locationData = null, pollData = null, fileName = null) {
     if (!activeChat) return;
-    
-    const text = messageInput.value.trim();
-    if (text || imageStr) {
-        const timeNow = formatTime(new Date());
-        
-        // Local update
-        const msgObj = { from: myNumber, text: text, image: imageStr, time: timeNow };
-        chats[activeChat].push(msgObj);
-        
-        // Send to server
-        socket.emit('private message', { to: activeChat, text: text, image: imageStr });
-        socket.emit('typing', { to: activeChat, isTyping: false });
-        
+
+    const text = (messageInput && msgType === 'text') ? messageInput.value.trim() : (fileName ? `📄 Document: ${fileName}` : '');
+    if (!text && !imageStr && !audioStr && !locationData && !pollData) return;
+
+    const timeNow = formatTime(new Date());
+    const msgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+    const msgObj = {
+        id: msgId,
+        from: myNumber,
+        to: activeChat,
+        text: text,
+        image: imageStr,
+        audio: audioStr,
+        location: locationData,
+        poll: pollData,
+        replyTo: currentReplyTo,
+        reactions: {},
+        type: msgType,
+        isEdited: false,
+        isDeleted: false,
+        isPinned: false,
+        starred: false,
+        time: timeNow
+    };
+
+    if (!chats[activeChat]) chats[activeChat] = [];
+    chats[activeChat].push(msgObj);
+
+    // Socket emit
+    socket.emit('private message', {
+        id: msgId,
+        to: activeChat,
+        text: text,
+        image: imageStr,
+        audio: audioStr,
+        location: locationData,
+        poll: pollData,
+        replyTo: currentReplyTo,
+        type: msgType
+    });
+    socket.emit('typing', { to: activeChat, isTyping: false });
+
+    // Reset inputs & reply preview
+    if (messageInput) {
         messageInput.value = '';
-        messageInput.dispatchEvent(new Event('input')); 
-        renderMessages();
-        renderChatList(); 
-        saveLocalCache();
-        playSentSound();
+        messageInput.dispatchEvent(new Event('input'));
+    }
+    if (currentReplyTo) {
+        currentReplyTo = null;
+        const bar = document.getElementById('reply-preview-bar');
+        if (bar) bar.style.display = 'none';
+    }
+
+    renderMessages();
+    renderChatList();
+    saveLocalCache();
+    playSentSound();
+}
+
+if (sendBtn) {
+    sendBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sendMessage();
+    });
+}
+
+if (messageInput) {
+    messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+}
+
+// 8. Message Actions: React, Delete, Star, Edit, Pin, Poll Vote
+function handleMessageAction(action, msgId, extra = {}) {
+    if (!activeChat || !chats[activeChat]) return;
+    const msg = chats[activeChat].find(m => m.id === msgId);
+    if (!msg) return;
+
+    if (action === 'react') {
+        const emoji = extra.emoji;
+        if (!msg.reactions) msg.reactions = {};
+        if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
+        if (msg.reactions[emoji].includes(myNumber)) {
+            msg.reactions[emoji] = msg.reactions[emoji].filter(n => n !== myNumber);
+            if (msg.reactions[emoji].length === 0) delete msg.reactions[emoji];
+        } else {
+            msg.reactions[emoji].push(myNumber);
+        }
+        socket.emit('message action', { action: 'react', msgId: msgId, emoji: emoji, to: activeChat });
+    } else if (action === 'star') {
+        msg.starred = !msg.starred;
+        if (msg.starred) {
+            starredMessages.push({ ...msg, chat: activeChat });
+            showWhatsAppToast("Message starred ⭐", "success", 2000);
+        } else {
+            starredMessages = starredMessages.filter(s => s.id !== msgId);
+            showWhatsAppToast("Message unstarred", "info", 2000);
+        }
+        localStorage.setItem('quickchat_starred_msgs', JSON.stringify(starredMessages));
+    } else if (action === 'edit') {
+        const newText = window.prompt ? window.prompt("Edit message:", msg.text) : null;
+        if (newText && newText.trim() && newText.trim() !== msg.text) {
+            msg.text = newText.trim();
+            msg.isEdited = true;
+            socket.emit('message action', { action: 'edit', msgId: msgId, newText: msg.text, to: activeChat });
+        }
+    } else if (action === 'pin') {
+        msg.isPinned = !msg.isPinned;
+        currentPinnedMessage = msg.isPinned ? msg : null;
+        updatePinnedBanner();
+        socket.emit('message action', { action: 'pin', msgId: msgId, isPinned: msg.isPinned, to: activeChat });
+        showWhatsAppToast(msg.isPinned ? "Message pinned 📌" : "Message unpinned", "info", 2000);
+    } else if (action === 'delete') {
+        msg.isDeleted = true;
+        msg.text = '🚫 This message was deleted';
+        msg.image = null;
+        msg.audio = null;
+        socket.emit('message action', { action: 'delete', msgId: msgId, to: activeChat });
+        showWhatsAppToast("Message deleted", "info", 2000);
+    } else if (action === 'vote_poll') {
+        const optIndex = extra.optionIndex;
+        if (msg.poll && msg.poll.options[optIndex]) {
+            const opt = msg.poll.options[optIndex];
+            if (!opt.votes) opt.votes = [];
+            if (opt.votes.includes(myNumber)) {
+                opt.votes = opt.votes.filter(n => n !== myNumber);
+            } else {
+                opt.votes.push(myNumber);
+            }
+            socket.emit('message action', { action: 'vote_poll', msgId: msgId, optionIndex: optIndex, to: activeChat });
+        }
+    }
+
+    renderMessages();
+    saveLocalCache();
+}
+
+function updatePinnedBanner() {
+    const banner = document.getElementById('pinned-message-banner');
+    const textEl = document.getElementById('pinned-banner-text');
+    if (banner && textEl) {
+        if (currentPinnedMessage && !currentPinnedMessage.isDeleted) {
+            textEl.innerText = currentPinnedMessage.text || 'Photo';
+            banner.style.display = 'flex';
+        } else {
+            banner.style.display = 'none';
+        }
     }
 }
 
-if (sendBtn) sendBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    sendMessage();
-});
+const unpinBtn = document.getElementById('unpin-btn');
+if (unpinBtn) {
+    unpinBtn.addEventListener('click', () => {
+        if (currentPinnedMessage) {
+            currentPinnedMessage.isPinned = false;
+            currentPinnedMessage = null;
+            updatePinnedBanner();
+        }
+    });
+}
 
-messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') sendMessage();
-});
-
+// 9. Comprehensive Message Renderer
 function renderMessages() {
     if (!activeChat) return;
-    
+
     messagesContainer.innerHTML = `
         <div class="date-chip">TODAY</div>
         <div class="encryption-msg">
             <i class="fas fa-lock"></i> Messages and calls are end-to-end encrypted. No one outside of this chat can read them.
         </div>
     `;
-    
+
     const messages = chats[activeChat] || [];
-    
-    messages.forEach(msg => {
+    currentPinnedMessage = messages.find(m => m.isPinned) || null;
+    updatePinnedBanner();
+
+    messages.forEach((msg, idx) => {
         const isMe = msg.from === myNumber;
         const msgElement = document.createElement('div');
         msgElement.className = `message ${isMe ? 'sent' : 'received'}`;
-        
+        msgElement.id = 'msg-el-' + (msg.id || idx);
+
         let senderTagHTML = !isMe ? `<span class="sender-name-tag">~+91 ${msg.from}</span>` : '';
         let ticksHTML = isMe ? `<i class="fas fa-check-double ticks"></i>` : '';
-        let mediaHTML = msg.image ? `<img src="${msg.image}" style="max-width:100%; border-radius:6px; margin-bottom:4px; display:block;">` : '';
-        let textHTML = msg.text ? `<span class="message-content">${escapeHtml(msg.text)}</span>` : '';
-        
+
+        // Quoted block
+        let quotedHTML = '';
+        if (msg.replyTo) {
+            quotedHTML = `
+                <div class="wa-msg-quoted">
+                    <div class="wa-msg-quoted-author">${msg.replyTo.from === myNumber ? 'You' : '+91 ' + msg.replyTo.from}</div>
+                    <div class="wa-msg-quoted-text">${escapeHtml(msg.replyTo.text)}</div>
+                </div>
+            `;
+        }
+
+        // Body content by type
+        let bodyHTML = '';
+        if (msg.isDeleted) {
+            bodyHTML = `<span class="message-content" style="font-style:italic; opacity:0.75;"><i class="fas fa-ban" style="font-size:11px; margin-right:4px;"></i> This message was deleted</span>`;
+        } else if (msg.audio) {
+            bodyHTML = `
+                <div class="wa-audio-player">
+                    <button type="button" class="wa-audio-play-btn" onclick="togglePlayAudio('${msg.id || idx}', '${msg.audio}')">
+                        <i class="fas fa-play" id="audio-icon-${msg.id || idx}"></i>
+                    </button>
+                    <div class="wa-audio-waveform">
+                        <div class="wa-audio-bar">
+                            <div class="wa-audio-progress" id="audio-prog-${msg.id || idx}"></div>
+                        </div>
+                        <span class="wa-audio-duration">Voice message</span>
+                    </div>
+                </div>
+            `;
+        } else if (msg.poll) {
+            const totalVotes = msg.poll.options.reduce((sum, o) => sum + (o.votes ? o.votes.length : 0), 0);
+            bodyHTML = `
+                <div class="wa-poll-card">
+                    <div class="wa-poll-question"><i class="fas fa-poll" style="color:#00a884; margin-right:6px;"></i> ${escapeHtml(msg.poll.question)}</div>
+                    ${msg.poll.options.map((opt, optIdx) => {
+                        const count = opt.votes ? opt.votes.length : 0;
+                        const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
+                        const hasVoted = opt.votes && opt.votes.includes(myNumber);
+                        return `
+                            <div class="wa-poll-option-item" onclick="handleMessageAction('vote_poll', '${msg.id}', { optionIndex: ${optIdx} })">
+                                <div class="wa-poll-option-fill" style="width:${pct}%;"></div>
+                                <div class="wa-poll-option-content">
+                                    <span>${hasVoted ? '<i class="fas fa-check-circle" style="color:#00a884; margin-right:4px;"></i>' : '<i class="far fa-circle" style="opacity:0.5; margin-right:4px;"></i>'} ${escapeHtml(opt.text)}</span>
+                                    <span class="wa-poll-votes-badge">${count} (${pct}%)</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        } else if (msg.location) {
+            bodyHTML = `
+                <div class="wa-location-card">
+                    <div style="font-weight:600; font-size:13.5px;"><i class="fas fa-map-marker-alt" style="color:#ea4335;"></i> Shared Location</div>
+                    <a href="${msg.location.mapUrl || '#'}" target="_blank" class="wa-location-map-btn"><i class="fas fa-external-link-alt"></i> Open in Google Maps</a>
+                </div>
+            `;
+        } else {
+            let mediaHTML = msg.image ? `<img src="${msg.image}" style="max-width:100%; border-radius:6px; margin-bottom:4px; display:block; cursor:pointer;">` : '';
+            let textHTML = msg.text ? `<span class="message-content">${escapeHtml(msg.text)}</span>` : '';
+            bodyHTML = mediaHTML + textHTML;
+        }
+
+        // Reactions badges
+        let reactionsHTML = '';
+        if (msg.reactions && Object.keys(msg.reactions).length > 0) {
+            reactionsHTML = `
+                <div class="wa-reactions-badge">
+                    ${Object.entries(msg.reactions).map(([emoji, users]) => `<span>${emoji} ${users.length > 1 ? users.length : ''}</span>`).join('')}
+                </div>
+            `;
+        }
+
+        let editedHTML = msg.isEdited ? `<span style="font-size:10px; opacity:0.75; margin-left:4px;">(edited)</span>` : '';
+        let starHTML = msg.starred ? `<i class="fas fa-star" style="font-size:9.5px; color:#ffbc38; margin-right:3px;"></i>` : '';
+
+        // Hover quick action buttons
+        let hoverActionsHTML = '';
+        if (!msg.isDeleted) {
+            hoverActionsHTML = `
+                <div class="wa-msg-hover-actions">
+                    <button class="wa-msg-action-btn" onclick="toggleReactionPicker('${msg.id || idx}')" title="React"><i class="far fa-smile"></i></button>
+                    <button class="wa-msg-action-btn" onclick="setReplyMessage(chats['${activeChat}'][${idx}])" title="Reply"><i class="fas fa-reply"></i></button>
+                    <button class="wa-msg-action-btn" onclick="openMsgMenu(event, '${msg.id}', ${idx})" title="More"><i class="fas fa-angle-down"></i></button>
+                    <!-- Reaction emojis bar -->
+                    <div id="react-picker-${msg.id || idx}" class="wa-reactions-bar" style="display:none;">
+                        <span class="wa-reaction-emoji" onclick="handleMessageAction('react', '${msg.id}', { emoji: '👍' })">👍</span>
+                        <span class="wa-reaction-emoji" onclick="handleMessageAction('react', '${msg.id}', { emoji: '❤️' })">❤️</span>
+                        <span class="wa-reaction-emoji" onclick="handleMessageAction('react', '${msg.id}', { emoji: '😂' })">😂</span>
+                        <span class="wa-reaction-emoji" onclick="handleMessageAction('react', '${msg.id}', { emoji: '😮' })">😮</span>
+                        <span class="wa-reaction-emoji" onclick="handleMessageAction('react', '${msg.id}', { emoji: '😢' })">😢</span>
+                        <span class="wa-reaction-emoji" onclick="handleMessageAction('react', '${msg.id}', { emoji: '🙏' })">🙏</span>
+                    </div>
+                </div>
+            `;
+        }
+
         msgElement.innerHTML = `
+            ${hoverActionsHTML}
             ${senderTagHTML}
-            ${mediaHTML}
-            ${textHTML}
+            ${quotedHTML}
+            ${bodyHTML}
             <div class="message-footer" style="${(!msg.text && msg.image) ? 'position:absolute; bottom:5px; right:8px; background:rgba(0,0,0,0.5); border-radius:10px; padding:2px 6px;' : ''}">
+                ${starHTML}
                 <span class="message-time" style="${(!msg.text && msg.image) ? 'color:white;' : ''}">${msg.time}</span>
+                ${editedHTML}
                 ${ticksHTML}
             </div>
+            ${reactionsHTML}
             <div style="clear:both"></div>
         `;
         messagesContainer.appendChild(msgElement);
     });
-    
+
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// --- RECEIVE PRIVATE MESSAGES ---
+// 10. Audio playback controller
+function togglePlayAudio(id, audioSrc) {
+    const icon = document.getElementById('audio-icon-' + id);
+    const prog = document.getElementById('audio-prog-' + id);
+
+    if (activePlayingAudio && activePlayingAudio.audioElem) {
+        activePlayingAudio.audioElem.pause();
+        if (activePlayingAudio.icon) activePlayingAudio.icon.className = 'fas fa-play';
+        if (activePlayingAudio.id === id) {
+            activePlayingAudio = null;
+            return;
+        }
+    }
+
+    const audio = new Audio(audioSrc);
+    if (icon) icon.className = 'fas fa-pause';
+    activePlayingAudio = { id, audioElem: audio, icon, prog };
+
+    audio.ontimeupdate = () => {
+        if (prog && audio.duration) {
+            prog.style.width = Math.round((audio.currentTime / audio.duration) * 100) + '%';
+        }
+    };
+    audio.onended = () => {
+        if (icon) icon.className = 'fas fa-play';
+        if (prog) prog.style.width = '0%';
+        activePlayingAudio = null;
+    };
+    audio.play().catch(e => console.warn("Audio play err:", e));
+}
+
+function toggleReactionPicker(id) {
+    const el = document.getElementById('react-picker-' + id);
+    if (el) {
+        el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+    }
+}
+
+function openMsgMenu(e, msgId, idx) {
+    e.stopPropagation();
+    const msg = chats[activeChat][idx];
+    if (!msg) return;
+
+    showWhatsAppDialog({
+        title: 'Message Options',
+        message: `Choose action for this message:\n"${(msg.text || 'Media').substring(0, 36)}"`,
+        confirmText: msg.starred ? 'Unstar ⭐' : 'Star ⭐',
+        cancelText: msg.from === myNumber ? 'Delete 🗑️' : 'Reply ↩️',
+        onConfirm: () => {
+            handleMessageAction('star', msgId);
+        },
+        onCancel: () => {
+            if (msg.from === myNumber) {
+                handleMessageAction('delete', msgId);
+            } else {
+                setReplyMessage(msg);
+            }
+        }
+    });
+}
+
+// 11. Socket Listeners for Real-Time Messages & Actions
 socket.on('private message', (data) => {
     const sender = data.from;
     const timeNow = formatTime(new Date(data.timestamp));
-    
+
     if (!chats[sender]) chats[sender] = [];
-    
-    chats[sender].push({ from: sender, text: data.text, image: data.image, time: timeNow });
-    
+
+    const receivedMsg = {
+        id: data.id || ('msg_' + Date.now()),
+        from: sender,
+        to: myNumber,
+        text: data.text,
+        image: data.image,
+        audio: data.audio,
+        location: data.location,
+        poll: data.poll,
+        replyTo: data.replyTo,
+        reactions: data.reactions || {},
+        isEdited: data.isEdited || false,
+        isDeleted: data.isDeleted || false,
+        isPinned: data.isPinned || false,
+        starred: false,
+        time: timeNow
+    };
+
+    chats[sender].push(receivedMsg);
+
     if (activeChat === sender) {
         renderMessages();
+        socket.emit('mark read', { from: sender });
     } else {
         unreadCounts[sender] = (unreadCounts[sender] || 0) + 1;
     }
     renderChatList();
     saveLocalCache();
     playReceivedSound();
+});
+
+socket.on('message action', (payload) => {
+    const targetChat = payload.to === myNumber ? payload.by : payload.to;
+    if (chats[targetChat]) {
+        const msg = chats[targetChat].find(m => m.id === payload.msgId);
+        if (msg) {
+            if (payload.action === 'react') {
+                if (!msg.reactions) msg.reactions = {};
+                if (!msg.reactions[payload.emoji]) msg.reactions[payload.emoji] = [];
+                if (msg.reactions[payload.emoji].includes(payload.by)) {
+                    msg.reactions[payload.emoji] = msg.reactions[payload.emoji].filter(u => u !== payload.by);
+                } else {
+                    msg.reactions[payload.emoji].push(payload.by);
+                }
+            } else if (payload.action === 'delete') {
+                msg.isDeleted = true;
+                msg.text = '🚫 This message was deleted';
+                msg.image = null;
+                msg.audio = null;
+            } else if (payload.action === 'edit') {
+                msg.text = payload.newText;
+                msg.isEdited = true;
+            } else if (payload.action === 'pin') {
+                msg.isPinned = payload.isPinned;
+            } else if (payload.action === 'vote_poll') {
+                if (msg.poll && msg.poll.options[payload.optionIndex]) {
+                    const opt = msg.poll.options[payload.optionIndex];
+                    if (!opt.votes) opt.votes = [];
+                    if (opt.votes.includes(payload.by)) {
+                        opt.votes = opt.votes.filter(u => u !== payload.by);
+                    } else {
+                        opt.votes.push(payload.by);
+                    }
+                }
+            }
+            if (activeChat === targetChat) renderMessages();
+            saveLocalCache();
+        }
+    }
 });
 
 // Real-time typing status receiver
@@ -1464,13 +2082,63 @@ if (menuThemeToggle) {
         toggleTheme();
     });
 }
+// ========================================================
+// 4. UNIFIED WHATSAPP SLIDING DRAWER CONTROLLER
+// ========================================================
 
-// 4. Far-Left Navigation Rail (Dock) Items
+function openDrawer(drawerId) {
+    document.querySelectorAll('.wa-drawer').forEach(d => d.classList.remove('active'));
+    const target = document.getElementById(drawerId);
+    if (target) {
+        target.classList.add('active');
+        if (drawerId === 'status-drawer') loadStatusDrawer();
+        if (drawerId === 'calls-drawer') renderCallsDrawer();
+        if (drawerId === 'channels-drawer') renderChannelsDrawer();
+        if (drawerId === 'communities-drawer') renderCommunitiesDrawer();
+        if (drawerId === 'starred-messages-drawer') renderStarredDrawer();
+        if (drawerId === 'contact-info-drawer') renderContactInfoDrawer();
+        if (drawerId === 'settings-drawer') renderSettingsDrawer();
+    }
+}
+
+function closeDrawer(drawerId) {
+    const target = document.getElementById(drawerId);
+    if (target) target.classList.remove('active');
+}
+
+function closeAllDrawers() {
+    document.querySelectorAll('.wa-drawer').forEach(d => d.classList.remove('active'));
+}
+
+// Drawer Back / Close Button Handlers
+const closeSettingsBtn = document.getElementById('close-settings-drawer');
+if (closeSettingsBtn) closeSettingsBtn.onclick = () => closeDrawer('settings-drawer');
+
+const closeStatusBtn = document.getElementById('close-status-drawer');
+if (closeStatusBtn) closeStatusBtn.onclick = () => closeDrawer('status-drawer');
+
+const closeCallsBtn = document.getElementById('close-calls-drawer');
+if (closeCallsBtn) closeCallsBtn.onclick = () => closeDrawer('calls-drawer');
+
+const closeChannelsBtn = document.getElementById('close-channels-drawer');
+if (closeChannelsBtn) closeChannelsBtn.onclick = () => closeDrawer('channels-drawer');
+
+const closeCommunitiesBtn = document.getElementById('close-communities-drawer');
+if (closeCommunitiesBtn) closeCommunitiesBtn.onclick = () => closeDrawer('communities-drawer');
+
+const closeStarredBtn = document.getElementById('close-starred-drawer');
+if (closeStarredBtn) closeStarredBtn.onclick = () => closeDrawer('starred-messages-drawer');
+
+const closeContactInfoBtn = document.getElementById('close-contact-info-drawer');
+if (closeContactInfoBtn) closeContactInfoBtn.onclick = () => closeDrawer('contact-info-drawer');
+
+// Far-Left Navigation Rail Buttons
 const railChatsBtn = document.getElementById('rail-chats-btn');
 if (railChatsBtn) {
     railChatsBtn.addEventListener('click', () => {
         document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
         railChatsBtn.classList.add('active');
+        closeAllDrawers();
         setActiveFilter('all');
     });
 }
@@ -1478,32 +2146,875 @@ if (railChatsBtn) {
 const railCallsBtn = document.getElementById('rail-calls-btn');
 if (railCallsBtn) {
     railCallsBtn.addEventListener('click', () => {
-        showWhatsAppToast("Tap the phone or camera icon in any chat to place a call.", "info");
+        document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+        railCallsBtn.classList.add('active');
+        openDrawer('calls-drawer');
     });
 }
 
 const railStatusBtn = document.getElementById('rail-status-btn');
 if (railStatusBtn) {
     railStatusBtn.addEventListener('click', () => {
-        showWhatsAppToast("Status updates coming soon!", "info");
+        document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+        railStatusBtn.classList.add('active');
+        openDrawer('status-drawer');
     });
 }
 
 const railChannelsBtn = document.getElementById('rail-channels-btn');
 if (railChannelsBtn) {
     railChannelsBtn.addEventListener('click', () => {
-        showWhatsAppToast("Channels coming soon!", "info");
+        document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+        railChannelsBtn.classList.add('active');
+        openDrawer('channels-drawer');
     });
 }
 
 const railCommunitiesBtn = document.getElementById('rail-communities-btn');
 if (railCommunitiesBtn) {
     railCommunitiesBtn.addEventListener('click', () => {
-        showWhatsAppToast("Communities coming soon!", "info");
+        document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+        railCommunitiesBtn.classList.add('active');
+        openDrawer('communities-drawer');
     });
 }
 
-// 5. QuickChat AI Assistant in Navigation Rail
+const railStarredBtn = document.getElementById('rail-starred-btn');
+if (railStarredBtn) {
+    railStarredBtn.addEventListener('click', () => {
+        document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+        railStarredBtn.classList.add('active');
+        openDrawer('starred-messages-drawer');
+    });
+}
+
+const railSettingsBtn = document.getElementById('rail-settings-btn');
+if (railSettingsBtn) {
+    railSettingsBtn.addEventListener('click', () => {
+        document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+        railSettingsBtn.classList.add('active');
+        openDrawer('settings-drawer');
+    });
+}
+
+const railProfileBtn = document.getElementById('rail-profile-btn');
+if (railProfileBtn) {
+    railProfileBtn.addEventListener('click', openProfileDrawer);
+}
+
+// Sidebar Tabs Bar (CHATS / STATUS / CALLS)
+const sidebarTabs = document.querySelectorAll('.wa-tabs-bar .wa-tab');
+sidebarTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        sidebarTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const text = tab.innerText.toUpperCase();
+        if (text.includes('CHATS')) {
+            closeAllDrawers();
+            setActiveFilter('all');
+        } else if (text.includes('STATUS')) {
+            openDrawer('status-drawer');
+        } else if (text.includes('CALLS')) {
+            openDrawer('calls-drawer');
+        }
+    });
+});
+
+const sidebarCameraTab = document.querySelector('.wa-tab-camera');
+if (sidebarCameraTab) {
+    sidebarCameraTab.addEventListener('click', () => {
+        const upload = document.getElementById('image-upload');
+        if (upload) upload.click();
+    });
+}
+
+// ========================================================
+// 5. STATUS STORIES ENGINE (POST & FULLSCREEN VIEWER)
+// ========================================================
+let allStatuses = [];
+let activeStatusColor = '#00a884';
+let statusViewerTimeout = null;
+let statusProgressInterval = null;
+
+function loadStatusDrawer() {
+    socket.emit('get statuses');
+    renderStatusList(allStatuses);
+}
+
+socket.on('statuses list', (list) => {
+    allStatuses = list || [];
+    renderStatusList(allStatuses);
+});
+
+socket.on('new status', (st) => {
+    allStatuses.unshift(st);
+    renderStatusList(allStatuses);
+});
+
+function renderStatusList(statuses) {
+    const container = document.getElementById('status-list-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!statuses || statuses.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 24px 16px; text-align: center; color: var(--wa-text-pill); font-size: 13.5px;">
+                <p>No recent status updates.<br>Tap above to share your first status!</p>
+            </div>
+        `;
+        return;
+    }
+
+    statuses.forEach(st => {
+        const item = document.createElement('div');
+        item.className = 'wa-status-item';
+        const isMine = (st.phone === myNumber);
+        const nameLabel = isMine ? 'My Status' : `+91 ${st.phone}`;
+        const timeLabel = formatTime(new Date(st.timestamp || Date.now()));
+
+        item.innerHTML = `
+            <div class="avatar wa-status-ring" style="width:44px; height:44px; background:${st.color || '#00a884'}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:600;">
+                <i class="fas fa-circle-notch"></i>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:15px; font-weight:600; color:var(--wa-text-drawer-card);">${escapeHtml(nameLabel)}</div>
+                <div style="font-size:12.5px; color:var(--wa-text-pill); margin-top:2px;">${timeLabel}</div>
+            </div>
+        `;
+        item.onclick = () => openStatusViewer(st);
+        container.appendChild(item);
+    });
+}
+
+const openAddStatusBtn = document.getElementById('open-add-status-btn');
+const addStatusModal = document.getElementById('add-status-modal');
+const closeAddStatusBtn = document.getElementById('close-add-status-btn');
+const publishStatusBtn = document.getElementById('publish-status-btn');
+const newStatusText = document.getElementById('new-status-text');
+
+if (openAddStatusBtn && addStatusModal) {
+    openAddStatusBtn.addEventListener('click', () => {
+        addStatusModal.style.display = 'flex';
+        if (newStatusText) {
+            newStatusText.value = '';
+            newStatusText.focus();
+        }
+    });
+}
+
+if (closeAddStatusBtn && addStatusModal) {
+    closeAddStatusBtn.addEventListener('click', () => {
+        addStatusModal.style.display = 'none';
+    });
+}
+
+// Color picker dots for status
+const statusColorDots = document.querySelectorAll('.wa-status-color-dot');
+statusColorDots.forEach(dot => {
+    dot.addEventListener('click', () => {
+        statusColorDots.forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+        activeStatusColor = dot.getAttribute('data-color') || '#00a884';
+        if (newStatusText) newStatusText.style.borderColor = activeStatusColor;
+    });
+});
+
+if (publishStatusBtn) {
+    publishStatusBtn.addEventListener('click', () => {
+        const text = newStatusText ? newStatusText.value.trim() : '';
+        if (!text) {
+            showWhatsAppToast("Please type something for your status.", "danger");
+            return;
+        }
+        socket.emit('post status', {
+            text: text,
+            color: activeStatusColor,
+            phone: myNumber
+        });
+        if (addStatusModal) addStatusModal.style.display = 'none';
+        if (newStatusText) newStatusText.value = '';
+        showWhatsAppToast("Status posted successfully! ✨", "success");
+    });
+}
+
+// Fullscreen Animated Stories Viewer
+const statusViewerModal = document.getElementById('status-viewer-modal');
+const statusViewerCloseBtn = document.getElementById('close-status-viewer-btn');
+const statusProgressFill = document.getElementById('status-progress-fill');
+const statusViewerAuthor = document.getElementById('status-viewer-author');
+const statusViewerTime = document.getElementById('status-viewer-time');
+const statusViewerText = document.getElementById('status-viewer-text');
+const statusViewerImg = document.getElementById('status-viewer-img');
+
+function openStatusViewer(st) {
+    if (!statusViewerModal) return;
+    clearTimeout(statusViewerTimeout);
+    clearInterval(statusProgressInterval);
+
+    statusViewerModal.style.display = 'flex';
+    statusViewerAuthor.innerText = (st.phone === myNumber) ? 'My Status' : `+91 ${st.phone}`;
+    statusViewerTime.innerText = formatTime(new Date(st.timestamp || Date.now()));
+    
+    const container = statusViewerModal.querySelector('.wa-status-viewer-container');
+    if (container) container.style.background = st.color || '#075e54';
+
+    if (st.image) {
+        statusViewerImg.src = st.image;
+        statusViewerImg.style.display = 'block';
+        statusViewerText.style.display = 'none';
+    } else {
+        statusViewerImg.style.display = 'none';
+        statusViewerText.style.display = 'block';
+        statusViewerText.innerText = st.text || '';
+    }
+
+    // 5-second progress bar animation
+    let elapsed = 0;
+    const duration = 5000;
+    if (statusProgressFill) statusProgressFill.style.width = '0%';
+
+    statusProgressInterval = setInterval(() => {
+        elapsed += 50;
+        const pct = Math.min(100, Math.round((elapsed / duration) * 100));
+        if (statusProgressFill) statusProgressFill.style.width = pct + '%';
+        if (elapsed >= duration) {
+            clearInterval(statusProgressInterval);
+            closeStatusViewer();
+        }
+    }, 50);
+}
+
+function closeStatusViewer() {
+    clearTimeout(statusViewerTimeout);
+    clearInterval(statusProgressInterval);
+    if (statusViewerModal) statusViewerModal.style.display = 'none';
+    if (statusProgressFill) statusProgressFill.style.width = '0%';
+}
+
+if (statusViewerCloseBtn) statusViewerCloseBtn.addEventListener('click', closeStatusViewer);
+
+// ========================================================
+// 6. CALLS DRAWER & CALL LINK GENERATOR
+// ========================================================
+const createCallLinkBtn = document.getElementById('create-call-link-btn');
+if (createCallLinkBtn) {
+    createCallLinkBtn.addEventListener('click', () => {
+        const linkId = Math.random().toString(36).substring(2, 9);
+        const callUrl = `${window.location.origin}/#call/${linkId}`;
+        navigator.clipboard.writeText(callUrl).then(() => {
+            showWhatsAppToast("Call link copied to clipboard! Share it with friends. 📞", "success");
+        }).catch(() => {
+            showWhatsAppDialog({
+                title: 'QuickChat Call Link',
+                message: `Here is your call link:\n${callUrl}`,
+                confirmText: 'Done'
+            });
+        });
+    });
+}
+
+function renderCallsDrawer() {
+    const container = document.getElementById('calls-list-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const mockCalls = [
+        { name: '+91 9876543210', type: 'outgoing', time: 'Yesterday, 8:15 pm', isVideo: false },
+        { name: '+91 9123456789', type: 'incoming', time: '10 October, 11:20 am', isVideo: true },
+        { name: '+91 9988776655', type: 'outgoing', time: '8 October, 5:45 pm', isVideo: false }
+    ];
+
+    mockCalls.forEach(call => {
+        const item = document.createElement('div');
+        item.className = 'wa-call-item';
+        const arrowIcon = call.type === 'outgoing' 
+            ? '<i class="fas fa-arrow-up" style="color:#00a884; font-size:11px; margin-right:4px;"></i>' 
+            : '<i class="fas fa-arrow-down" style="color:#ea4335; font-size:11px; margin-right:4px;"></i>';
+        const callActionIcon = call.isVideo ? 'fa-video' : 'fa-phone-alt';
+
+        item.innerHTML = `
+            <div class="avatar" style="width:44px; height:44px;"></div>
+            <div style="flex:1;">
+                <div style="font-size:15px; font-weight:600; color:var(--wa-text-drawer-card);">${call.name}</div>
+                <div style="font-size:12.5px; color:var(--wa-text-pill); margin-top:2px;">${arrowIcon} ${call.time}</div>
+            </div>
+            <button class="icon-btn" style="color:#00a884; font-size:16px;" title="Call back">
+                <i class="fas ${callActionIcon}"></i>
+            </button>
+        `;
+        container.appendChild(item);
+    });
+}
+
+// ========================================================
+// 7. CHANNELS DIRECTORY & FOLLOWING ENGINE
+// ========================================================
+const officialChannels = [
+    { id: 'c1', name: 'WhatsApp Official', handle: '@whatsapp', followers: '142M followers', desc: 'Updates, news, and official announcements from WhatsApp.' },
+    { id: 'c2', name: 'TechCrunch', handle: '@techcrunch', followers: '18.4M followers', desc: 'Breaking technology news, AI developments, and startup analysis.' },
+    { id: 'c3', name: 'Real Madrid C.F.', handle: '@realmadrid', followers: '32.1M followers', desc: 'Official updates, scores, and match highlights.' },
+    { id: 'c4', name: 'Coding & AI World', handle: '@codingai', followers: '6.5M followers', desc: 'Daily web development tips, fullstack guides, and AI tutorials.' }
+];
+
+let followedChannels = JSON.parse(localStorage.getItem('quickchat_followed_channels') || '["c1"]');
+
+function renderChannelsDrawer() {
+    const container = document.getElementById('channels-list-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    officialChannels.forEach(ch => {
+        const isFollowed = followedChannels.includes(ch.id);
+        const card = document.createElement('div');
+        card.className = 'wa-channel-card';
+        card.innerHTML = `
+            <div class="avatar" style="width:48px; height:48px; background:#008069; color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px;">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:15px; font-weight:600; color:var(--wa-text-drawer-card); display:flex; align-items:center; gap:6px;">
+                    ${ch.name} <i class="fas fa-check-circle" style="color:#00a884; font-size:13px;"></i>
+                </div>
+                <div style="font-size:12px; color:var(--wa-text-pill); margin-top:1px;">${ch.followers}</div>
+                <div style="font-size:12.5px; color:var(--wa-text-pill); margin-top:3px; line-height:1.3;">${ch.desc}</div>
+            </div>
+            <button class="wa-channel-follow-btn ${isFollowed ? 'following' : ''}" data-chid="${ch.id}">
+                ${isFollowed ? 'Following' : 'Follow'}
+            </button>
+        `;
+
+        const followBtn = card.querySelector('.wa-channel-follow-btn');
+        followBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (followedChannels.includes(ch.id)) {
+                followedChannels = followedChannels.filter(id => id !== ch.id);
+                followBtn.classList.remove('following');
+                followBtn.innerText = 'Follow';
+                showWhatsAppToast(`Unfollowed ${ch.name}`, 'info');
+            } else {
+                followedChannels.push(ch.id);
+                followBtn.classList.add('following');
+                followBtn.innerText = 'Following';
+                showWhatsAppToast(`Following ${ch.name}! 📢`, 'success');
+            }
+            localStorage.setItem('quickchat_followed_channels', JSON.stringify(followedChannels));
+        };
+
+        container.appendChild(card);
+    });
+}
+
+// ========================================================
+// 8. COMMUNITIES ENGINE
+// ========================================================
+const createCommunityBtn = document.getElementById('create-community-btn');
+if (createCommunityBtn) {
+    createCommunityBtn.addEventListener('click', () => {
+        showWhatsAppDialog({
+            title: 'New Community',
+            message: 'Bring your members together in topic-based groups, and easily send admin announcements.',
+            confirmText: 'Get Started',
+            cancelText: 'Cancel',
+            onConfirm: () => {
+                showWhatsAppToast("Community feature is enabled for your account!", "success");
+            }
+        });
+    });
+}
+
+function renderCommunitiesDrawer() {
+    const container = document.getElementById('communities-list-container');
+    if (!container) return;
+    container.innerHTML = `
+        <div class="wa-community-card">
+            <div class="avatar" style="width:48px; height:48px; background:#128c7e; color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; border-radius:12px;">
+                <i class="fas fa-users"></i>
+            </div>
+            <div style="flex:1;">
+                <div style="font-size:15.5px; font-weight:600; color:var(--wa-text-drawer-card);">QuickChat Global Community</div>
+                <div style="font-size:12.5px; color:var(--wa-text-pill); margin-top:2px;">Announcements • 140 members</div>
+            </div>
+        </div>
+    `;
+}
+
+// ========================================================
+// 9. STARRED MESSAGES DRAWER
+// ========================================================
+function renderStarredDrawer() {
+    const container = document.getElementById('starred-messages-list');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const list = [];
+    Object.keys(chats).forEach(contactNum => {
+        chats[contactNum].forEach(msg => {
+            if (msg.starred || (msg.starredBy && msg.starredBy.includes(myNumber))) {
+                list.push({ contactNum, msg });
+            }
+        });
+    });
+
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center; color: var(--wa-text-pill); font-size: 13.5px;">
+                <div style="font-size: 40px; margin-bottom: 12px; color: #8696a0;"><i class="far fa-star"></i></div>
+                <div style="font-weight:600; font-size:16px; margin-bottom:6px; color:var(--wa-text-drawer-card);">No starred messages</div>
+                <p>Use starred messages to easily find important text, photos, or documents later.</p>
+            </div>
+        `;
+        return;
+    }
+
+    list.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'wa-starred-item';
+        const sender = item.msg.from === myNumber ? 'You' : `+91 ${item.msg.from}`;
+        const preview = item.msg.text || (item.msg.image ? '📷 Photo' : (item.msg.audio ? '🎤 Voice message' : 'Message'));
+        
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--wa-text-pill); margin-bottom:4px;">
+                <span style="font-weight:600; color:var(--wa-text-drawer-card);">${escapeHtml(sender)} &bull; +91 ${item.contactNum}</span>
+                <span>${item.msg.time || ''}</span>
+            </div>
+            <div style="font-size:14px; color:var(--wa-text-drawer-card);">${escapeHtml(preview)}</div>
+        `;
+        card.onclick = () => {
+            closeAllDrawers();
+            openChat(item.contactNum);
+        };
+        container.appendChild(card);
+    });
+}
+
+// ========================================================
+// 10. SETTINGS DRAWER ENGINE
+// ========================================================
+function renderSettingsDrawer() {
+    const nameEl = document.getElementById('settings-profile-name');
+    const aboutEl = document.getElementById('settings-profile-about');
+    const savedName = localStorage.getItem('quickchat_user_name') || 'QuickChat User';
+    const savedAbout = localStorage.getItem('quickchat_user_about') || 'Hey there! I am using QuickChat.';
+    if (nameEl) nameEl.innerText = savedName;
+    if (aboutEl) aboutEl.innerText = savedAbout;
+}
+
+const settingsOpenProfileBtn = document.getElementById('settings-open-profile-btn');
+if (settingsOpenProfileBtn) settingsOpenProfileBtn.onclick = () => openDrawer('profile-drawer');
+
+const settingItemNotifications = document.getElementById('setting-item-notifications');
+if (settingItemNotifications) {
+    settingItemNotifications.onclick = () => {
+        showWhatsAppDialog({
+            title: 'Notifications',
+            message: 'Message notifications: Enabled\nPreview messages: Enabled\nNotification tones: Active\nReaction alerts: Active',
+            confirmText: 'Done'
+        });
+    };
+}
+
+const settingItemPrivacy = document.getElementById('setting-item-privacy');
+if (settingItemPrivacy) {
+    settingItemPrivacy.onclick = () => {
+        showWhatsAppDialog({
+            title: 'Privacy & Security',
+            message: 'Last seen: Everyone\nProfile photo: Everyone\nRead receipts: On (Blue ticks)\nEnd-to-end encryption: Active (256-bit)\nDisappearing messages: Configurable per chat',
+            confirmText: 'Done'
+        });
+    };
+}
+
+const settingItemChats = document.getElementById('setting-item-chats');
+if (settingItemChats) {
+    settingItemChats.onclick = () => {
+        const wallModal = document.getElementById('wallpaper-modal');
+        if (wallModal) wallModal.style.display = 'flex';
+    };
+}
+
+const settingItemStorage = document.getElementById('setting-item-storage');
+if (settingItemStorage) {
+    settingItemStorage.onclick = () => {
+        const msgCount = Object.values(chats).reduce((acc, c) => acc + c.length, 0);
+        const cacheSize = (JSON.stringify(chats).length / 1024).toFixed(1);
+        showWhatsAppDialog({
+            title: 'Storage and Data',
+            message: `Total saved messages: ${msgCount}\nCached chat size: ${cacheSize} KB\nAuto-download media: Wi-Fi & Cellular\nNetwork usage: Optimized for speed`,
+            confirmText: 'Done'
+        });
+    };
+}
+
+const settingItemShortcuts = document.getElementById('setting-item-shortcuts');
+if (settingItemShortcuts) {
+    settingItemShortcuts.onclick = () => {
+        const modal = document.getElementById('shortcuts-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+}
+
+const settingItemHelp = document.getElementById('setting-item-help');
+if (settingItemHelp) {
+    settingItemHelp.onclick = () => {
+        showWhatsAppDialog({
+            title: 'QuickChat Help & Info',
+            message: 'QuickChat Web v2.5.0\nFully responsive WhatsApp Web clone with real-time WebSockets, WebRTC HD voice & video calls, status stories, voice notes, polls, reactions, and end-to-end encryption.',
+            confirmText: 'Got It'
+        });
+    };
+}
+
+const settingsLogoutBtn = document.getElementById('settings-logout-btn');
+if (settingsLogoutBtn) {
+    settingsLogoutBtn.onclick = () => {
+        const realLogout = document.getElementById('logout-btn');
+        if (realLogout) realLogout.click();
+    };
+}
+
+// ========================================================
+// 11. CONTACT INFO DRAWER
+// ========================================================
+function renderContactInfoDrawer() {
+    const body = document.getElementById('contact-info-body');
+    if (!body || !activeChat) return;
+    const isMuted = mutedChats.includes(activeChat);
+    const msgCount = (chats[activeChat] || []).length;
+
+    body.innerHTML = `
+        <div style="background:var(--wa-bg-drawer-card); padding:24px 16px; text-align:center; border-bottom:1px solid var(--wa-border-drawer);">
+            <div class="avatar" style="width:120px; height:120px; margin:0 auto 14px auto; font-size:42px;"></div>
+            <div style="font-size:18px; font-weight:600; color:var(--wa-text-drawer-card);">+91 ${activeChat}</div>
+            <div style="font-size:13px; color:var(--wa-text-pill); margin-top:4px;">online</div>
+        </div>
+        <div class="wa-profile-card">
+            <span class="wa-profile-label">About</span>
+            <div class="wa-profile-val-row">Hey there! I am using QuickChat.</div>
+        </div>
+        <div class="wa-settings-list" style="margin-top:10px;">
+            <div class="wa-settings-item" id="info-mute-toggle">
+                <i class="fas fa-bell wa-settings-item-icon"></i>
+                <div class="wa-settings-item-content">
+                    <div class="wa-settings-item-title">Mute notifications</div>
+                    <div class="wa-settings-item-desc">${isMuted ? 'Muted' : 'Sound enabled'}</div>
+                </div>
+            </div>
+            <div class="wa-settings-item" id="info-disappear-btn">
+                <i class="fas fa-stopwatch wa-settings-item-icon"></i>
+                <div class="wa-settings-item-content">
+                    <div class="wa-settings-item-title">Disappearing messages</div>
+                    <div class="wa-settings-item-desc">Off</div>
+                </div>
+            </div>
+            <div class="wa-settings-item">
+                <i class="fas fa-lock wa-settings-item-icon" style="color:#00a884;"></i>
+                <div class="wa-settings-item-content">
+                    <div class="wa-settings-item-title">Encryption</div>
+                    <div class="wa-settings-item-desc">Messages and calls are end-to-end encrypted. Tap to verify.</div>
+                </div>
+            </div>
+            <div class="wa-settings-item logout" id="info-block-btn">
+                <i class="fas fa-ban wa-settings-item-icon" style="color:#ea4335;"></i>
+                <div class="wa-settings-item-content">
+                    <div class="wa-settings-item-title" style="color:#ea4335;">Block +91 ${activeChat}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const infoMuteToggle = document.getElementById('info-mute-toggle');
+    if (infoMuteToggle) {
+        infoMuteToggle.onclick = () => {
+            toggleMuteActiveChat();
+            renderContactInfoDrawer();
+        };
+    }
+
+    const infoBlockBtn = document.getElementById('info-block-btn');
+    if (infoBlockBtn) {
+        infoBlockBtn.onclick = () => {
+            showWhatsAppDialog({
+                title: `Block +91 ${activeChat}?`,
+                message: 'Blocked contacts will no longer be able to call you or send you messages.',
+                confirmText: 'Block',
+                cancelText: 'Cancel',
+                onConfirm: () => {
+                    showWhatsAppToast(`Blocked +91 ${activeChat}.`, 'info');
+                }
+            });
+        };
+    }
+}
+
+const chatHeaderInfoClickable = document.getElementById('chat-header-info-clickable');
+if (chatHeaderInfoClickable) {
+    chatHeaderInfoClickable.addEventListener('click', (e) => {
+        if (e.target.closest('#back-btn')) return;
+        if (activeChat) openDrawer('contact-info-drawer');
+    });
+}
+
+// ========================================================
+// 12. CHAT HEADER MENU & ACTIONS
+// ========================================================
+const chatMoreBtn = document.getElementById('chat-more-btn');
+const chatHeaderMenu = document.getElementById('chat-header-menu');
+
+if (chatMoreBtn && chatHeaderMenu) {
+    chatMoreBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatHeaderMenu.style.display = chatHeaderMenu.style.display === 'none' ? 'block' : 'none';
+    });
+    document.addEventListener('click', (e) => {
+        if (chatHeaderMenu && !chatHeaderMenu.contains(e.target) && e.target !== chatMoreBtn) {
+            chatHeaderMenu.style.display = 'none';
+        }
+    });
+}
+
+function toggleMuteActiveChat() {
+    if (!activeChat) return;
+    if (mutedChats.includes(activeChat)) {
+        mutedChats = mutedChats.filter(c => c !== activeChat);
+        showWhatsAppToast(`Unmuted +91 ${activeChat}`, 'info');
+    } else {
+        mutedChats.push(activeChat);
+        showWhatsAppToast(`Muted notifications for +91 ${activeChat}`, 'info');
+    }
+    localStorage.setItem('quickchat_muted_chats', JSON.stringify(mutedChats));
+}
+
+const chatMenuContactInfo = document.getElementById('chat-menu-contact-info');
+if (chatMenuContactInfo) {
+    chatMenuContactInfo.onclick = () => {
+        if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
+        if (activeChat) openDrawer('contact-info-drawer');
+    };
+}
+
+const chatMenuMute = document.getElementById('chat-menu-mute');
+if (chatMenuMute) {
+    chatMenuMute.onclick = () => {
+        if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
+        toggleMuteActiveChat();
+    };
+}
+
+const chatMenuDisappearing = document.getElementById('chat-menu-disappearing');
+if (chatMenuDisappearing) {
+    chatMenuDisappearing.onclick = () => {
+        if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
+        showWhatsAppDialog({
+            title: 'Disappearing Messages',
+            message: 'Make messages in this chat disappear for everyone after:\n• 24 hours\n• 7 days\n• 90 days\n• Off',
+            confirmText: 'Keep Off',
+            cancelText: 'Cancel'
+        });
+    };
+}
+
+const chatMenuWallpaper = document.getElementById('chat-menu-wallpaper');
+if (chatMenuWallpaper) {
+    chatMenuWallpaper.onclick = () => {
+        if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
+        const modal = document.getElementById('wallpaper-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+}
+
+const chatMenuExport = document.getElementById('chat-menu-export');
+if (chatMenuExport) {
+    chatMenuExport.onclick = () => {
+        if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
+        if (!activeChat || !chats[activeChat]) {
+            showWhatsAppToast("No messages to export.", "info");
+            return;
+        }
+        let exportTxt = `QuickChat Chat with +91 ${activeChat}\nExported on: ${new Date().toLocaleString()}\n----------------------------------------\n\n`;
+        chats[activeChat].forEach(m => {
+            const sender = (m.from === myNumber) ? 'You' : `+91 ${m.from}`;
+            const content = m.text || (m.image ? '[Photo]' : (m.audio ? '[Voice message]' : (m.poll ? '[Poll]' : '[Attachment]')));
+            exportTxt += `[${m.time || ''}] ${sender}: ${content}\n`;
+        });
+        const blob = new Blob([exportTxt], { type: 'text/plain;charset=utf-8' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `QuickChat-Chat-${activeChat}.txt`;
+        a.click();
+        showWhatsAppToast("Chat exported successfully! 📄", "success");
+    };
+}
+
+const chatMenuClear = document.getElementById('chat-menu-clear');
+if (chatMenuClear) {
+    chatMenuClear.onclick = () => {
+        if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
+        if (!activeChat) return;
+        showWhatsAppDialog({
+            title: 'Clear this chat?',
+            message: 'This will delete all messages in this chat from your device.',
+            confirmText: 'Clear messages',
+            cancelText: 'Cancel',
+            onConfirm: () => {
+                chats[activeChat] = [];
+                saveLocalCache();
+                renderMessages();
+                renderChatList();
+                showWhatsAppToast("Chat messages cleared.", "info");
+            }
+        });
+    };
+}
+
+const chatMenuDelete = document.getElementById('chat-menu-delete');
+if (chatMenuDelete) {
+    chatMenuDelete.onclick = () => {
+        if (chatHeaderMenu) chatHeaderMenu.style.display = 'none';
+        if (!activeChat) return;
+        showWhatsAppDialog({
+            title: 'Delete this chat?',
+            message: `Delete chat with +91 ${activeChat}?`,
+            confirmText: 'Delete chat',
+            cancelText: 'Cancel',
+            onConfirm: () => {
+                const target = activeChat;
+                delete chats[target];
+                saveLocalCache();
+                activeChat = null;
+                chatPanel.style.display = 'none';
+                chatPanel.classList.remove('active-mobile');
+                emptyState.style.display = 'flex';
+                renderChatList();
+                showWhatsAppToast("Chat deleted.", "info");
+            }
+        });
+    };
+}
+
+// ========================================================
+// 13. IN-CHAT SEARCH ENGINE
+// ========================================================
+const chatSearchBtn = document.getElementById('chat-search-btn');
+const inchatSearchBar = document.getElementById('inchat-search-bar');
+const inchatSearchInput = document.getElementById('inchat-search-input');
+const closeInchatSearch = document.getElementById('close-inchat-search');
+
+if (chatSearchBtn && inchatSearchBar) {
+    chatSearchBtn.addEventListener('click', () => {
+        const isClosed = inchatSearchBar.style.display === 'none';
+        inchatSearchBar.style.display = isClosed ? 'flex' : 'none';
+        if (isClosed && inchatSearchInput) {
+            inchatSearchInput.focus();
+        } else {
+            clearInChatSearchHighlight();
+        }
+    });
+}
+
+function clearInChatSearchHighlight() {
+    document.querySelectorAll('.message').forEach(m => {
+        m.style.outline = '';
+    });
+}
+
+if (closeInchatSearch && inchatSearchBar) {
+    closeInchatSearch.addEventListener('click', () => {
+        inchatSearchBar.style.display = 'none';
+        if (inchatSearchInput) inchatSearchInput.value = '';
+        clearInChatSearchHighlight();
+    });
+}
+
+if (inchatSearchInput) {
+    inchatSearchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        clearInChatSearchHighlight();
+        if (!query) return;
+
+        let firstMatch = null;
+        document.querySelectorAll('.message').forEach(m => {
+            if (m.innerText.toLowerCase().includes(query)) {
+                m.style.outline = '2px solid #00a884';
+                if (!firstMatch) firstMatch = m;
+            }
+        });
+        if (firstMatch) {
+            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+}
+
+// ========================================================
+// 14. WALLPAPER PICKER ENGINE
+// ========================================================
+const closeWallpaperModalBtn = document.getElementById('close-wallpaper-modal-btn');
+const wallpaperModal = document.getElementById('wallpaper-modal');
+if (closeWallpaperModalBtn && wallpaperModal) {
+    closeWallpaperModalBtn.onclick = () => wallpaperModal.style.display = 'none';
+}
+
+const wallpaperChoices = document.querySelectorAll('.wa-wallpaper-choice');
+wallpaperChoices.forEach(choice => {
+    choice.addEventListener('click', () => {
+        wallpaperChoices.forEach(c => c.classList.remove('active'));
+        choice.classList.add('active');
+        const wall = choice.getAttribute('data-wall');
+        if (wall === 'default') {
+            document.documentElement.style.removeProperty('--wa-bg-chat-panel');
+            localStorage.removeItem('quickchat_wallpaper');
+        } else {
+            document.documentElement.style.setProperty('--wa-bg-chat-panel', wall);
+            localStorage.setItem('quickchat_wallpaper', wall);
+        }
+        if (wallpaperModal) wallpaperModal.style.display = 'none';
+        showWhatsAppToast("Chat wallpaper updated! 🎨", "success");
+    });
+});
+
+// ========================================================
+// 15. SHORTCUTS MODAL & GLOBAL HOTKEYS
+// ========================================================
+const shortcutsModal = document.getElementById('shortcuts-modal');
+const closeShortcutsModalBtn = document.getElementById('close-shortcuts-modal-btn');
+if (closeShortcutsModalBtn && shortcutsModal) {
+    closeShortcutsModalBtn.onclick = () => shortcutsModal.style.display = 'none';
+}
+
+window.addEventListener('keydown', (e) => {
+    // Escape closes popups & drawers
+    if (e.key === 'Escape') {
+        if (shortcutsModal) shortcutsModal.style.display = 'none';
+        if (wallpaperModal) wallpaperModal.style.display = 'none';
+        if (addStatusModal) addStatusModal.style.display = 'none';
+        if (statusViewerModal && statusViewerModal.style.display === 'flex') closeStatusViewer();
+        if (inchatSearchBar && inchatSearchBar.style.display === 'flex') {
+            inchatSearchBar.style.display = 'none';
+            clearInChatSearchHighlight();
+        }
+        if (emojiPickerPopup) emojiPickerPopup.style.display = 'none';
+        if (attachMenuPopup) attachMenuPopup.style.display = 'none';
+        closeAllDrawers();
+    }
+    // Ctrl + Alt + N: New chat
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        openNewChatDrawer();
+    }
+    // Ctrl + Alt + Shift + F: Search in chat
+    if (e.ctrlKey && e.altKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (chatSearchBtn) chatSearchBtn.click();
+    }
+    // Ctrl + Alt + ,: Settings
+    if (e.ctrlKey && e.altKey && e.key === ',') {
+        e.preventDefault();
+        openDrawer('settings-drawer');
+    }
+});
+
+// ========================================================
+// 16. QUICKCHAT AI ASSISTANT IN NAVIGATION RAIL
+// ========================================================
 function openAiAssistant() {
     const aiId = 'QuickChat AI';
     if (!chats[aiId]) {
@@ -1523,24 +3034,9 @@ if (railAiBtn) {
     railAiBtn.addEventListener('click', openAiAssistant);
 }
 
-const railStarredBtn = document.getElementById('rail-starred-btn');
-if (railStarredBtn) {
-    railStarredBtn.addEventListener('click', () => {
-        showWhatsAppToast("Starred messages coming soon!", "info");
-    });
-}
-
-const railSettingsBtn = document.getElementById('rail-settings-btn');
-if (railSettingsBtn) {
-    railSettingsBtn.addEventListener('click', openProfileDrawer);
-}
-
-const railProfileBtn = document.getElementById('rail-profile-btn');
-if (railProfileBtn) {
-    railProfileBtn.addEventListener('click', openProfileDrawer);
-}
-
-// 6. Bottom Desktop Promo Banner ("Get QuickChat for Windows")
+// ========================================================
+// 17. BOTTOM DESKTOP PROMO BANNER ("GET QUICKCHAT FOR WINDOWS")
+// ========================================================
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -1565,19 +3061,21 @@ if (promoBanner) {
     });
 }
 
-// 7. Interactive AI Response when chatting with QuickChat AI
+// ========================================================
+// 18. INTERACTIVE AI RESPONSE WHEN CHATTING WITH QUICKCHAT AI
+// ========================================================
 const originalSendMessage = sendMessage;
-sendMessage = function(imageStr = null) {
+sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locationData = null, pollData = null, fileName = null) {
     const currentChatTarget = activeChat;
     const currentInputText = messageInput ? messageInput.value.trim() : '';
-    originalSendMessage(imageStr);
+    originalSendMessage(imageStr, audioStr, msgType, locationData, pollData, fileName);
 
-    if (currentChatTarget === 'QuickChat AI' && currentInputText) {
+    if (currentChatTarget === 'QuickChat AI' && (currentInputText || imageStr || audioStr)) {
         setTimeout(() => {
             const aiReplies = [
                 "I'm here to help! QuickChat features real-time messaging, HD voice/video calls, and end-to-end encryption. 🚀",
                 "Great question! You can click the green '+' button to start a chat with any 10-digit number.",
-                "QuickChat is fully responsive and supports Dark Mode, emoji reactions, and offline instant load! ✨",
+                "QuickChat is fully responsive and supports Dark Mode, emoji reactions, voice notes, and offline instant load! ✨",
                 "Did you know? You can click 'Get QuickChat for Windows' at the bottom to install QuickChat directly on your PC."
             ];
             const chosen = aiReplies[Math.floor(Math.random() * aiReplies.length)];
@@ -1590,3 +3088,4 @@ sendMessage = function(imageStr = null) {
         }, 600);
     }
 };
+
