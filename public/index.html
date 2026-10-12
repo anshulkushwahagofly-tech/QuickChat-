@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WhatsApp</title>
+    <title>QuickChat</title>
     <link rel="icon" type="image/svg+xml" href="logo.svg?v=4">
     <link rel="alternate icon" type="image/png" href="logo.png?v=4">
     <link rel="apple-touch-icon" href="logo.png?v=4">
-    <link rel="manifest" href="manifest.json?v=3">
+    <link rel="manifest" href="manifest.json?v=4">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=18">
-    <link rel="stylesheet" href="mobile-whatsapp.css?v=8">
+    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="mobile-whatsapp.css?v=9">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    <!-- Login Overlay (WhatsApp Native Onboarding Flow) -->
+    <!-- Login Overlay (QuickChat Native Onboarding Flow) -->
     <div id="login-container">
         <!-- Top 3-dots menu for Onboarding -->
         <div class="onboarding-top-bar">
@@ -37,17 +37,17 @@
                     <div style="font-size: 48px; color: #00a884; margin-bottom: 20px;">
                         <i class="fas fa-circle-notch fa-spin"></i>
                     </div>
-                    <h3 style="color:#111b21; font-weight:600; font-size: 22px; margin-bottom: 8px;">WhatsApp</h3>
+                    <h3 style="color:#111b21; font-weight:600; font-size: 22px; margin-bottom: 8px;">QuickChat</h3>
                     <p style="color:#667781; font-size:14.5px;">Connecting...</p>
                 </div>
 
-                <!-- 1. Screen 1: WhatsApp Welcome Screen -->
+                <!-- 1. Screen 1: QuickChat Welcome Screen -->
                 <div id="onboarding-welcome-view" class="wa-onboarding-step">
                     <div class="wa-doodle-container">
-                        <img src="welcome-doodle.png" alt="WhatsApp" class="wa-welcome-doodle">
+                        <img src="welcome-doodle.png" alt="QuickChat" class="wa-welcome-doodle">
                     </div>
                     
-                    <h1 class="wa-welcome-title">Welcome to WhatsApp</h1>
+                    <h1 class="wa-welcome-title">Welcome to QuickChat</h1>
                     
                     <p class="wa-welcome-terms">
                         Read our <a href="#" onclick="return false;">Privacy Policy</a>. Tap "Agree and continue" to accept the <a href="#" onclick="return false;">Terms of Service</a>.
@@ -72,7 +72,7 @@
                 <div id="otp-phone-view" class="wa-onboarding-step" style="display:none;">
                     <h2 class="wa-screen-title">Enter your phone number</h2>
                     <p class="wa-screen-desc">
-                        WhatsApp will need to verify your phone number.
+                        QuickChat will need to verify your phone number.
                     </p>
 
                     <div class="wa-input-section">
@@ -181,9 +181,9 @@
                     <div class="avatar" id="my-profile-avatar"></div>
                 </div>
 
-                <!-- Mobile WhatsApp branding (Visible on Mobile only) -->
+                <!-- Mobile QuickChat branding (Visible on Mobile only) -->
                 <div class="whatsapp-brand">
-                    <span>WhatsApp</span>
+                    <span>QuickChat</span>
                 </div>
 
                 <div class="header-icons">
@@ -268,13 +268,13 @@
             </div>
         </div>
         
-        <!-- Empty state when no chat is selected (WhatsApp Web style) -->
+        <!-- Empty state when no chat is selected (QuickChat Web style) -->
         <div class="empty-chat-state" id="empty-state">
             <div class="empty-state-icon">
                 <i class="fas fa-laptop"></i>
             </div>
-            <h2>WhatsApp Web</h2>
-            <p>Send and receive messages without keeping your phone online.<br>Use WhatsApp on up to 4 linked devices and 1 phone at the same time.</p>
+            <h2>QuickChat Web</h2>
+            <p>Send and receive messages without keeping your phone online.<br>Use QuickChat on multiple devices at the same time.</p>
             <div class="empty-state-lock">
                 <i class="fas fa-lock"></i> End-to-end encrypted
             </div>
@@ -341,7 +341,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=27"></script>
+    <script src="script.js?v=28"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>

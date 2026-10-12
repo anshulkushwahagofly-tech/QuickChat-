@@ -1,6 +1,6 @@
 {
-  "name": "WhatsApp",
-  "short_name": "WhatsApp",
+  "name": "QuickChat",
+  "short_name": "QuickChat",
   "description": "Simple. Reliable. Private.",
   "start_url": "/",
   "display": "standalone",

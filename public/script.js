@@ -279,7 +279,7 @@ if (menuSwitchPin) {
 if (menuHelp) {
     menuHelp.addEventListener('click', () => {
         if (onboardingMenu) onboardingMenu.style.display = 'none';
-        alert("QuickChat Help:\n\n1. Apna 10-digit mobile number enter karke 'Next' par tap karein.\n2. SMS mein 6-digit OTP code prapt hoga.\n3. OTP dalte hi WhatsApp account activate ho jayega!");
+        alert("QuickChat Help:\n\n1. Apna 10-digit mobile number enter karke 'Next' par tap karein.\n2. SMS mein 6-digit OTP code prapt hoga.\n3. OTP dalte hi QuickChat account activate ho jayega!");
     });
 }
 
@@ -530,7 +530,7 @@ socket.on('login success', (data) => {
 
     // Update UI previews
     if (myNumberPreview) myNumberPreview.innerText = '+91 ' + myNumber;
-    if (myDisplayNumber) myDisplayNumber.innerText = "WhatsApp";
+    if (myDisplayNumber) myDisplayNumber.innerText = "QuickChat";
 
     // Load history from database
     data.history.forEach(msg => {
