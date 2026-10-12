@@ -491,6 +491,80 @@ body::before {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid #e9edef;
+    position: relative;
+}
+
+/* --- WHATSAPP WEB DESKTOP DROPDOWN MENU --- */
+.dropdown-menu {
+    position: absolute;
+    top: 54px;
+    right: 12px;
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 4px 20px rgba(11, 20, 26, 0.2), 0 2px 6px rgba(11, 20, 26, 0.08);
+    min-width: 200px;
+    z-index: 1000;
+    padding: 8px 0;
+    animation: menuFadeIn 0.15s ease-out;
+}
+
+@keyframes menuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.menu-item {
+    padding: 11px 20px;
+    font-size: 14.5px;
+    color: #3b4a54;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+    white-space: nowrap;
+    line-height: 1.2;
+}
+
+.menu-item:hover {
+    background-color: #f5f6f6;
+}
+
+.menu-item i {
+    font-size: 15px;
+    width: 20px;
+    color: #54656f;
+    text-align: center;
+    padding: 0 !important;
+    border-radius: 0 !important;
+}
+
+.menu-item:hover i {
+    background-color: transparent !important;
+}
+
+.menu-divider {
+    height: 1px;
+    background-color: #e9edef;
+    margin: 6px 0;
+}
+
+.menu-item.logout {
+    color: #ea0038;
+}
+
+.menu-item.logout i {
+    color: #ea0038;
+}
+
+.menu-item.logout:hover {
+    background-color: #fff1f2;
 }
 
 .desktop-avatar-wrapper {
