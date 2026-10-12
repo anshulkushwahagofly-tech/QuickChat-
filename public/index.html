@@ -22,6 +22,15 @@
         </div>
         <div class="login-box">
             <div class="login-content">
+                <!-- Connecting/Loading View for Auto-Login -->
+                <div id="login-loading-view" style="display:none; padding: 40px 10px; text-align:center;">
+                    <div style="font-size: 45px; color: #00a884; margin-bottom: 18px;">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                    </div>
+                    <h3 style="color:#111b21; font-weight:500; font-size: 20px; margin-bottom: 8px;">QuickChat</h3>
+                    <p style="color:#667781; font-size:14px;">Aapka account connect ho raha hai...</p>
+                </div>
+
                 <!-- Login Mode -->
                 <div id="login-form-view">
                     <h2>Login to QuickChat</h2>
@@ -226,7 +235,7 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=16"></script>
+    <script src="script.js?v=17"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>

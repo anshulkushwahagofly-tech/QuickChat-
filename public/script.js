@@ -37,20 +37,37 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Auto-login on socket connect and reconnect
-socket.on('connect', () => {
-    const num = myNumber || localStorage.getItem('quickchat_session_num');
-    const pin = localStorage.getItem('quickchat_session_pin');
-    if (num && pin) {
-        socket.emit('login', { number: num, pin: pin });
-    }
-});
-
-// Form view switching
+const loginLoadingView = document.getElementById('login-loading-view');
 const loginFormView = document.getElementById('login-form-view');
 const signupFormView = document.getElementById('signup-form-view');
 const showSignupBtn = document.getElementById('show-signup');
 const showLoginBtn = document.getElementById('show-login');
+
+// Check saved session immediately to prevent flashing login form on reload
+const savedNum = localStorage.getItem('quickchat_session_num');
+const savedPin = localStorage.getItem('quickchat_session_pin');
+
+if (savedNum && savedPin) {
+    if (loginFormView) loginFormView.style.display = 'none';
+    if (signupFormView) signupFormView.style.display = 'none';
+    if (loginLoadingView) loginLoadingView.style.display = 'block';
+    
+    const loginNumInput = document.getElementById('login-number');
+    const loginPinInput = document.getElementById('login-pin');
+    if (loginNumInput) loginNumInput.value = savedNum;
+    if (loginPinInput) loginPinInput.value = savedPin;
+
+    socket.emit('login', { number: savedNum, pin: savedPin });
+}
+
+// Auto-login on socket connect and reconnect
+socket.on('connect', () => {
+    const num = myNumber || localStorage.getItem('quickchat_session_num');
+    const pin = localStorage.getItem('quickchat_session_pin');
+    if (num && pin && !myNumber) {
+        socket.emit('login', { number: num, pin: pin });
+    }
+});
 
 showSignupBtn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -115,22 +132,15 @@ if (logoutBtn) {
 
 socket.on('login error', (msg) => {
     console.warn("Login response:", msg);
+    if (loginLoadingView) loginLoadingView.style.display = 'none';
+    if (loginFormView) loginFormView.style.display = 'block';
+
     if (msg.includes('Galat PIN')) {
         alert(msg);
         localStorage.removeItem('quickchat_session_num');
         localStorage.removeItem('quickchat_session_pin');
-    } else if (msg.includes('Account nahi mila')) {
-        if (!myNumber) {
-            alert(msg);
-            localStorage.removeItem('quickchat_session_num');
-            localStorage.removeItem('quickchat_session_pin');
-        } else {
-            console.log("Ignored temporary re-auth error:", msg);
-        }
     } else {
-        if (!myNumber) {
-            alert(msg);
-        }
+        alert(msg);
     }
 });
 
@@ -139,6 +149,12 @@ socket.on('login success', (data) => {
     chats = {};
     allRegisteredUsers = data.allUsers || [];
     
+    // Ensure session credentials remain safely saved in localStorage
+    const pinInput = document.getElementById('login-pin');
+    const currentPin = (pinInput && pinInput.value.trim()) || localStorage.getItem('quickchat_session_pin');
+    if (myNumber) localStorage.setItem('quickchat_session_num', myNumber);
+    if (currentPin) localStorage.setItem('quickchat_session_pin', currentPin);
+
     // Load history from database
     data.history.forEach(msg => {
         const friend = (msg.from === myNumber) ? msg.to : msg.from;
@@ -147,6 +163,7 @@ socket.on('login success', (data) => {
         chats[friend].push({ from: msg.from, text: msg.text, image: msg.image, time: timeStr });
     });
 
+    if (loginLoadingView) loginLoadingView.style.display = 'none';
     loginContainer.style.display = 'none';
     appContainer.style.display = 'flex';
     myDisplayNumber.innerText = "QuickChat";
