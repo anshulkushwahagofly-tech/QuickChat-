@@ -31,10 +31,61 @@
                     <p style="color:#667781; font-size:14px;">Aapka account connect ho raha hai...</p>
                 </div>
 
-                <!-- Login Mode -->
-                <div id="login-form-view">
-                    <h2>Login to QuickChat</h2>
-                    <p class="login-subtitle">Welcome back! Please enter your details.</p>
+                <!-- 1. Firebase Phone Number Step -->
+                <div id="otp-phone-view">
+                    <h2>Enter phone number</h2>
+                    <p class="login-subtitle">QuickChat will send an SMS with a 6-digit verification code to verify your real phone number.</p>
+                    
+                    <div class="input-group">
+                        <label>Mobile Number (Real Indian Number)</label>
+                        <div class="input-wrapper">
+                            <span class="country-code">+91</span>
+                            <input type="text" id="otp-phone-input" placeholder="Enter 10-digit number" maxlength="10" autocomplete="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        </div>
+                        <small style="color:#8696a0; font-size:12px; margin-top:5px; display:block; text-align:left;">Real 10-digit mobile number (6, 7, 8 ya 9 se shuru hona chahiye).</small>
+                    </div>
+
+                    <!-- Invisible Firebase reCAPTCHA container -->
+                    <div id="recaptcha-container"></div>
+                    
+                    <button id="send-otp-btn">
+                        <span>Send OTP</span>
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    
+                    <div style="margin-top:18px; display:flex; justify-content:center; gap:15px; font-size:13.5px;">
+                        <a href="#" id="show-pin-view-btn" style="color:#008069; font-weight:600; text-decoration:none;">Or use 4-digit PIN</a>
+                    </div>
+                </div>
+
+                <!-- 2. Firebase 6-digit OTP Verification Step -->
+                <div id="otp-verify-view" style="display:none;">
+                    <h2>Verify Number</h2>
+                    <p class="login-subtitle" style="margin-bottom:12px;">Waiting to detect an SMS sent to <b id="otp-target-display" style="color:#111b21;">+91 ...</b></p>
+                    <a href="#" id="change-number-btn" style="color:#00a884; font-size:13px; text-decoration:none; display:inline-block; margin-bottom:20px; font-weight:500;"><i class="fas fa-edit"></i> Wrong number?</a>
+                    
+                    <div class="input-group">
+                        <label style="text-align:center;">Enter 6-digit OTP code</label>
+                        <div class="input-wrapper" style="border-radius:8px;">
+                            <input type="text" id="otp-code-input" placeholder="------" maxlength="6" autocomplete="one-time-code" oninput="this.value = this.value.replace(/[^0-9]/g, '')" style="text-align:center; font-size:26px; letter-spacing:8px; font-weight:bold; padding:12px 6px;">
+                        </div>
+                    </div>
+
+                    <button id="verify-otp-btn">
+                        <span>Verify & Login</span>
+                        <i class="fas fa-check"></i>
+                    </button>
+
+                    <div style="margin-top:20px; font-size:13.5px; color:#667781; text-align:center;">
+                        <span id="countdown-box">Resend SMS in <b id="countdown-timer">30</b>s</span>
+                        <a href="#" id="resend-otp-btn" style="display:none; color:#008069; font-weight:bold; text-decoration:none;"><i class="fas fa-redo"></i> Resend SMS OTP</a>
+                    </div>
+                </div>
+
+                <!-- 3. Legacy PIN Mode (Optional fallback) -->
+                <div id="login-form-view" style="display:none;">
+                    <h2>Login with PIN</h2>
+                    <p class="login-subtitle">Enter your 10-digit number and 4-digit PIN.</p>
                     
                     <div class="input-group">
                         <label>Phone Number</label>
@@ -55,40 +106,11 @@
                         <span>Login</span>
                         <i class="fas fa-arrow-right"></i>
                     </button>
-                    <p style="margin-top:20px; font-size:14px; color:#54656f; text-align:center;">New here? <a href="#" id="show-signup" style="color:#008bbf; font-weight:bold; text-decoration:none;">Create an account</a></p>
-                </div>
-
-                <!-- Signup Mode (Strict Real Number Verification) -->
-                <div id="signup-form-view" style="display:none;">
-                    <h2>Create Account</h2>
-                    <p class="login-subtitle">Apna real mobile number aur 4-digit PIN dalein.</p>
-                    
-                    <div class="input-group">
-                        <label>Mobile Number (Real Indian Number)</label>
-                        <div class="input-wrapper">
-                            <span class="country-code">+91</span>
-                            <input type="text" id="signup-number" placeholder="Enter 10-digit number" maxlength="10" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-                        </div>
-                        <small style="color:#8696a0; font-size:12px; margin-top:5px; display:block; text-align:left;">Sirf 6, 7, 8 ya 9 se shuru hone wale real Indian numbers allowed hain.</small>
-                    </div>
-
-                    <div class="input-group">
-                        <label>Create 4-digit PIN</label>
-                        <div class="input-wrapper">
-                            <input type="password" id="signup-pin" placeholder="****" maxlength="4" autocomplete="off" style="text-align: center; font-size: 20px; letter-spacing: 5px;">
-                        </div>
-                    </div>
-
-                    <button id="signup-btn" style="background-color: #00a884; color: #ffffff; border: none; padding: 14px 20px; border-radius: 24px; font-size: 16px; cursor: pointer; width: 100%; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 12px rgba(0, 168, 132, 0.4);">
-                        <span>Sign Up</span>
-                        <i class="fas fa-user-plus"></i>
-                    </button>
-                    
-                    <p style="margin-top:20px; font-size:14px; color:#54656f; text-align:center;">Already have an account? <a href="#" id="show-login" style="color:#008069; font-weight:bold; text-decoration:none;">Login here</a></p>
+                    <p style="margin-top:16px; font-size:14px; text-align:center;"><a href="#" id="back-to-otp-btn" style="color:#008069; font-weight:bold; text-decoration:none;">⬅ Back to Phone OTP</a></p>
                 </div>
                 
                 <div class="secure-badge">
-                    <i class="fas fa-lock"></i> End-to-end encrypted
+                    <i class="fas fa-shield-alt"></i> Google Firebase End-to-end verified
                 </div>
             </div>
         </div>
@@ -241,8 +263,12 @@
         </div>
     </div>
 
+    <!-- Google Firebase Phone Authentication SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="firebase-config.js?v=1"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=20"></script>
+    <script src="script.js?v=22"></script>
     <script src="webrtc.js?v=3"></script>
 </body>
 </html>

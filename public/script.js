@@ -46,55 +46,234 @@ if ('serviceWorker' in navigator) {
 }
 
 const loginLoadingView = document.getElementById('login-loading-view');
+const otpPhoneView = document.getElementById('otp-phone-view');
+const otpVerifyView = document.getElementById('otp-verify-view');
+const otpPhoneInput = document.getElementById('otp-phone-input');
+const sendOtpBtn = document.getElementById('send-otp-btn');
+const showPinViewBtn = document.getElementById('show-pin-view-btn');
+const backToOtpBtn = document.getElementById('back-to-otp-btn');
+const otpTargetDisplay = document.getElementById('otp-target-display');
+const changeNumberBtn = document.getElementById('change-number-btn');
+const otpCodeInput = document.getElementById('otp-code-input');
+const verifyOtpBtn = document.getElementById('verify-otp-btn');
+const resendOtpBtn = document.getElementById('resend-otp-btn');
+const countdownBox = document.getElementById('countdown-box');
+const countdownTimer = document.getElementById('countdown-timer');
+
 const loginFormView = document.getElementById('login-form-view');
-const signupFormView = document.getElementById('signup-form-view');
-const showSignupBtn = document.getElementById('show-signup');
-const showLoginBtn = document.getElementById('show-login');
+const loginBtn = document.getElementById('login-btn');
 
 // Check saved session immediately to prevent flashing login form on reload
 const savedNum = localStorage.getItem('quickchat_session_num');
 const savedPin = localStorage.getItem('quickchat_session_pin');
 
-if (savedNum && savedPin) {
+if (savedNum) {
+    if (otpPhoneView) otpPhoneView.style.display = 'none';
+    if (otpVerifyView) otpVerifyView.style.display = 'none';
     if (loginFormView) loginFormView.style.display = 'none';
-    if (signupFormView) signupFormView.style.display = 'none';
     if (loginLoadingView) loginLoadingView.style.display = 'block';
-    
-    const loginNumInput = document.getElementById('login-number');
-    const loginPinInput = document.getElementById('login-pin');
-    if (loginNumInput) loginNumInput.value = savedNum;
-    if (loginPinInput) loginPinInput.value = savedPin;
 
-    socket.emit('login', { number: savedNum, pin: savedPin });
+    if (savedPin) {
+        socket.emit('login', { number: savedNum, pin: savedPin });
+    } else {
+        socket.emit('auto login', { number: savedNum });
+    }
 }
 
 // Auto-login on socket connect and reconnect
 socket.on('connect', () => {
     const num = myNumber || localStorage.getItem('quickchat_session_num');
     const pin = localStorage.getItem('quickchat_session_pin');
-    if (num && pin && !myNumber) {
-        socket.emit('login', { number: num, pin: pin });
+    if (num && !myNumber) {
+        if (pin) {
+            socket.emit('login', { number: num, pin: pin });
+        } else {
+            socket.emit('auto login', { number: num });
+        }
     }
 });
 
-showSignupBtn.addEventListener('click', (e) => {
+// Resend countdown timer
+let resendTimerInterval = null;
+function startResendTimer() {
+    let timeLeft = 30;
+    if (countdownBox) countdownBox.style.display = 'inline';
+    if (resendOtpBtn) resendOtpBtn.style.display = 'none';
+    if (countdownTimer) countdownTimer.innerText = timeLeft;
+
+    clearInterval(resendTimerInterval);
+    resendTimerInterval = setInterval(() => {
+        timeLeft--;
+        if (countdownTimer) countdownTimer.innerText = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(resendTimerInterval);
+            if (countdownBox) countdownBox.style.display = 'none';
+            if (resendOtpBtn) resendOtpBtn.style.display = 'inline-block';
+        }
+    }, 1000);
+}
+
+function showOtpVerifyScreen(phoneNum) {
+    if (otpPhoneView) otpPhoneView.style.display = 'none';
+    if (otpVerifyView) otpVerifyView.style.display = 'block';
+    if (otpTargetDisplay) otpTargetDisplay.innerText = '+91 ' + phoneNum;
+    if (otpCodeInput) {
+        otpCodeInput.value = '';
+        otpCodeInput.focus();
+    }
+    resetSendOtpBtn();
+    startResendTimer();
+}
+
+function resetSendOtpBtn() {
+    if (sendOtpBtn) {
+        sendOtpBtn.disabled = false;
+        sendOtpBtn.innerHTML = `<span>Send OTP</span> <i class="fas fa-arrow-right"></i>`;
+    }
+}
+
+function resetVerifyOtpBtn() {
+    if (verifyOtpBtn) {
+        verifyOtpBtn.disabled = false;
+        verifyOtpBtn.innerHTML = `<span>Verify & Login</span> <i class="fas fa-check"></i>`;
+    }
+}
+
+// 1. Send OTP Action
+function doSendOtp() {
+    const rawNum = otpPhoneInput ? otpPhoneInput.value.trim() : '';
+    if (!rawNum || !/^[6-9]\d{9}$/.test(rawNum)) {
+        alert("Kripya ek valid 10-digit Indian mobile number dalein (6, 7, 8 ya 9 se shuru hona chahiye).");
+        return;
+    }
+
+    if (sendOtpBtn) {
+        sendOtpBtn.disabled = true;
+        sendOtpBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> <span>Sending SMS...</span>`;
+    }
+
+    const hasRealFirebase = (typeof isFirebaseConfigured === 'function') && isFirebaseConfigured() && firebaseAuth;
+
+    if (hasRealFirebase) {
+        try {
+            if (!window.recaptchaVerifier) {
+                window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                    'size': 'invisible',
+                    'callback': () => { console.log('Firebase reCAPTCHA verified'); }
+                });
+            }
+
+            firebaseAuth.signInWithPhoneNumber('+91' + rawNum, window.recaptchaVerifier)
+                .then((confirmationResult) => {
+                    window.confirmationResult = confirmationResult;
+                    window.currentOtpPhone = rawNum;
+                    showOtpVerifyScreen(rawNum);
+                })
+                .catch((err) => {
+                    console.error("Firebase SMS error:", err);
+                    alert("Firebase SMS Error: " + (err.message || err));
+                    resetSendOtpBtn();
+                    try { if (window.recaptchaVerifier) window.recaptchaVerifier.clear(); } catch(e){}
+                });
+        } catch (e) {
+            console.error("Firebase send exception:", e);
+            alert("Firebase Exception: " + e.message);
+            resetSendOtpBtn();
+        }
+    } else {
+        // Instant Demo/Setup Mode for testing
+        const demoCode = "123456";
+        window.currentDemoOtp = demoCode;
+        window.currentOtpPhone = rawNum;
+        setTimeout(() => {
+            alert(`[TESTING OTP]\n\nMobile Number +91 ${rawNum} ke liye OTP: ${demoCode}\n\n(Aap firebase-config.js me apni keys daal kar direct Real SMS OTP activate kar sakte hain).`);
+            showOtpVerifyScreen(rawNum);
+        }, 600);
+    }
+}
+
+// 2. Verify OTP Action
+function doVerifyOtp() {
+    const code = otpCodeInput ? otpCodeInput.value.trim() : '';
+    if (!code || code.length !== 6) {
+        alert("Kripya 6-digit OTP code dalein.");
+        return;
+    }
+
+    if (verifyOtpBtn) {
+        verifyOtpBtn.disabled = true;
+        verifyOtpBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> <span>Verifying...</span>`;
+    }
+
+    if (window.confirmationResult) {
+        window.confirmationResult.confirm(code)
+            .then((result) => {
+                const user = result.user;
+                localStorage.setItem('quickchat_session_num', window.currentOtpPhone);
+                localStorage.removeItem('quickchat_session_pin');
+                socket.emit('firebase otp login', { number: window.currentOtpPhone, uid: user.uid });
+            })
+            .catch((err) => {
+                alert("Galat OTP code! Kripya SMS me aaya hua sahi OTP dalein.");
+                resetVerifyOtpBtn();
+            });
+    } else {
+        // Demo Mode Verification
+        if (code === (window.currentDemoOtp || "123456")) {
+            localStorage.setItem('quickchat_session_num', window.currentOtpPhone);
+            localStorage.removeItem('quickchat_session_pin');
+            socket.emit('firebase otp login', { number: window.currentOtpPhone, uid: 'demo_' + Date.now() });
+        } else {
+            alert("Galat OTP code! Demo OTP '123456' dalein.");
+            resetVerifyOtpBtn();
+        }
+    }
+}
+
+if (sendOtpBtn) sendOtpBtn.addEventListener('click', doSendOtp);
+if (verifyOtpBtn) verifyOtpBtn.addEventListener('click', doVerifyOtp);
+if (resendOtpBtn) resendOtpBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    loginFormView.style.display = 'none';
-    signupFormView.style.display = 'block';
+    doSendOtp();
 });
 
-showLoginBtn.addEventListener('click', (e) => {
-    e.preventDefault();
-    signupFormView.style.display = 'none';
-    loginFormView.style.display = 'block';
-});
+if (otpPhoneInput) {
+    otpPhoneInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doSendOtp();
+    });
+}
+if (otpCodeInput) {
+    otpCodeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doVerifyOtp();
+    });
+}
 
-const loginBtn = document.getElementById('login-btn');
-const signupBtn = document.getElementById('signup-btn');
-const signupNumberInput = document.getElementById('signup-number');
-const signupPinInput = document.getElementById('signup-pin');
+if (changeNumberBtn) {
+    changeNumberBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (otpVerifyView) otpVerifyView.style.display = 'none';
+        if (otpPhoneView) otpPhoneView.style.display = 'block';
+        if (otpPhoneInput) otpPhoneInput.focus();
+    });
+}
 
-function doLogin() {
+// PIN Toggle Mode
+if (showPinViewBtn) {
+    showPinViewBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (otpPhoneView) otpPhoneView.style.display = 'none';
+        if (loginFormView) loginFormView.style.display = 'block';
+    });
+}
+if (backToOtpBtn) {
+    backToOtpBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (loginFormView) loginFormView.style.display = 'none';
+        if (otpPhoneView) otpPhoneView.style.display = 'block';
+    });
+}
+
+function doPinLogin() {
     const num = document.getElementById('login-number').value.trim();
     const pin = document.getElementById('login-pin').value.trim();
     if (num && pin) {
@@ -106,39 +285,11 @@ function doLogin() {
     }
 }
 
-function doSignup() {
-    const num = signupNumberInput.value.trim();
-    const pin = signupPinInput.value.trim();
-    if (!num || !pin) {
-        alert("Kripya Mobile Number aur 4-digit PIN dono dalein.");
-        return;
-    }
-    if (!/^[6-9]\d{9}$/.test(num)) {
-        alert("Kripya ek valid 10-digit Indian mobile number dalein (6, 7, 8 ya 9 se shuru hona chahiye).");
-        return;
-    }
-    if (pin.length !== 4) {
-        alert("PIN exactly 4-digit ka hona chahiye.");
-        return;
-    }
-    if (signupBtn) {
-        signupBtn.disabled = true;
-        signupBtn.innerText = "Creating Account...";
-    }
-    localStorage.setItem('quickchat_session_num', num);
-    localStorage.setItem('quickchat_session_pin', pin);
-    socket.emit('signup', { number: num, pin: pin });
-}
-
-if (loginBtn) loginBtn.addEventListener('click', doLogin);
-if (signupBtn) signupBtn.addEventListener('click', doSignup);
-
-document.getElementById('login-pin').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') doLogin();
-});
-if (signupPinInput) {
-    signupPinInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') doSignup();
+if (loginBtn) loginBtn.addEventListener('click', doPinLogin);
+const loginPinInput = document.getElementById('login-pin');
+if (loginPinInput) {
+    loginPinInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doPinLogin();
     });
 }
 

@@ -213,6 +213,58 @@ io.on('connection', (socket) => {
         }
     });
 
+    // FIREBASE OTP VERIFIED LOGIN / REGISTER
+    socket.on('firebase otp login', async ({ number, uid }) => {
+        try {
+            const validation = validateRealIndianNumber(number);
+            if (!validation.valid) {
+                return socket.emit('login error', validation.message);
+            }
+            const cleanNum = validation.number;
+
+            let existingUser = await getUser(cleanNum);
+            if (!existingUser) {
+                // Register verified user with OTP
+                await createUser(cleanNum, 'OTP_VERIFIED_' + (uid ? uid.substring(0, 10) : 'OK'));
+                console.log(`Real user registered via Phone OTP: ${cleanNum}`);
+            } else {
+                console.log(`User logged in via Phone OTP: ${cleanNum}`);
+            }
+
+            connectedUsers[cleanNum] = socket.id;
+            socketToPhone[socket.id] = cleanNum;
+
+            const userMessages = await getUserMessages(cleanNum);
+            const allUsers = await getAllUsers();
+            socket.emit('login success', { number: cleanNum, history: userMessages, allUsers });
+            io.emit('all users', allUsers);
+        } catch (err) {
+            console.error("Firebase OTP Login error:", err);
+            socket.emit('login error', 'OTP verification server error.');
+        }
+    });
+
+    // AUTO LOGIN (Session Persistence across reload)
+    socket.on('auto login', async ({ number }) => {
+        try {
+            if (!number) return;
+            const cleanNum = (number || '').trim();
+            const existingUser = await getUser(cleanNum);
+            if (existingUser) {
+                connectedUsers[cleanNum] = socket.id;
+                socketToPhone[socket.id] = cleanNum;
+                console.log(`User auto-reconnected: ${cleanNum}`);
+
+                const userMessages = await getUserMessages(cleanNum);
+                const allUsers = await getAllUsers();
+                socket.emit('login success', { number: cleanNum, history: userMessages, allUsers });
+                io.emit('all users', allUsers);
+            }
+        } catch (err) {
+            console.error("Auto login error:", err);
+        }
+    });
+
     socket.on('get all users', async () => {
         try {
             const allUsers = await getAllUsers();
