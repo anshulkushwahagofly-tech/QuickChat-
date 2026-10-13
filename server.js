@@ -21,10 +21,16 @@ const io = new Server(server, {
 // Enable Gzip compression to speed up network asset delivery by up to 70%
 app.use(compression());
 
-// Static file serving with short-term caching & etag for instant reloads
+// Static file serving with no-cache on HTML/JS/CSS so updates take effect immediately
 app.use(express.static(path.join(__dirname, 'public'), {
-    maxAge: '1h',
-    etag: true
+    etag: true,
+    setHeaders: (res, filePath) => {
+        if (/\.(html|js|css)$/i.test(filePath)) {
+            res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
+        }
+    }
 }));
 
 // --- DATABASE SETUP (MongoDB or Local JSON Fallback) ---
@@ -589,7 +595,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- ADVANCED QUICKCHAT AI BRAIN (Server LLM + Image Gen + Knowledge Engine) ---
+    // --- ADVANCED QUICKCHAT AI BRAIN (Server LLM + Image Gen + Auto-Retry) ---
     socket.on('ask ai', async ({ requestId, prompt, history = [], hasImage = false, hasAudio = false }) => {
         try {
             const userText = String(prompt || '').trim();
@@ -608,19 +614,25 @@ io.on('connection', (socket) => {
                 });
             }
 
-            // 2. Call Live Generative LLM API with conversation memory
+            // 2. Call Live Generative LLM API with clean conversation memory & auto-retry
             const systemInstruction = [
-                "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant integrated into QuickChat (like Meta AI on WhatsApp).",
+                "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant inside QuickChat (like Meta AI on WhatsApp).",
+                "Never call yourself ChatGPT; your name is QuickChat AI.",
                 "CRITICAL RULE: Directly and accurately answer the exact question the user asked! Do not give generic filler.",
-                "LANGUAGE RULE: If the user writes in Hinglish (Hindi in English alphabet, e.g., 'bharat ke pm kon hai', 'suraj garam kyu hota hai'), reply in clear, natural Hinglish. If they write in Hindi (Devanagari), reply in Hindi. If they write in English, reply in English.",
-                "You are an expert in all subjects: General Knowledge, Science, Math, Coding/Programming, History, Current Affairs, Recipes, Health, Career, Shayari, Jokes, and Daily Life."
+                "LANGUAGE RULE: If the user writes in Hinglish (Hindi in English alphabet, e.g., 'bharat ke pm kon hai', 'kya kar rahe ho'), reply in clear, natural Hinglish. If they write in Hindi (Devanagari), reply in Hindi. If they write in English, reply in English."
             ].join(" ");
 
             const formattedHistory = Array.isArray(history)
-                ? history.slice(-6).map(m => ({
-                    role: m.role === 'assistant' ? 'assistant' : 'user',
-                    content: String(m.content || '').slice(0, 500)
-                }))
+                ? history
+                    .filter(m => {
+                        const c = String(m && m.content || '');
+                        return c && !c.startsWith('📚') && !c.includes('QuickChat AI Analysis') && !c.includes('connection slow hai') && !c.includes('Main **QuickChat AI** hoon — aapka apna');
+                    })
+                    .slice(-4)
+                    .map(m => ({
+                        role: m.role === 'assistant' ? 'assistant' : 'user',
+                        content: String(m.content || '').slice(0, 350)
+                    }))
                 : [];
 
             const messagesPayload = [
@@ -634,37 +646,52 @@ io.on('connection', (socket) => {
                 }
             ];
 
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 22000);
-
-            const response = await fetch('https://text.pollinations.ai/openai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: 'openai-fast',
-                    reasoning_effort: 'low',
-                    messages: messagesPayload
-                }),
-                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
-
-            if (response && response.ok) {
-                const rawBody = (await response.text()).trim();
-                let aiText = rawBody;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 22000);
                 try {
-                    const parsed = JSON.parse(rawBody);
-                    if (parsed && parsed.choices && parsed.choices[0] && parsed.choices[0].message && parsed.choices[0].message.content) {
-                        aiText = parsed.choices[0].message.content.trim();
-                    }
-                } catch (e) {}
+                    const response = await fetch('https://text.pollinations.ai/openai', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: 'openai-fast',
+                            reasoning_effort: 'low',
+                            seed: Math.floor(Math.random() * 1000000),
+                            messages: messagesPayload
+                        }),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
 
-                if (aiText && aiText.length > 1 && !aiText.startsWith('<!DOCTYPE') && !aiText.startsWith('{"error"')) {
-                    return socket.emit('ai response', { requestId, text: aiText });
+                    if (response && response.ok) {
+                        const rawBody = (await response.text()).trim();
+                        let aiText = rawBody;
+                        try {
+                            const parsed = JSON.parse(rawBody);
+                            if (parsed && parsed.choices && parsed.choices[0] && parsed.choices[0].message && parsed.choices[0].message.content) {
+                                aiText = parsed.choices[0].message.content.trim();
+                            }
+                        } catch (e) {}
+
+                        if (aiText && aiText.length > 1 && !aiText.startsWith('<!DOCTYPE') && !aiText.startsWith('{"error"')) {
+                            return socket.emit('ai response', { requestId, text: aiText });
+                        }
+                    }
+
+                    if (response && (response.status === 402 || response.status === 429 || response.status >= 500) && attempt < 3) {
+                        await new Promise(r => setTimeout(r, 1500 * attempt));
+                        continue;
+                    }
+                } catch (fetchErr) {
+                    clearTimeout(timeoutId);
+                    if (attempt < 3) {
+                        await new Promise(r => setTimeout(r, 1200));
+                        continue;
+                    }
                 }
             }
 
-            // Trigger client fallback brain if external LLM returned empty
+            // Trigger client fallback brain if external LLM returned empty after all retries
             socket.emit('ai response', { requestId, fallback: true, prompt: userText, hasImage, hasAudio });
         } catch (err) {
             console.warn("AI external API fallback triggered:", err.message);
