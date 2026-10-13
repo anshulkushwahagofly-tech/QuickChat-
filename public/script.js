@@ -44,6 +44,32 @@ let chats = {};
 let unreadCounts = {};
 let allRegisteredUsers = [];
 
+const WHATSAPP_ABOUT_PRESETS = [
+    "Available",
+    "Busy",
+    "At school",
+    "At the movies",
+    "At work",
+    "Battery about to die",
+    "Can't talk, QuickChat only",
+    "In a meeting",
+    "At the gym",
+    "Sleeping",
+    "Urgent calls only"
+];
+
+let myProfile = {
+    name: '',
+    about: 'Hey there! I am using QuickChat.',
+    avatar: ''
+};
+
+let contactsProfiles = {};
+try {
+    const cachedContacts = localStorage.getItem('quickchat_contacts_profiles');
+    if (cachedContacts) contactsProfiles = JSON.parse(cachedContacts);
+} catch(e) {}
+
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').then(() => {
@@ -3613,32 +3639,6 @@ if (settingsLogoutBtn) {
 // ========================================================
 // 10.5 REAL-TIME WHATSAPP PROFILE & DP SYSTEM (A TO Z)
 // ========================================================
-
-const WHATSAPP_ABOUT_PRESETS = [
-    "Available",
-    "Busy",
-    "At school",
-    "At the movies",
-    "At work",
-    "Battery about to die",
-    "Can't talk, QuickChat only",
-    "In a meeting",
-    "At the gym",
-    "Sleeping",
-    "Urgent calls only"
-];
-
-let myProfile = {
-    name: '',
-    about: 'Hey there! I am using QuickChat.',
-    avatar: ''
-};
-
-let contactsProfiles = {};
-try {
-    const cachedContacts = localStorage.getItem('quickchat_contacts_profiles');
-    if (cachedContacts) contactsProfiles = JSON.parse(cachedContacts);
-} catch(e) {}
 
 // Helper to get contact profile
 function getContactProfile(number) {
