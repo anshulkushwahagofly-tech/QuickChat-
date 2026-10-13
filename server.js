@@ -159,29 +159,31 @@ async function getUserMessages(number) {
     await ensureDBReady();
     if (useMongo || mongoose.connection.readyState === 1) {
         const msgs = await Message.find({ $or: [{ from: number }, { to: number }] }).sort('timestamp').lean();
-        return msgs.map(m => ({
-            id: m.id || ('msg_' + (m._id || Date.now())),
-            from: m.from,
-            to: m.to,
-            text: m.text,
-            image: m.image,
-            audio: m.audio,
-            location: m.location,
-            poll: m.poll,
-            replyTo: m.replyTo,
-            reactions: m.reactions || {},
-            type: m.type || (m.image ? 'image' : (m.audio ? 'audio' : 'text')),
-            isEdited: m.isEdited || false,
-            isDeleted: m.isDeleted || false,
-            isPinned: m.isPinned || false,
-            starredBy: m.starredBy || [],
-            status: m.isRead ? 'read' : (m.status || 'sent'),
-            isRead: !!m.isRead,
-            timestamp: m.timestamp ? (typeof m.timestamp.toISOString === 'function' ? m.timestamp.toISOString() : m.timestamp) : new Date().toISOString()
-        }));
+        return msgs
+            .filter(m => m.to !== 'QuickChat AI' && m.from !== 'QuickChat AI')
+            .map(m => ({
+                id: m.id || ('msg_' + (m._id || Date.now())),
+                from: m.from,
+                to: m.to,
+                text: m.text,
+                image: m.image,
+                audio: m.audio,
+                location: m.location,
+                poll: m.poll,
+                replyTo: m.replyTo,
+                reactions: m.reactions || {},
+                type: m.type || (m.image ? 'image' : (m.audio ? 'audio' : 'text')),
+                isEdited: m.isEdited || false,
+                isDeleted: m.isDeleted || false,
+                isPinned: m.isPinned || false,
+                starredBy: m.starredBy || [],
+                status: m.isRead ? 'read' : (m.status || 'sent'),
+                isRead: !!m.isRead,
+                timestamp: m.timestamp ? (typeof m.timestamp.toISOString === 'function' ? m.timestamp.toISOString() : m.timestamp) : new Date().toISOString()
+            }));
     } else {
         return loadDB().messages
-            .filter(m => m.from === number || m.to === number)
+            .filter(m => (m.from === number || m.to === number) && m.to !== 'QuickChat AI' && m.from !== 'QuickChat AI')
             .map(m => ({
                 ...m,
                 status: m.isRead ? 'read' : (m.status || 'sent'),
@@ -410,7 +412,7 @@ io.on('connection', (socket) => {
     socket.on('private message', async (data) => {
         try {
             const senderNumber = socketToPhone[socket.id];
-            if (!senderNumber) return;
+            if (!senderNumber || !data || data.to === 'QuickChat AI') return;
 
             const timestamp = new Date();
             const msgId = data.id || ('msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
@@ -620,26 +622,13 @@ io.on('connection', (socket) => {
                 });
             }
 
-            // 2. Prepare conversation memory & system instructions
+            // 2. Prepare system instructions (Strictly answer ONLY the current question!)
             const systemInstruction = [
-                "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant inside QuickChat (like Meta AI on WhatsApp).",
+                "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant inside QuickChat.",
                 "Never call yourself ChatGPT; your name is QuickChat AI.",
-                "CRITICAL RULE: Directly and accurately answer the exact question the user asked! Do not give generic filler.",
+                "STRICT RULE: Answer ONLY the exact question asked in the user's message. Do NOT add unrelated topics, extra answers, or filler.",
                 "LANGUAGE RULE: If the user writes in Hinglish (Hindi in English alphabet, e.g., 'bharat ke pm kon hai', 'kya kar rahe ho'), reply in clear, natural Hinglish. If they write in Hindi (Devanagari), reply in Hindi. If they write in English, reply in English."
             ].join(" ");
-
-            const formattedHistory = Array.isArray(history)
-                ? history
-                    .filter(m => {
-                        const c = String(m && m.content || '');
-                        return c && !c.startsWith('📚') && !c.includes('QuickChat AI Analysis') && !c.includes('connection slow hai') && !c.includes('Main **QuickChat AI** hoon — aapka apna');
-                    })
-                    .slice(-4)
-                    .map(m => ({
-                        role: m.role === 'assistant' ? 'assistant' : 'user',
-                        content: String(m.content || '').slice(0, 350)
-                    }))
-                : [];
 
             const userContent = hasImage
                 ? `[User shared a photo] ${userText || 'Describe and comment on this photo warmly.'}`
@@ -647,7 +636,6 @@ io.on('connection', (socket) => {
 
             const messagesPayload = [
                 { role: 'system', content: systemInstruction },
-                ...formattedHistory,
                 { role: 'user', content: userContent }
             ];
 
@@ -667,10 +655,6 @@ io.on('connection', (socket) => {
                     if (activeKey.startsWith('AIza')) {
                         // Official Google Gemini API
                         const geminiContents = [
-                            ...formattedHistory.map(m => ({
-                                role: m.role === 'assistant' ? 'model' : 'user',
-                                parts: [{ text: m.content }]
-                            })),
                             { role: 'user', parts: [{ text: userContent }] }
                         ];
                         for (const modelName of ['gemini-2.0-flash', 'gemini-1.5-flash']) {

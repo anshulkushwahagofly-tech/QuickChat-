@@ -1109,7 +1109,7 @@ socket.on('login success', (data) => {
     if (Array.isArray(data.history)) {
         data.history.forEach(msg => {
             const friend = (msg.from === myNumber) ? msg.to : msg.from;
-            if (!friend) return;
+            if (!friend || friend === 'QuickChat AI') return;
             if (!chats[friend]) chats[friend] = [];
             const timeStr = formatTime(new Date(msg.timestamp));
             const resolvedStatus = msg.isRead ? 'read' : (msg.status || 'sent');
@@ -2241,19 +2241,21 @@ function sendMessage(imageStr = null, audioStr = null, msgType = 'text', locatio
     if (!chats[activeChat]) chats[activeChat] = [];
     chats[activeChat].push(msgObj);
 
-    // Socket emit
-    socket.emit('private message', {
-        id: msgId,
-        to: activeChat,
-        text: text,
-        image: imageStr,
-        audio: audioStr,
-        location: locationData,
-        poll: pollData,
-        replyTo: currentReplyTo,
-        type: msgType
-    });
-    socket.emit('typing', { to: activeChat, isTyping: false });
+    // Socket emit (only for real user chats, not QuickChat AI)
+    if (activeChat !== 'QuickChat AI') {
+        socket.emit('private message', {
+            id: msgId,
+            to: activeChat,
+            text: text,
+            image: imageStr,
+            audio: audioStr,
+            location: locationData,
+            poll: pollData,
+            replyTo: currentReplyTo,
+            type: msgType
+        });
+        socket.emit('typing', { to: activeChat, isTyping: false });
+    }
 
     // Reset inputs & reply preview
     if (messageInput) {
@@ -4196,20 +4198,18 @@ let aiRequestChain = Promise.resolve();
 async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio) {
     const runTask = async () => {
         const sysPrompt = [
-            "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant inside QuickChat (like Meta AI on WhatsApp).",
+            "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant inside QuickChat.",
             "Never call yourself ChatGPT; your name is QuickChat AI.",
-            "CRITICAL RULE: Directly and accurately answer the exact question the user asked! Never give generic filler.",
+            "STRICT RULE: Answer ONLY the exact question asked in the user's message. Do NOT add unrelated topics, extra answers, or filler.",
             "LANGUAGE RULE: If the user writes in Hinglish (Hindi in English script, e.g., 'bharat ke pm kon hai', 'kya kar rahe ho'), reply in clear, natural Hinglish. If they write in Hindi (Devanagari), reply in Hindi. If they write in English, reply in English."
         ].join(" ");
 
-        const recent = getCleanAiHistory(historyArr);
         const userContent = hasImage
             ? `[User shared a photo] ${userText || 'Describe and comment on this photo warmly.'}`
             : (hasAudio ? `[User sent a voice note] ${userText || 'Reply warmly to my voice message.'}` : userText);
 
         const messagesPayload = [
             { role: 'system', content: sysPrompt },
-            ...recent,
             { role: 'user', content: userContent }
         ];
 
@@ -4219,10 +4219,6 @@ async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio)
             try {
                 if (customKey.startsWith('AIza')) {
                     const geminiContents = [
-                        ...recent.map(m => ({
-                            role: m.role === 'assistant' ? 'model' : 'user',
-                            parts: [{ text: m.content }]
-                        })),
                         { role: 'user', parts: [{ text: userContent }] }
                     ];
                     for (const modelName of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
