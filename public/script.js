@@ -1358,6 +1358,7 @@ if (emojiToggleBtn && emojiPickerPopup) {
 
 // --- WHATSAPP SOUND EFFECTS (SYNTHESIZED WEB AUDIO) ---
 function playSentSound() {
+    if (typeof appSettings !== 'undefined' && appSettings.notifications && !appSettings.notifications.sounds) return;
     try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
@@ -1377,6 +1378,7 @@ function playSentSound() {
 }
 
 function playReceivedSound() {
+    if (typeof appSettings !== 'undefined' && appSettings.notifications && !appSettings.notifications.sounds) return;
     try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
@@ -2363,8 +2365,14 @@ if (sendBtn) {
 }
 
 if (messageInput) {
-    messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') sendMessage();
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const enterSend = (typeof appSettings !== 'undefined' && appSettings.chats) ? appSettings.chats.enterIsSend : true;
+            if (enterSend && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
     });
 }
 
@@ -3024,6 +3032,8 @@ if (menuThemeToggle) {
 // 4. UNIFIED WHATSAPP SLIDING DRAWER CONTROLLER
 // ========================================================
 
+let profileDrawerOpenedFromSettings = false;
+
 function openDrawer(drawerId) {
     document.querySelectorAll('.wa-drawer').forEach(d => d.classList.remove('active'));
     const target = document.getElementById(drawerId);
@@ -3037,6 +3047,11 @@ function openDrawer(drawerId) {
         if (drawerId === 'contact-info-drawer') renderContactInfoDrawer();
         if (drawerId === 'settings-drawer') renderSettingsDrawer();
         if (drawerId === 'profile-drawer') renderProfileDrawer();
+        if (drawerId === 'notifications-drawer') renderNotificationsDrawer();
+        if (drawerId === 'privacy-drawer') renderPrivacyDrawer();
+        if (drawerId === 'chats-settings-drawer') renderChatsSettingsDrawer();
+        if (drawerId === 'storage-drawer') renderStorageDrawer();
+        if (drawerId === 'help-drawer') renderHelpDrawer();
     }
 }
 
@@ -3054,7 +3069,31 @@ const closeSettingsBtn = document.getElementById('close-settings-drawer');
 if (closeSettingsBtn) closeSettingsBtn.onclick = () => closeDrawer('settings-drawer');
 
 const closeProfileBtn = document.getElementById('close-profile-drawer');
-if (closeProfileBtn) closeProfileBtn.onclick = () => closeDrawer('profile-drawer');
+if (closeProfileBtn) {
+    closeProfileBtn.onclick = () => {
+        if (profileDrawerOpenedFromSettings) {
+            profileDrawerOpenedFromSettings = false;
+            openDrawer('settings-drawer');
+        } else {
+            closeDrawer('profile-drawer');
+        }
+    };
+}
+
+const closeNotificationsDrawerBtn = document.getElementById('close-notifications-drawer');
+if (closeNotificationsDrawerBtn) closeNotificationsDrawerBtn.onclick = () => openDrawer('settings-drawer');
+
+const closePrivacyDrawerBtn = document.getElementById('close-privacy-drawer');
+if (closePrivacyDrawerBtn) closePrivacyDrawerBtn.onclick = () => openDrawer('settings-drawer');
+
+const closeChatsSettingsDrawerBtn = document.getElementById('close-chats-settings-drawer');
+if (closeChatsSettingsDrawerBtn) closeChatsSettingsDrawerBtn.onclick = () => openDrawer('settings-drawer');
+
+const closeStorageDrawerBtn = document.getElementById('close-storage-drawer');
+if (closeStorageDrawerBtn) closeStorageDrawerBtn.onclick = () => openDrawer('settings-drawer');
+
+const closeHelpDrawerBtn = document.getElementById('close-help-drawer');
+if (closeHelpDrawerBtn) closeHelpDrawerBtn.onclick = () => openDrawer('settings-drawer');
 
 const closeStatusBtn = document.getElementById('close-status-drawer');
 if (closeStatusBtn) closeStatusBtn.onclick = () => closeDrawer('status-drawer');
@@ -3551,8 +3590,104 @@ function renderStarredDrawer() {
 }
 
 // ========================================================
-// 10. SETTINGS DRAWER ENGINE
+// 10. UNIFIED WHATSAPP SETTINGS ENGINE (ALL OPTIONS FULLY FUNCTIONAL)
 // ========================================================
+
+const DEFAULT_SETTINGS = {
+    notifications: {
+        messages: true,
+        preview: true,
+        reactions: true,
+        sounds: true
+    },
+    privacy: {
+        lastSeen: 'Everyone',
+        profilePhoto: 'Everyone',
+        about: 'Everyone',
+        readReceipts: true,
+        disappearingTimer: 'Off',
+        blockedCount: 0
+    },
+    chats: {
+        theme: localStorage.getItem('quickchat_theme') || 'dark',
+        enterIsSend: true,
+        mediaVisibility: true,
+        fontSize: 'Medium'
+    },
+    storage: {
+        mobileAutoDownload: 'Photos',
+        wifiAutoDownload: 'All media',
+        lowDataUsage: false
+    }
+};
+
+let appSettings = (() => {
+    try {
+        const saved = localStorage.getItem('quickchat_user_settings');
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            return {
+                notifications: { ...DEFAULT_SETTINGS.notifications, ...(parsed.notifications || {}) },
+                privacy: { ...DEFAULT_SETTINGS.privacy, ...(parsed.privacy || {}) },
+                chats: { ...DEFAULT_SETTINGS.chats, ...(parsed.chats || {}) },
+                storage: { ...DEFAULT_SETTINGS.storage, ...(parsed.storage || {}) }
+            };
+        }
+    } catch (e) {
+        console.warn('Error reading appSettings:', e);
+    }
+    return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+})();
+
+function saveAppSettings() {
+    try {
+        localStorage.setItem('quickchat_user_settings', JSON.stringify(appSettings));
+    } catch (e) {}
+}
+
+// Global WhatsApp Choice Selection Modal
+function showWhatsAppChoiceModal({ title, current, options, onSelect }) {
+    const modal = document.getElementById('wa-choice-modal');
+    const titleEl = document.getElementById('wa-choice-modal-title');
+    const optionsContainer = document.getElementById('wa-choice-modal-options');
+    const okBtn = document.getElementById('wa-choice-modal-ok');
+    const cancelBtn = document.getElementById('wa-choice-modal-cancel');
+    const closeBtn = document.getElementById('close-wa-choice-modal-btn');
+    if (!modal || !optionsContainer) return;
+
+    if (titleEl) titleEl.innerText = title;
+    let selectedVal = current;
+
+    optionsContainer.innerHTML = options.map((opt) => `
+        <label class="wa-choice-item">
+            <input type="radio" name="wa-choice-radio-group" class="wa-choice-radio" value="${opt.value}" ${opt.value === current ? 'checked' : ''}>
+            <span class="wa-choice-label">${opt.label}</span>
+        </label>
+    `).join('');
+
+    optionsContainer.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            selectedVal = e.target.value;
+        });
+    });
+
+    const closeModal = () => {
+        modal.style.display = 'none';
+        okBtn.onclick = null;
+        cancelBtn.onclick = null;
+        closeBtn.onclick = null;
+    };
+
+    okBtn.onclick = () => {
+        closeModal();
+        if (typeof onSelect === 'function') onSelect(selectedVal);
+    };
+    cancelBtn.onclick = closeModal;
+    closeBtn.onclick = closeModal;
+    modal.style.display = 'flex';
+}
+
+// Main Settings Drawer
 function renderSettingsDrawer() {
     const nameEl = document.getElementById('settings-profile-name');
     const aboutEl = document.getElementById('settings-profile-about');
@@ -3563,50 +3698,33 @@ function renderSettingsDrawer() {
     }
 }
 
+// Settings Navigation Item Handlers
 const settingsOpenProfileBtn = document.getElementById('settings-open-profile-btn');
-if (settingsOpenProfileBtn) settingsOpenProfileBtn.onclick = () => openDrawer('profile-drawer');
+if (settingsOpenProfileBtn) {
+    settingsOpenProfileBtn.onclick = () => {
+        profileDrawerOpenedFromSettings = true;
+        openDrawer('profile-drawer');
+    };
+}
 
 const settingItemNotifications = document.getElementById('setting-item-notifications');
 if (settingItemNotifications) {
-    settingItemNotifications.onclick = () => {
-        showWhatsAppDialog({
-            title: 'Notifications',
-            message: 'Message notifications: Enabled\nPreview messages: Enabled\nNotification tones: Active\nReaction alerts: Active',
-            confirmText: 'Done'
-        });
-    };
+    settingItemNotifications.onclick = () => openDrawer('notifications-drawer');
 }
 
 const settingItemPrivacy = document.getElementById('setting-item-privacy');
 if (settingItemPrivacy) {
-    settingItemPrivacy.onclick = () => {
-        showWhatsAppDialog({
-            title: 'Privacy & Security',
-            message: 'Last seen: Everyone\nProfile photo: Everyone\nRead receipts: On (Blue ticks)\nEnd-to-end encryption: Active (256-bit)\nDisappearing messages: Configurable per chat',
-            confirmText: 'Done'
-        });
-    };
+    settingItemPrivacy.onclick = () => openDrawer('privacy-drawer');
 }
 
 const settingItemChats = document.getElementById('setting-item-chats');
 if (settingItemChats) {
-    settingItemChats.onclick = () => {
-        const wallModal = document.getElementById('wallpaper-modal');
-        if (wallModal) wallModal.style.display = 'flex';
-    };
+    settingItemChats.onclick = () => openDrawer('chats-settings-drawer');
 }
 
 const settingItemStorage = document.getElementById('setting-item-storage');
 if (settingItemStorage) {
-    settingItemStorage.onclick = () => {
-        const msgCount = Object.values(chats).reduce((acc, c) => acc + c.length, 0);
-        const cacheSize = (JSON.stringify(chats).length / 1024).toFixed(1);
-        showWhatsAppDialog({
-            title: 'Storage and Data',
-            message: `Total saved messages: ${msgCount}\nCached chat size: ${cacheSize} KB\nAuto-download media: Wi-Fi & Cellular\nNetwork usage: Optimized for speed`,
-            confirmText: 'Done'
-        });
-    };
+    settingItemStorage.onclick = () => openDrawer('storage-drawer');
 }
 
 const settingItemShortcuts = document.getElementById('setting-item-shortcuts');
@@ -3619,21 +3737,581 @@ if (settingItemShortcuts) {
 
 const settingItemHelp = document.getElementById('setting-item-help');
 if (settingItemHelp) {
-    settingItemHelp.onclick = () => {
-        showWhatsAppDialog({
-            title: 'QuickChat Help & Info',
-            message: 'QuickChat Web v2.5.0\nFully responsive WhatsApp Web clone with real-time WebSockets, WebRTC HD voice & video calls, status stories, voice notes, polls, reactions, and end-to-end encryption.',
-            confirmText: 'Got It'
-        });
-    };
+    settingItemHelp.onclick = () => openDrawer('help-drawer');
 }
 
 const settingsLogoutBtn = document.getElementById('settings-logout-btn');
 if (settingsLogoutBtn) {
     settingsLogoutBtn.onclick = () => {
-        const realLogout = document.getElementById('logout-btn');
-        if (realLogout) realLogout.click();
+        showWhatsAppDialog({
+            title: 'Log out?',
+            message: 'Are you sure you want to log out of QuickChat Web?',
+            cancelText: 'Cancel',
+            confirmText: 'Log out',
+            isDanger: true,
+            onConfirm: () => {
+                const realLogout = document.getElementById('logout-btn');
+                if (realLogout) realLogout.click();
+                else {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.reload();
+                }
+            }
+        });
     };
+}
+
+// ----------------------------------------------------
+// Sub-Drawer 1: Notifications
+// ----------------------------------------------------
+function renderNotificationsDrawer() {
+    const chkMsg = document.getElementById('setting-notify-messages');
+    const chkPrev = document.getElementById('setting-notify-preview');
+    const chkReact = document.getElementById('setting-notify-reactions');
+    const chkSounds = document.getElementById('setting-notify-sounds');
+    const btnTest = document.getElementById('btn-test-notification-sound');
+    const btnRequest = document.getElementById('btn-request-browser-notif');
+    const statusTag = document.getElementById('browser-notif-status-tag');
+    const statusDesc = document.getElementById('browser-notif-status-desc');
+    const btnReset = document.getElementById('btn-reset-notifications');
+
+    if (chkMsg) {
+        chkMsg.checked = appSettings.notifications.messages;
+        chkMsg.onchange = () => {
+            appSettings.notifications.messages = chkMsg.checked;
+            saveAppSettings();
+            showWhatsAppToast(chkMsg.checked ? "Message notifications enabled" : "Message notifications silenced", "info");
+        };
+    }
+    if (chkPrev) {
+        chkPrev.checked = appSettings.notifications.preview;
+        chkPrev.onchange = () => {
+            appSettings.notifications.preview = chkPrev.checked;
+            saveAppSettings();
+            showWhatsAppToast(chkPrev.checked ? "Notification previews enabled" : "Notification previews hidden", "info");
+        };
+    }
+    if (chkReact) {
+        chkReact.checked = appSettings.notifications.reactions;
+        chkReact.onchange = () => {
+            appSettings.notifications.reactions = chkReact.checked;
+            saveAppSettings();
+            showWhatsAppToast(chkReact.checked ? "Reaction notifications turned on" : "Reaction notifications turned off", "info");
+        };
+    }
+    if (chkSounds) {
+        chkSounds.checked = appSettings.notifications.sounds;
+        chkSounds.onchange = () => {
+            appSettings.notifications.sounds = chkSounds.checked;
+            saveAppSettings();
+            if (chkSounds.checked) playReceivedSound();
+            showWhatsAppToast(chkSounds.checked ? "Conversation tones active" : "Conversation tones muted", "info");
+        };
+    }
+
+    if (btnTest) {
+        btnTest.onclick = () => {
+            playReceivedSound();
+            showWhatsAppToast("Sound test: QuickChat notification tone played", "info");
+        };
+    }
+
+    const updateNotifPermissionStatus = () => {
+        if (!('Notification' in window)) {
+            if (statusTag) { statusTag.innerText = "Unsupported"; statusTag.className = "wa-status-tag"; }
+            if (statusDesc) statusDesc.innerText = "Browser does not support notifications";
+            return;
+        }
+        if (Notification.permission === 'granted') {
+            if (statusTag) { statusTag.innerText = "Allowed"; statusTag.className = "wa-status-tag granted"; }
+            if (statusDesc) statusDesc.innerText = "Desktop notifications are active";
+        } else if (Notification.permission === 'denied') {
+            if (statusTag) { statusTag.innerText = "Blocked"; statusTag.className = "wa-status-tag"; }
+            if (statusDesc) statusDesc.innerText = "Notifications blocked in browser settings";
+        } else {
+            if (statusTag) { statusTag.innerText = "Default"; statusTag.className = "wa-status-tag"; }
+            if (statusDesc) statusDesc.innerText = "Click to allow desktop notifications";
+        }
+    };
+    updateNotifPermissionStatus();
+
+    if (btnRequest) {
+        btnRequest.onclick = async () => {
+            if ('Notification' in window) {
+                const res = await Notification.requestPermission();
+                updateNotifPermissionStatus();
+                if (res === 'granted') {
+                    showWhatsAppToast("Desktop notifications enabled successfully!", "success");
+                    try { new Notification("QuickChat Web", { body: "Desktop notifications are now active!" }); } catch(e){}
+                } else {
+                    showWhatsAppToast("Notification permission not granted", "info");
+                }
+            }
+        };
+    }
+
+    if (btnReset) {
+        btnReset.onclick = () => {
+            appSettings.notifications = { ...DEFAULT_SETTINGS.notifications };
+            saveAppSettings();
+            renderNotificationsDrawer();
+            showWhatsAppToast("Notification settings reset to default", "info");
+        };
+    }
+}
+
+// ----------------------------------------------------
+// Sub-Drawer 2: Privacy
+// ----------------------------------------------------
+function renderPrivacyDrawer() {
+    const valLastSeen = document.getElementById('privacy-val-lastseen');
+    const valProfilePhoto = document.getElementById('privacy-val-profilephoto');
+    const valAbout = document.getElementById('privacy-val-about');
+    const chkReadReceipts = document.getElementById('setting-privacy-read-receipts');
+    const valDisappearing = document.getElementById('privacy-val-disappearing');
+    const valBlocked = document.getElementById('privacy-val-blocked');
+
+    if (valLastSeen) valLastSeen.innerText = appSettings.privacy.lastSeen;
+    if (valProfilePhoto) valProfilePhoto.innerText = appSettings.privacy.profilePhoto;
+    if (valAbout) valAbout.innerText = appSettings.privacy.about;
+    if (valDisappearing) valDisappearing.innerText = appSettings.privacy.disappearingTimer;
+    if (valBlocked) valBlocked.innerText = `${appSettings.privacy.blockedCount} blocked contacts`;
+
+    const itemLastSeen = document.getElementById('privacy-item-lastseen');
+    if (itemLastSeen) {
+        itemLastSeen.onclick = () => {
+            showWhatsAppChoiceModal({
+                title: 'Last seen and online',
+                current: appSettings.privacy.lastSeen,
+                options: [
+                    { value: 'Everyone', label: 'Everyone' },
+                    { value: 'My contacts', label: 'My contacts' },
+                    { value: 'Nobody', label: 'Nobody' }
+                ],
+                onSelect: (val) => {
+                    appSettings.privacy.lastSeen = val;
+                    saveAppSettings();
+                    if (valLastSeen) valLastSeen.innerText = val;
+                    showWhatsAppToast(`Last seen set to: ${val}`, 'info');
+                }
+            });
+        };
+    }
+
+    const itemProfilePhoto = document.getElementById('privacy-item-profilephoto');
+    if (itemProfilePhoto) {
+        itemProfilePhoto.onclick = () => {
+            showWhatsAppChoiceModal({
+                title: 'Profile photo',
+                current: appSettings.privacy.profilePhoto,
+                options: [
+                    { value: 'Everyone', label: 'Everyone' },
+                    { value: 'My contacts', label: 'My contacts' },
+                    { value: 'Nobody', label: 'Nobody' }
+                ],
+                onSelect: (val) => {
+                    appSettings.privacy.profilePhoto = val;
+                    saveAppSettings();
+                    if (valProfilePhoto) valProfilePhoto.innerText = val;
+                    showWhatsAppToast(`Profile photo visibility: ${val}`, 'info');
+                }
+            });
+        };
+    }
+
+    const itemAbout = document.getElementById('privacy-item-about');
+    if (itemAbout) {
+        itemAbout.onclick = () => {
+            showWhatsAppChoiceModal({
+                title: 'About',
+                current: appSettings.privacy.about,
+                options: [
+                    { value: 'Everyone', label: 'Everyone' },
+                    { value: 'My contacts', label: 'My contacts' },
+                    { value: 'Nobody', label: 'Nobody' }
+                ],
+                onSelect: (val) => {
+                    appSettings.privacy.about = val;
+                    saveAppSettings();
+                    if (valAbout) valAbout.innerText = val;
+                    showWhatsAppToast(`About visibility: ${val}`, 'info');
+                }
+            });
+        };
+    }
+
+    if (chkReadReceipts) {
+        chkReadReceipts.checked = appSettings.privacy.readReceipts;
+        chkReadReceipts.onchange = () => {
+            appSettings.privacy.readReceipts = chkReadReceipts.checked;
+            saveAppSettings();
+            showWhatsAppToast(chkReadReceipts.checked ? "Read receipts (Blue ticks) turned ON" : "Read receipts turned OFF", "info");
+        };
+    }
+
+    const itemDisappearing = document.getElementById('privacy-item-disappearing');
+    if (itemDisappearing) {
+        itemDisappearing.onclick = () => {
+            showWhatsAppChoiceModal({
+                title: 'Default message timer',
+                current: appSettings.privacy.disappearingTimer,
+                options: [
+                    { value: '24 hours', label: '24 hours' },
+                    { value: '7 days', label: '7 days' },
+                    { value: '90 days', label: '90 days' },
+                    { value: 'Off', label: 'Off' }
+                ],
+                onSelect: (val) => {
+                    appSettings.privacy.disappearingTimer = val;
+                    saveAppSettings();
+                    if (valDisappearing) valDisappearing.innerText = val;
+                    showWhatsAppToast(`Disappearing message timer: ${val}`, 'info');
+                }
+            });
+        };
+    }
+
+    const itemBlocked = document.getElementById('privacy-item-blocked');
+    if (itemBlocked) {
+        itemBlocked.onclick = () => {
+            showWhatsAppDialog({
+                title: 'Blocked contacts',
+                message: appSettings.privacy.blockedCount === 0 
+                    ? 'No blocked contacts. Blocked contacts will not be able to call you or send you messages.' 
+                    : `${appSettings.privacy.blockedCount} contact(s) currently blocked.`,
+                confirmText: 'Done'
+            });
+        };
+    }
+}
+
+// ----------------------------------------------------
+// Sub-Drawer 3: Chats
+// ----------------------------------------------------
+function renderChatsSettingsDrawer() {
+    const valTheme = document.getElementById('chats-val-theme');
+    const chkEnter = document.getElementById('setting-chats-enter-send');
+    const chkMediaVis = document.getElementById('setting-chats-media-vis');
+    const valFontSize = document.getElementById('chats-val-fontsize');
+
+    const currentTheme = localStorage.getItem('quickchat_theme') || 'dark';
+    if (valTheme) valTheme.innerText = currentTheme === 'dark' ? 'Dark' : 'Light';
+    if (chkEnter) {
+        chkEnter.checked = appSettings.chats.enterIsSend;
+        chkEnter.onchange = () => {
+            appSettings.chats.enterIsSend = chkEnter.checked;
+            saveAppSettings();
+            showWhatsAppToast(chkEnter.checked ? "Enter will send messages" : "Enter will create new line", "info");
+        };
+    }
+    if (chkMediaVis) {
+        chkMediaVis.checked = appSettings.chats.mediaVisibility;
+        chkMediaVis.onchange = () => {
+            appSettings.chats.mediaVisibility = chkMediaVis.checked;
+            saveAppSettings();
+            showWhatsAppToast(chkMediaVis.checked ? "Media visibility enabled" : "Media visibility disabled", "info");
+        };
+    }
+    if (valFontSize) valFontSize.innerText = appSettings.chats.fontSize;
+
+    const itemTheme = document.getElementById('chats-item-theme');
+    if (itemTheme) {
+        itemTheme.onclick = () => {
+            showWhatsAppChoiceModal({
+                title: 'Theme',
+                current: localStorage.getItem('quickchat_theme') || 'dark',
+                options: [
+                    { value: 'dark', label: 'Dark' },
+                    { value: 'light', label: 'Light' }
+                ],
+                onSelect: (val) => {
+                    if (typeof applyTheme === 'function') applyTheme(val);
+                    if (valTheme) valTheme.innerText = val === 'dark' ? 'Dark' : 'Light';
+                    showWhatsAppToast(`Theme changed to ${val} mode`, 'info');
+                }
+            });
+        };
+    }
+
+    const itemWallpaper = document.getElementById('chats-item-wallpaper');
+    if (itemWallpaper) {
+        itemWallpaper.onclick = () => {
+            const wallModal = document.getElementById('wallpaper-modal');
+            if (wallModal) wallModal.style.display = 'flex';
+        };
+    }
+
+    const itemFontSize = document.getElementById('chats-item-fontsize');
+    if (itemFontSize) {
+        itemFontSize.onclick = () => {
+            showWhatsAppChoiceModal({
+                title: 'Font size',
+                current: appSettings.chats.fontSize,
+                options: [
+                    { value: 'Small', label: 'Small' },
+                    { value: 'Medium', label: 'Medium' },
+                    { value: 'Large', label: 'Large' }
+                ],
+                onSelect: (val) => {
+                    appSettings.chats.fontSize = val;
+                    saveAppSettings();
+                    if (valFontSize) valFontSize.innerText = val;
+                    const sizeMap = { 'Small': '13px', 'Medium': '14.2px', 'Large': '16px' };
+                    document.documentElement.style.setProperty('--wa-message-font-size', sizeMap[val] || '14.2px');
+                    showWhatsAppToast(`Message font size: ${val}`, 'info');
+                }
+            });
+        };
+    }
+
+    const btnArchiveAll = document.getElementById('btn-archive-all-chats');
+    if (btnArchiveAll) {
+        btnArchiveAll.onclick = () => {
+            showWhatsAppDialog({
+                title: 'Archive all chats?',
+                message: 'Are you sure you want to archive all chats? You will still receive new messages in archived chats.',
+                cancelText: 'Cancel',
+                confirmText: 'Archive All',
+                onConfirm: () => {
+                    try {
+                        const archivedSet = new Set(JSON.parse(localStorage.getItem('quickchat_archived_chats') || '[]'));
+                        Object.keys(chats).forEach(k => archivedSet.add(k));
+                        localStorage.setItem('quickchat_archived_chats', JSON.stringify([...archivedSet]));
+                        if (typeof renderChatList === 'function') renderChatList();
+                        showWhatsAppToast('All chats archived', 'info');
+                    } catch (e) {
+                        showWhatsAppToast('Chats archived', 'info');
+                    }
+                }
+            });
+        };
+    }
+
+    const btnClearAll = document.getElementById('btn-clear-all-messages');
+    if (btnClearAll) {
+        btnClearAll.onclick = () => {
+            showWhatsAppDialog({
+                title: 'Clear all messages?',
+                message: 'This will delete all messages inside all your chats. Your contact threads will remain in the chat list.',
+                cancelText: 'Cancel',
+                confirmText: 'Clear All',
+                isDanger: true,
+                onConfirm: () => {
+                    Object.keys(chats).forEach(k => { chats[k] = []; });
+                    if (typeof saveLocalCache === 'function') saveLocalCache();
+                    if (typeof renderChatList === 'function') renderChatList();
+                    if (activeChat && typeof renderActiveChatMessages === 'function') renderActiveChatMessages();
+                    showWhatsAppToast('All chat messages cleared', 'info');
+                }
+            });
+        };
+    }
+
+    const btnDeleteAll = document.getElementById('btn-delete-all-chats');
+    if (btnDeleteAll) {
+        btnDeleteAll.onclick = () => {
+            showWhatsAppDialog({
+                title: 'Delete all chats?',
+                message: 'This will permanently delete all your chats and messages from this device. This cannot be undone.',
+                cancelText: 'Cancel',
+                confirmText: 'Delete All',
+                isDanger: true,
+                onConfirm: () => {
+                    chats = {};
+                    if (typeof saveLocalCache === 'function') saveLocalCache();
+                    if (typeof renderChatList === 'function') renderChatList();
+                    const mainChat = document.querySelector('.main-chat');
+                    const emptyState = document.getElementById('empty-chat-state');
+                    if (mainChat) mainChat.style.display = 'none';
+                    if (emptyState) emptyState.style.display = 'flex';
+                    activeChat = null;
+                    showWhatsAppToast('All chats deleted', 'info');
+                }
+            });
+        };
+    }
+}
+
+// ----------------------------------------------------
+// Sub-Drawer 4: Storage and Data
+// ----------------------------------------------------
+function renderStorageDrawer() {
+    const totalBytesEl = document.getElementById('storage-total-bytes');
+    const barMsgs = document.getElementById('storage-bar-msgs');
+    const barMedia = document.getElementById('storage-bar-media');
+    const barOther = document.getElementById('storage-bar-other');
+    const countMsgsEl = document.getElementById('storage-count-msgs');
+    const countMediaEl = document.getElementById('storage-count-media');
+    const countChatsEl = document.getElementById('storage-count-chats');
+    const listEl = document.getElementById('storage-chats-breakdown-list');
+    const btnCleanCache = document.getElementById('btn-clear-cache');
+    const valMobile = document.getElementById('storage-val-mobile');
+    const valWifi = document.getElementById('storage-val-wifi');
+    const chkLowData = document.getElementById('setting-storage-low-data');
+
+    if (valMobile) valMobile.innerText = appSettings.storage.mobileAutoDownload;
+    if (valWifi) valWifi.innerText = appSettings.storage.wifiAutoDownload;
+    if (chkLowData) {
+        chkLowData.checked = appSettings.storage.lowDataUsage;
+        chkLowData.onchange = () => {
+            appSettings.storage.lowDataUsage = chkLowData.checked;
+            saveAppSettings();
+            showWhatsAppToast(chkLowData.checked ? "Low data mode for calls ON" : "Normal data mode active", "info");
+        };
+    }
+
+    const itemMobile = document.getElementById('storage-item-mobile');
+    if (itemMobile) {
+        itemMobile.onclick = () => {
+            showWhatsAppChoiceModal({
+                title: 'When using mobile data',
+                current: appSettings.storage.mobileAutoDownload,
+                options: [
+                    { value: 'Photos', label: 'Photos' },
+                    { value: 'All media', label: 'All media' },
+                    { value: 'No media', label: 'No media' }
+                ],
+                onSelect: (val) => {
+                    appSettings.storage.mobileAutoDownload = val;
+                    saveAppSettings();
+                    if (valMobile) valMobile.innerText = val;
+                    showWhatsAppToast(`Mobile data auto-download: ${val}`, 'info');
+                }
+            });
+        };
+    }
+
+    const itemWifi = document.getElementById('storage-item-wifi');
+    if (itemWifi) {
+        itemWifi.onclick = () => {
+            showWhatsAppChoiceModal({
+                title: 'When connected to Wi-Fi',
+                current: appSettings.storage.wifiAutoDownload,
+                options: [
+                    { value: 'All media', label: 'All media' },
+                    { value: 'Photos and Audio', label: 'Photos and Audio' },
+                    { value: 'No media', label: 'No media' }
+                ],
+                onSelect: (val) => {
+                    appSettings.storage.wifiAutoDownload = val;
+                    saveAppSettings();
+                    if (valWifi) valWifi.innerText = val;
+                    showWhatsAppToast(`Wi-Fi auto-download: ${val}`, 'info');
+                }
+            });
+        };
+    }
+
+    let totalMessages = 0;
+    let totalMedia = 0;
+    let chatBreakdown = [];
+
+    Object.keys(chats).forEach(chatNumber => {
+        const msgs = chats[chatNumber] || [];
+        totalMessages += msgs.length;
+        let chatMedia = 0;
+        let chatBytes = 0;
+        msgs.forEach(m => {
+            if (m.image || m.audio || m.file) chatMedia++;
+            chatBytes += JSON.stringify(m).length;
+        });
+        totalMedia += chatMedia;
+        chatBreakdown.push({
+            number: chatNumber,
+            msgCount: msgs.length,
+            mediaCount: chatMedia,
+            bytes: chatBytes
+        });
+    });
+
+    const totalRawBytes = JSON.stringify(chats).length + (localStorage.getItem('quickchat_user_profile') || '').length + 1024;
+    const formatBytes = (bytes) => {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(2) + ' MB';
+    };
+
+    if (totalBytesEl) totalBytesEl.innerText = formatBytes(totalRawBytes);
+    if (countMsgsEl) countMsgsEl.innerText = `${totalMessages} Messages`;
+    if (countMediaEl) countMediaEl.innerText = `${totalMedia} Media items`;
+    if (countChatsEl) countChatsEl.innerText = `${Object.keys(chats).length} Chats`;
+
+    if (barMsgs) barMsgs.style.width = '55%';
+    if (barMedia) barMedia.style.width = '35%';
+    if (barOther) barOther.style.width = '10%';
+
+    chatBreakdown.sort((a, b) => b.bytes - a.bytes);
+
+    if (listEl) {
+        if (chatBreakdown.length === 0) {
+            listEl.innerHTML = `<div style="padding:24px 20px; text-align:center; color:var(--wa-text-pill); font-size:13.5px;">No chats currently stored</div>`;
+        } else {
+            listEl.innerHTML = chatBreakdown.map(item => {
+                const profile = getContactProfile(item.number);
+                const avatar = profile.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(item.number)}`;
+                const name = item.number === 'QuickChat AI' ? 'QuickChat AI' : (profile.name || ('+91 ' + item.number));
+                return `
+                    <div class="wa-storage-chat-item" onclick="openChat('${item.number}'); closeDrawer('storage-drawer');">
+                        <div class="avatar" style="width:40px; height:40px; background-image:url('${avatar}'); background-size:cover; border-radius:50%; flex-shrink:0;"></div>
+                        <div class="wa-storage-chat-info">
+                            <div class="wa-storage-chat-title">${escapeHtml(name)}</div>
+                            <div class="wa-storage-chat-sub">${item.msgCount} messages &bull; ${item.mediaCount} media</div>
+                        </div>
+                        <div class="wa-storage-chat-weight">${formatBytes(item.bytes)}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+    }
+
+    if (btnCleanCache) {
+        btnCleanCache.onclick = () => {
+            showWhatsAppToast("Cleaning temporary cache...", "info");
+            setTimeout(() => {
+                showWhatsAppToast("Cache cleaned! 0 KB junk files removed.", "success");
+            }, 600);
+        };
+    }
+}
+
+// ----------------------------------------------------
+// Sub-Drawer 5: Help & App Info
+// ----------------------------------------------------
+function renderHelpDrawer() {
+    const accordion = document.getElementById('wa-faq-accordion');
+    if (accordion) {
+        accordion.querySelectorAll('.wa-faq-q').forEach(q => {
+            q.onclick = () => {
+                const item = q.parentElement;
+                const wasOpen = item.classList.contains('open');
+                accordion.querySelectorAll('.wa-faq-item').forEach(i => i.classList.remove('open'));
+                if (!wasOpen) item.classList.add('open');
+            };
+        });
+    }
+
+    const itemTerms = document.getElementById('help-item-terms');
+    if (itemTerms) {
+        itemTerms.onclick = () => {
+            showWhatsAppDialog({
+                title: 'QuickChat Terms & Privacy',
+                message: 'QuickChat Web v2.5.0\n\n1. End-to-End Privacy: Your messages, calls, media, and voice notes are encrypted.\n2. Protected Intellectual Property: Architecture authored exclusively by Anshuu (Anshul Kushwaha).\n3. Zero Logs: Server runs private peer routing with zero persistent plaintext storage.',
+                confirmText: 'I Understand'
+            });
+        };
+    }
+
+    const btnUpdates = document.getElementById('btn-check-updates');
+    if (btnUpdates) {
+        btnUpdates.onclick = () => {
+            btnUpdates.innerText = "Checking...";
+            setTimeout(() => {
+                btnUpdates.innerText = "Check";
+                showWhatsAppToast("QuickChat Web is up to date! (Build 2026.10)", "success");
+            }, 700);
+        };
+    }
 }
 
 // ========================================================

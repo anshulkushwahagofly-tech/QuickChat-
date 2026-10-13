@@ -589,6 +589,409 @@
                 </div>
             </div>
 
+            <!-- WhatsApp Sliding Sub-Drawer: Notifications -->
+            <div id="notifications-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-notifications-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Notifications</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">MESSAGES</div>
+                        <div class="wa-settings-row">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Message notifications</div>
+                                <div class="wa-settings-row-desc">Show notifications for new incoming messages</div>
+                            </div>
+                            <label class="wa-switch">
+                                <input type="checkbox" id="setting-notify-messages" checked>
+                                <span class="wa-slider"></span>
+                            </label>
+                        </div>
+                        <div class="wa-settings-row">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Show previews</div>
+                                <div class="wa-settings-row-desc">Display message text in notifications</div>
+                            </div>
+                            <label class="wa-switch">
+                                <input type="checkbox" id="setting-notify-preview" checked>
+                                <span class="wa-slider"></span>
+                            </label>
+                        </div>
+                        <div class="wa-settings-row">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Show reaction notifications</div>
+                                <div class="wa-settings-row-desc">Show notifications when someone reacts to your messages</div>
+                            </div>
+                            <label class="wa-switch">
+                                <input type="checkbox" id="setting-notify-reactions" checked>
+                                <span class="wa-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">SOUNDS</div>
+                        <div class="wa-settings-row">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Conversation tones</div>
+                                <div class="wa-settings-row-desc">Play sounds for incoming and outgoing messages</div>
+                            </div>
+                            <label class="wa-switch">
+                                <input type="checkbox" id="setting-notify-sounds" checked>
+                                <span class="wa-slider"></span>
+                            </label>
+                        </div>
+                        <div class="wa-settings-action-row" id="btn-test-notification-sound">
+                            <div class="wa-settings-action-icon"><i class="fas fa-volume-up"></i></div>
+                            <div class="wa-settings-action-text">
+                                <div class="wa-settings-row-title">Play test notification sound</div>
+                                <div class="wa-settings-row-desc">Listen to QuickChat message notification tone</div>
+                            </div>
+                            <button type="button" class="wa-secondary-btn-pill">Test</button>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">BROWSER NOTIFICATIONS</div>
+                        <div class="wa-settings-action-row" id="btn-request-browser-notif">
+                            <div class="wa-settings-action-icon"><i class="fas fa-desktop"></i></div>
+                            <div class="wa-settings-action-text">
+                                <div class="wa-settings-row-title">Desktop alerts</div>
+                                <div class="wa-settings-row-desc" id="browser-notif-status-desc">Allow desktop push alerts in browser</div>
+                            </div>
+                            <span class="wa-status-tag" id="browser-notif-status-tag">Default</span>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section" style="margin-top:auto; padding:20px 16px;">
+                        <button type="button" class="wa-reset-settings-btn" id="btn-reset-notifications">
+                            <i class="fas fa-redo-alt"></i> Reset notification settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Sub-Drawer: Privacy -->
+            <div id="privacy-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-privacy-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Privacy</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">WHO CAN SEE MY PERSONAL INFO</div>
+                        <div class="wa-settings-select-row" id="privacy-item-lastseen">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Last seen and online</div>
+                                <div class="wa-settings-row-val" id="privacy-val-lastseen">Everyone</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                        <div class="wa-settings-select-row" id="privacy-item-profilephoto">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Profile photo</div>
+                                <div class="wa-settings-row-val" id="privacy-val-profilephoto">Everyone</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                        <div class="wa-settings-select-row" id="privacy-item-about">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">About</div>
+                                <div class="wa-settings-row-val" id="privacy-val-about">Everyone</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                        <div class="wa-settings-row">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Read receipts</div>
+                                <div class="wa-settings-row-desc">If turned off, you won't send or receive read receipts (blue ticks). Read receipts are always sent for group chats.</div>
+                            </div>
+                            <label class="wa-switch">
+                                <input type="checkbox" id="setting-privacy-read-receipts" checked>
+                                <span class="wa-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">DISAPPEARING MESSAGES</div>
+                        <div class="wa-settings-select-row" id="privacy-item-disappearing">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Default message timer</div>
+                                <div class="wa-settings-row-desc">Start new chats with disappearing messages</div>
+                                <div class="wa-settings-row-val" id="privacy-val-disappearing">Off</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">SECURITY</div>
+                        <div class="wa-settings-select-row" id="privacy-item-blocked">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Blocked contacts</div>
+                                <div class="wa-settings-row-desc" id="privacy-val-blocked">0 blocked contacts</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                        <div class="wa-encryption-card">
+                            <i class="fas fa-lock wa-lock-badge"></i>
+                            <div class="wa-encryption-card-text">
+                                <b>End-to-end encryption</b>
+                                <span>Your personal messages and calls are secured with 256-bit encryption. No one outside of this chat can read or listen to them.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Sub-Drawer: Chats -->
+            <div id="chats-settings-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-chats-settings-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Chats</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">DISPLAY</div>
+                        <div class="wa-settings-select-row" id="chats-item-theme">
+                            <div class="wa-settings-select-icon"><i class="fas fa-moon"></i></div>
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Theme</div>
+                                <div class="wa-settings-row-val" id="chats-val-theme">Dark</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                        <div class="wa-settings-action-row" id="chats-item-wallpaper">
+                            <div class="wa-settings-action-icon"><i class="fas fa-image"></i></div>
+                            <div class="wa-settings-action-text">
+                                <div class="wa-settings-row-title">Chat wallpaper</div>
+                                <div class="wa-settings-row-desc">Set custom colors or WhatsApp doodle wallpaper</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">CHAT SETTINGS</div>
+                        <div class="wa-settings-row">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Enter is send</div>
+                                <div class="wa-settings-row-desc">Enter key sends message; Shift+Enter adds a new line</div>
+                            </div>
+                            <label class="wa-switch">
+                                <input type="checkbox" id="setting-chats-enter-send" checked>
+                                <span class="wa-slider"></span>
+                            </label>
+                        </div>
+                        <div class="wa-settings-row">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Media visibility</div>
+                                <div class="wa-settings-row-desc">Show newly received photos and audio in messages</div>
+                            </div>
+                            <label class="wa-switch">
+                                <input type="checkbox" id="setting-chats-media-vis" checked>
+                                <span class="wa-slider"></span>
+                            </label>
+                        </div>
+                        <div class="wa-settings-select-row" id="chats-item-fontsize">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Font size</div>
+                                <div class="wa-settings-row-val" id="chats-val-fontsize">Medium</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">CHAT ACTIONS & HISTORY</div>
+                        <div class="wa-settings-action-row" id="btn-archive-all-chats">
+                            <div class="wa-settings-action-icon"><i class="fas fa-archive"></i></div>
+                            <div class="wa-settings-action-text">
+                                <div class="wa-settings-row-title">Archive all chats</div>
+                                <div class="wa-settings-row-desc">Move all chats to the archived section</div>
+                            </div>
+                        </div>
+                        <div class="wa-settings-action-row danger" id="btn-clear-all-messages">
+                            <div class="wa-settings-action-icon"><i class="fas fa-eraser"></i></div>
+                            <div class="wa-settings-action-text">
+                                <div class="wa-settings-row-title">Clear all messages</div>
+                                <div class="wa-settings-row-desc">Delete messages in all chats, keep contact threads</div>
+                            </div>
+                        </div>
+                        <div class="wa-settings-action-row danger" id="btn-delete-all-chats">
+                            <div class="wa-settings-action-icon"><i class="fas fa-trash-alt"></i></div>
+                            <div class="wa-settings-action-text">
+                                <div class="wa-settings-row-title">Delete all chats</div>
+                                <div class="wa-settings-row-desc">Permanently remove all chats and messages</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Sub-Drawer: Storage and Data -->
+            <div id="storage-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-storage-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Storage and data</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <!-- Live storage meter card -->
+                    <div class="wa-storage-meter-card">
+                        <div class="wa-storage-header-row">
+                            <div class="wa-storage-total-box">
+                                <span class="wa-storage-total-num" id="storage-total-bytes">0 KB</span>
+                                <span class="wa-storage-total-lbl">Used in QuickChat</span>
+                            </div>
+                            <button type="button" class="wa-clean-cache-btn" id="btn-clear-cache">
+                                <i class="fas fa-broom"></i> Clean Cache
+                            </button>
+                        </div>
+                        <div class="wa-storage-bar-wrapper">
+                            <div class="wa-storage-bar">
+                                <div class="wa-storage-bar-seg msgs" id="storage-bar-msgs" style="width: 50%;"></div>
+                                <div class="wa-storage-bar-seg media" id="storage-bar-media" style="width: 30%;"></div>
+                                <div class="wa-storage-bar-seg other" id="storage-bar-other" style="width: 20%;"></div>
+                            </div>
+                        </div>
+                        <div class="wa-storage-legend-row">
+                            <div class="wa-storage-legend-item">
+                                <span class="wa-dot msgs"></span>
+                                <span id="storage-count-msgs">0 Messages</span>
+                            </div>
+                            <div class="wa-storage-legend-item">
+                                <span class="wa-dot media"></span>
+                                <span id="storage-count-media">0 Media files</span>
+                            </div>
+                            <div class="wa-storage-legend-item">
+                                <span class="wa-dot other"></span>
+                                <span id="storage-count-chats">0 Chats</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">CHAT STORAGE BREAKDOWN</div>
+                        <div class="wa-storage-chats-list" id="storage-chats-breakdown-list">
+                            <!-- Populated dynamically with sorted chats, avatars, counts and sizes -->
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">MEDIA AUTO-DOWNLOAD</div>
+                        <div class="wa-settings-select-row" id="storage-item-mobile">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">When using mobile data</div>
+                                <div class="wa-settings-row-val" id="storage-val-mobile">Photos</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                        <div class="wa-settings-select-row" id="storage-item-wifi">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">When connected to Wi-Fi</div>
+                                <div class="wa-settings-row-val" id="storage-val-wifi">All media</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                        <div class="wa-settings-row">
+                            <div class="wa-settings-row-text">
+                                <div class="wa-settings-row-title">Use less data for calls</div>
+                                <div class="wa-settings-row-desc">Optimizes audio and video bitrate for poor connections</div>
+                            </div>
+                            <label class="wa-switch">
+                                <input type="checkbox" id="setting-storage-low-data">
+                                <span class="wa-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WhatsApp Sliding Sub-Drawer: Help & App Info -->
+            <div id="help-drawer" class="wa-drawer">
+                <div class="wa-drawer-header">
+                    <button id="close-help-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+                    <h3>Help & App info</h3>
+                </div>
+                <div class="wa-drawer-body">
+                    <!-- Brand info banner -->
+                    <div class="wa-help-brand-card">
+                        <div class="wa-help-app-icon">
+                            <i class="fab fa-whatsapp"></i>
+                        </div>
+                        <div class="wa-help-app-name">QuickChat Web</div>
+                        <div class="wa-help-app-version">Version 2.5.0 (Official Build)</div>
+                        <div class="wa-help-creator-badge">
+                            <i class="fas fa-shield-alt"></i> Architect & Creator: <b>Anshuu (Anshul Kushwaha)</b>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">HELP CENTRE & FAQ</div>
+                        <div class="wa-faq-accordion" id="wa-faq-accordion">
+                            <div class="wa-faq-item">
+                                <div class="wa-faq-q">
+                                    <span>How does End-to-End Encryption work?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="wa-faq-a">
+                                    Your personal messages, calls, photos, and voice notes are secured end-to-end. Only you and the person you're communicating with can read or listen to them. QuickChat servers never store unencrypted message payloads.
+                                </div>
+                            </div>
+                            <div class="wa-faq-item">
+                                <div class="wa-faq-q">
+                                    <span>Who is QuickChat AI and how to use it?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="wa-faq-a">
+                                    QuickChat AI is your built-in intelligent assistant created by Anshuu (Anshul Kushwaha). You can chat with it in your contact list for answers, image generation, math, and smart replies in any language.
+                                </div>
+                            </div>
+                            <div class="wa-faq-item">
+                                <div class="wa-faq-q">
+                                    <span>How do Voice and Video calls work?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="wa-faq-a">
+                                    QuickChat uses ultra-low latency WebRTC peer-to-peer audio and video streams with HD noise cancellation and DTLS encryption.
+                                </div>
+                            </div>
+                            <div class="wa-faq-item">
+                                <div class="wa-faq-q">
+                                    <span>How to change status stories?</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="wa-faq-a">
+                                    Tap the Status icon on the sidebar rail or navigation bar to post 24-hour disappearing text or photo updates.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="wa-settings-sub-section">
+                        <div class="wa-settings-section-title">LEGAL & SYSTEM</div>
+                        <div class="wa-settings-action-row" id="help-item-terms">
+                            <div class="wa-settings-action-icon"><i class="fas fa-file-contract"></i></div>
+                            <div class="wa-settings-action-text">
+                                <div class="wa-settings-row-title">Terms & Privacy Policy</div>
+                                <div class="wa-settings-row-desc">Read QuickChat's security and user guidelines</div>
+                            </div>
+                            <i class="fas fa-chevron-right wa-row-arrow"></i>
+                        </div>
+                        <div class="wa-settings-action-row" id="help-item-updates">
+                            <div class="wa-settings-action-icon"><i class="fas fa-sync-alt"></i></div>
+                            <div class="wa-settings-action-text">
+                                <div class="wa-settings-row-title">Check for updates</div>
+                                <div class="wa-settings-row-desc">Up to date &bull; Build 2026.10</div>
+                            </div>
+                            <button type="button" class="wa-secondary-btn-pill" id="btn-check-updates">Check</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- WhatsApp Sliding Drawer: Status -->
             <div id="status-drawer" class="wa-drawer">
                 <div class="wa-drawer-header">
@@ -1100,6 +1503,23 @@
         </div>
     </div>
 
+    <!-- WhatsApp Choice Selector Modal -->
+    <div id="wa-choice-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content wa-choice-modal-box" style="max-width:360px;">
+            <div class="modal-header">
+                <h3 id="wa-choice-modal-title">Select option</h3>
+                <button type="button" id="close-wa-choice-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="wa-choice-modal-options" style="padding:10px 0; max-height:280px; overflow-y:auto;">
+                <!-- Dynamically generated choice list -->
+            </div>
+            <div class="modal-footer" style="display:flex; justify-content:flex-end; padding:12px 18px; border-top:1px solid var(--wa-border-drawer); gap:10px;">
+                <button type="button" class="wa-choice-footer-btn cancel" id="wa-choice-modal-cancel">Cancel</button>
+                <button type="button" class="wa-choice-footer-btn ok" id="wa-choice-modal-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- WhatsApp In-App Confirmation / Action Dialog -->
     <div id="wa-dialog-overlay" class="wa-dialog-overlay">
         <div class="wa-dialog-box" role="dialog" aria-modal="true">
@@ -1118,7 +1538,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=57"></script>
+    <script src="script.js?v=58"></script>
     <script src="webrtc.js?v=5"></script>
 </body>
 </html>
