@@ -4097,7 +4097,7 @@ async function tryFetchWikipediaSummary(queryText) {
     try {
         let cleaned = String(queryText || '')
             .replace(/^(?:who\s+is|what\s+is|what\s+are|where\s+is|tell\s+me\s+about|explain|define|history\s+of|biography\s+of|meaning\s+of)\s+/i, '')
-            .replace(/\s+(?:kaun\s+hai|kon\s+hai|kya\s+hai|kya\s+hota\s+hai|ke\s+baare\s+me\s+batao|ke\s+bare\s+mein\s+batao|kahan\s+hai|ki\s+jankari\s+do|in\s+hindi|in\s+english)\s*\??$/i, '')
+            .replace(/\s+(?:kaun\s+hai|kon\s+hai|kya\s+hai|kya\s+hota\s+hai|kisne\s+banaya(?:\s+tha)?|kab\s+bana(?:\s+tha)?|ke\s+baare\s+me\s+batao|ke\s+bare\s+mein\s+batao|kahan\s+hai|ki\s+jankari\s+do|in\s+hindi|in\s+english)\s*\??$/i, '')
             .replace(/[?.,!]/g, '')
             .trim();
 
@@ -4115,49 +4115,74 @@ async function tryFetchWikipediaSummary(queryText) {
         if (!sumRes.ok) return null;
         const sumJson = await sumRes.json();
         if (sumJson && sumJson.extract && sumJson.extract.length > 40) {
-            return `📚 **${sumJson.title}**\n\n${sumJson.extract}\n\n💡 *Agar aap iske baare mein aur detail ya Hindi mein samajhna chahte hain toh pooch sakte hain!*`;
+            return `📚 **${sumJson.title}**\n\n${sumJson.extract}`;
         }
     } catch (e) {}
     return null;
 }
 
-// Helper: Direct Browser Generative LLM Call (Backup if socket is slow)
+// Helper: Direct Browser Generative LLM Call (22s timeout, openai-fast with low reasoning effort)
 async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio) {
     try {
-        const sysPrompt = "You are QuickChat AI, an advanced, super-intelligent, friendly AI assistant inside QuickChat (like Meta AI on WhatsApp). Answer ANY question accurately and completely. Mirror the user's language: if they write in Hindi or Hinglish, reply in natural Hinglish/Hindi; if in English, reply in English. Format nicely with bullet points or bold text where helpful.";
-        const recent = (chats['QuickChat AI'] || []).slice(-8).map(m => ({
-            role: m.from === 'QuickChat AI' ? 'assistant' : 'user',
-            content: String(m.text || '').slice(0, 500)
-        }));
+        const sysPrompt = [
+            "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant inside QuickChat (like Meta AI on WhatsApp).",
+            "CRITICAL RULE: Directly and accurately answer the exact question the user asked! Never give generic filler.",
+            "LANGUAGE RULE: If the user writes in Hinglish (Hindi in English script, e.g., 'bharat ke pm kon hai', 'suraj garam kyu hota hai'), reply in clear, natural Hinglish. If they write in Hindi (Devanagari), reply in Hindi. If they write in English, reply in English.",
+            "You are an expert in all subjects: General Knowledge, Science, Math, Coding/Programming, History, Current Affairs, Recipes, Health, Career, Shayari, Jokes, and Daily Life."
+        ].join(" ");
+
+        const recent = Array.isArray(historyArr) && historyArr.length > 0
+            ? historyArr.slice(-6)
+            : (chats['QuickChat AI'] || []).slice(-7, -1).map(m => ({
+                role: m.from === 'QuickChat AI' ? 'assistant' : 'user',
+                content: String(m.text || '').slice(0, 500)
+            }));
+
         const controller = new AbortController();
-        const tId = setTimeout(() => controller.abort(), 5500);
-        const res = await fetch('https://text.pollinations.ai/', {
+        const tId = setTimeout(() => controller.abort(), 22000);
+        const res = await fetch('https://text.pollinations.ai/openai', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                model: 'openai-fast',
+                reasoning_effort: 'low',
                 messages: [
                     { role: 'system', content: sysPrompt },
                     ...recent,
-                    { role: 'user', content: hasImage ? `[Shared an image] ${userText || 'Comment on this photo'}` : (hasAudio ? `[Sent a voice message] ${userText || 'Reply to my voice note'}` : userText) }
-                ],
-                model: 'openai',
-                private: true
+                    {
+                        role: 'user',
+                        content: hasImage
+                            ? `[User shared a photo] ${userText || 'Describe and comment on this photo warmly.'}`
+                            : (hasAudio ? `[User sent a voice note] ${userText || 'Reply warmly to my voice message.'}` : userText)
+                    }
+                ]
             }),
             signal: controller.signal
         });
         clearTimeout(tId);
         if (res.ok) {
-            const txt = (await res.text()).trim();
-            if (txt && txt.length > 1 && !txt.startsWith('<!DOCTYPE')) {
-                return txt;
+            const rawBody = (await res.text()).trim();
+            let aiText = rawBody;
+            try {
+                const parsed = JSON.parse(rawBody);
+                if (parsed && parsed.choices && parsed.choices[0] && parsed.choices[0].message && parsed.choices[0].message.content) {
+                    aiText = parsed.choices[0].message.content.trim();
+                }
+            } catch (e) {}
+
+            if (aiText && aiText.length > 1 && !aiText.startsWith('<!DOCTYPE') && !aiText.startsWith('{"error"')) {
+                return aiText;
             }
         }
     } catch (e) {}
     return null;
 }
 
-// Autonomous Local Reasoning & Multi-Domain Brain (100% Offline-Capable Fallback)
-async function generateLocalAutonomousBrainReply(rawText, hasImage = false, hasAudio = false) {
+// Multi-Layered AI Brain:
+// 1) Image Gen & Pure Math first
+// 2) Real Generative LLM (tryBrowserGenerativeLLM) for ALL questions
+// 3) Live Wikipedia + Strictly-Anchored Offline Fallbacks only if internet/LLM is unreachable
+async function generateLocalAutonomousBrainReply(rawText, hasImage = false, hasAudio = false, recentHistory = []) {
     const text = String(rawText || '').trim();
     const lower = text.toLowerCase();
 
@@ -4168,7 +4193,7 @@ async function generateLocalAutonomousBrainReply(rawText, hasImage = false, hasA
         return "🎤 **Aapka voice message mila!** ✨\nAapki aawaaz bilkul clear hai. Bataiye main aapki kis cheez mein madad kar sakta hoon?";
     }
 
-    // 1. Check Image Generation
+    // 1. Check Explicit AI Image Generation Request
     const imgSubject = detectAiImageRequest(text);
     if (imgSubject) {
         const seed = Math.floor(Math.random() * 999999);
@@ -4179,18 +4204,18 @@ async function generateLocalAutonomousBrainReply(rawText, hasImage = false, hasA
         };
     }
 
-    // 2. Check Math / Calculator / Tables
+    // 2. Check Pure Math / Calculator / Tables
     const mathAns = tryEvaluateMathQuery(text);
     if (mathAns) return mathAns;
 
     // 3. User Name Memory ("mera naam X hai" / "my name is X")
-    const nameMatch = text.match(/(?:mera\s+naam|my\s+name\s+is|i\s+am|main\s+hoon)\s+([a-zA-Z\u0900-\u097F]{2,20})(?:\s+hai)?$/i);
+    const nameMatch = text.match(/^(?:mera\s+naam|my\s+name\s+is)\s+([a-zA-Z\u0900-\u097F]{2,20})(?:\s+hai)?[.!]?$/i);
     if (nameMatch && nameMatch[1]) {
         const userName = nameMatch[1].trim();
         localStorage.setItem('quickchat_my_name', userName);
         return `Bahut khushi hui aapse milkar, **${userName}**! 🤝✨ Maine aapka naam yaad rakh liya hai. Bataiye ${userName}, aaj kis topic par baat karein?`;
     }
-    if (/(?:mera\s+naam\s+kya\s+hai|what\s+is\s+my\s+name|do\s+you\s+know\s+my\s+name)/i.test(lower)) {
+    if (/^(?:mera\s+naam\s+kya\s+hai|what\s+is\s+my\s+name|do\s+you\s+know\s+my\s+name)\??$/i.test(lower)) {
         const savedUser = localStorage.getItem('quickchat_my_name');
         if (savedUser && !savedUser.startsWith('+91')) {
             return `Aapka naam **${savedUser}** hai! 😊 Main apne doston ka naam kabhi nahi bhoolta.`;
@@ -4198,107 +4223,69 @@ async function generateLocalAutonomousBrainReply(rawText, hasImage = false, hasA
         return `Aapne abhi tak apna naam nahi bataya! Aap likh sakte hain *"Mera naam ... hai"* aur main hamesha yaad rakhunga. 😊`;
     }
 
-    // 4. Live Time / Date / Day
-    if (/\b(?:time\s+kya|kya\s+time|what\s+time|current\s+time|samay\s+kya|kitne\s+baje)\b/i.test(lower)) {
+    // 4. Live Time / Date / Day (Exact queries)
+    if (/^(?:abhi\s+)?(?:time\s+kya\s+hua\s+hai|time\s+kya\s+hai|kya\s+time\s+hai|what\s+time\s+is\s+it|current\s+time|samay\s+kya\s+hai|kitne\s+baje\s+hain)\??$/i.test(lower)) {
         const now = new Date();
         return `⏰ Abhi sahi samay **${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}** ho raha hai.`;
     }
-    if (/\b(?:aaj\s+kya\s+date|aaj\s+ki\s+tarikh|today'?s?\s+date|what\s+date|kaun\s+sa\s+din\s+hai|what\s+day\s+is\s+today)\b/i.test(lower)) {
+    if (/^(?:aaj\s+kya\s+date\s+hai|aaj\s+ki\s+tarikh\s+kya\s+hai|today'?s?\s+date|what\s+date\s+is\s+today|aaj\s+kaun\s+sa\s+din\s+hai|what\s+day\s+is\s+today)\??$/i.test(lower)) {
         const now = new Date();
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         return `📅 Aaj **${now.toLocaleDateString('en-IN', options)}** hai.`;
     }
 
-    // 5. Greetings & Casual Hinglish/Hindi/English Conversation
-    if (/^(?:hi+|hello+|hey+|hlo+|hy+|namaste|namaskar|ram\s*ram|radhe\s*radhe|jai\s*shree\s*ram|assalamualaikum|salaam|sat\s*sri\s*akal|good\s*(?:morning|afternoon|evening|night))\b/i.test(lower) && lower.split(/\s+/).length <= 5) {
-        const savedUser = localStorage.getItem('quickchat_my_name');
-        const nameTag = (savedUser && !savedUser.startsWith('+91')) ? ` ${savedUser}` : '';
-        return `Namaste${nameTag}! 👋😊 Main **QuickChat AI** bilkul taiyaar hoon. Aap kaise hain? Aaj koi sawaal hai, code likhwana hai, ya kisi topic par jankari chahiye?`;
-    }
-
-    if (/(?:kaise\s+ho|kaisa\s+hai|kya\s+haal|how\s+are\s+you|how\s+r\s+u|sab\s+badiya|aur\s+batao)/i.test(lower)) {
-        return "Main bilkul badiya aur super-active hoon! ⚡🤖 Mera AI dimaag 24×7 aapki madad ke liye ready rehta hai. Aap bataiye, aapka din kaisa chal raha hai?";
-    }
-
-    if (/(?:kya\s+kar\s+rahe\s+ho|what\s+are\s+you\s+doing|kya\s+chal\s+raha)/i.test(lower)) {
-        return "Main abhi aapke saath chat kar raha hoon aur naye ideas, coding solutions, aur duniya bhar ki knowledge analyze kar raha hoon! 🧠✨ Bataiye aaj kya explore karein?";
-    }
-
-    if (/(?:khana\s+khaya|dinner\s+hua|lunch\s+hua|breakfast\s+hua)/i.test(lower)) {
-        return "Haha, main toh ek AI hoon toh meri खुराक **High-Speed Data aur Electricity** hai! ⚡😄 Par aap zaroor time par healthy khana khaiye. Aapne aaj kya khaya?";
-    }
-
-    if (/(?:tum\s+kaun\s+ho|who\s+are\s+you|apna\s+intro|tumhara\s+naam\s+kya|what\s+are\s+you|tumhe\s+kisne\s+banaya|who\s+created\s+you)/i.test(lower)) {
-        return "🤖 Main **QuickChat AI** hoon — QuickChat ka advanced neural AI assistant!\n\n**Meri Khaasiyat:**\n• 🧠 Har sawaal ka jawab (Science, GK, History, Math, Coding)\n• 🗣️ Hindi, Hinglish aur English teeno mein smart baat-cheet\n• 🎨 Live AI Image Generation (*'photo banao ...'*)\n• 💻 Programming & Problem Solving\n• ✍️ Shayari, Jokes, Kahani, Emails & Career Advice";
-    }
-
-    // 6. Shayari / Poetry
-    if (/(?:shayari|shayri|shairi|ghazal|kavita|poem)/i.test(lower)) {
-        const shayaris = [
-            "✨ **Arz kiya hai:**\n\n*Manzilein unhi ko milti hain jinke sapno mein jaan hoti hai,*\n*Pankh se kuch nahi hota dosto, hauslon se udaan hoti hai!* 🚀🔥",
-            "💖 **Dosti Shayari:**\n\n*Har mod par mukam nahi hota,*\n*Dil ke rishto ka koi naam nahi hota,*\n*Chirag ki roshni se dhoonda hai aapko,*\n*Aap jaisa dost milna aasan nahi hota!* 🤝✨",
-            "🌙 **Khayal Shayari:**\n\n*Khamoshiyon mein bhi ek alag hi baat hoti hai,*\n*Har andheri raat ke baad nayi shuruaat hoti hai,*\n*Bharosa rakh apni mehnat par aye dost,*\n*Kamyabi hamesha sabar ke baad hi saath hoti hai!* 🌟"
-        ];
-        return shayaris[Math.floor(Math.random() * shayaris.length)];
-    }
-
-    // 7. Jokes / Humor
-    if (/(?:joke|chutkula|chutkule|hasao|funny|mazak|comedy)/i.test(lower)) {
-        const jokes = [
-            "😂 **Funny Joke:**\n\n**Teacher:** Batao, bijli kahan se aati hai?\n**Pappu:** Sir, mere mama ke ghar se!\n**Teacher:** Woh kaise?\n**Pappu:** Jab bhi bijli jaati hai, papa bolte hain — *'Saalo ne phir bijli kaat di!'* 🤣⚡",
-            "😄 **Tech Joke:**\n\n**Dost:** Bhai teri life mein sabse bada darr kya hai?\n**Programmer:** Jab code pehli baar mein bina kisi error ke chal jaye... tab samajh nahi aata ki khush hoon ya daru! 💻😂",
-            "🤣 **Doctor & Patient:**\n\n**Patient:** Doctor sahab, mujhe bhoolne ki bimari ho gayi hai!\n**Doctor:** Kab se?\n**Patient:** Kab se kya doctor sahab? 🤔😂"
-        ];
-        return jokes[Math.floor(Math.random() * jokes.length)];
-    }
-
-    // 8. Coding & Programming Requests
-    if (/\b(?:code|program|html|javascript|python|java|c\+\+|react|node|sql|function|algorithm|website\s+kaise)\b/i.test(lower)) {
-        if (lower.includes('python')) {
-            return `🐍 **Python Program Example:**\n\`\`\`python\ndef greet_and_calculate(name, numbers):\n    print(f"Hello {name}! Welcome to QuickChat AI.")\n    total = sum(numbers)\n    avg = total / len(numbers) if numbers else 0\n    return {"sum": total, "average": avg}\n\nresult = greet_and_calculate("Developer", [10, 20, 30, 40, 50])\nprint("Result:", result)\n\`\`\`\n💡 Agar aapko Python mein koi specific project, loop, ya API code chahiye toh uska naam batayein!`;
-        }
-        if (lower.includes('html') || lower.includes('website')) {
-            return `🌐 **Modern HTML + CSS Card Template:**\n\`\`\`html\n<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: sans-serif; background: #0b141a; color: #e9edef; display: flex; justify-content: center; align-items: center; height: 100vh; }\n    .card { background: #202c33; padding: 24px; border-radius: 12px; border: 1px solid #00a884; text-align: center; }\n    button { background: #00a884; color: #fff; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }\n  </style>\n</head>\n<body>\n  <div class="card">\n    <h2>Welcome to My Website 🚀</h2>\n    <p>Built with QuickChat AI</p>\n    <button onclick="alert('Hello!')">Click Me</button>\n  </div>\n</body>\n</html>\n\`\`\``;
-        }
-        return `💻 **JavaScript Solution:**\n\`\`\`javascript\n// QuickChat AI Smart Function\nfunction solveTask(input) {\n    console.log("Processing:", input);\n    return \`Result for \${input} generated at \${new Date().toLocaleTimeString()}\`;\n}\n\nconsole.log(solveTask("QuickChat Pro"));\n\`\`\`\n💡 Aap jis bhi language (**Python, JS, C++, Java, SQL, React**) ka code chahte hain, bas topic ka naam likh dijiye!`;
-    }
-
-    // 9. Try Direct Browser LLM or Live Wikipedia Lookup before general reasoning
-    const browserLlmAns = await tryBrowserGenerativeLLM(text, [], hasImage, hasAudio);
+    // 5. PRIMARY BRAIN: Direct Generative LLM Call (Answers ANY question accurately!)
+    const browserLlmAns = await tryBrowserGenerativeLLM(text, recentHistory, hasImage, hasAudio);
     if (browserLlmAns) return browserLlmAns;
 
+    // 6. SECONDARY BRAIN: Live Wikipedia Knowledge Lookup
     const wikiAns = await tryFetchWikipediaSummary(text);
     if (wikiAns) return wikiAns;
 
-    // 10. Universal Intelligent Topic Synthesizer (Handles ANY topic in Hindi/Hinglish/English)
-    const isHinglishOrHindi = /[\u0900-\u097F]|\b(?:kya|kyu|kyon|kaise|kab|kahan|kaun|kon|kitna|mujhe|batao|samjhao|karo|hai|hain|mein|ke|ki|ka|se|par|aur|ek|koi)\b/i.test(lower);
-
-    if (isHinglishOrHindi) {
-        return `🧠 **QuickChat AI Analysis ("${text}"):**\n\nAapne bahut accha vishay poocha hai! Iske mukhya bindu (key points) yeh hain:\n\n1. **Mukhya Jankari (Core Concept):** "${text}" ko samajhne ke liye sabse pehle iske basic principles aur practical upyog par dhyan dena zaroori hai.\n2. **Smart Approach:** Agar aap ispar kaam kar rahe hain ya seekh rahe hain, toh step-by-step chote goals banakar shuruaat karein.\n3. **Agla Kadam:** Aap mujhse iske kisi bhi khaas hisse (jaise *examples, advantages, step-by-step guide, ya code*) ke baare mein seedha pooch sakte hain!\n\n💡 *Bataiye, kya main isko aur vistaar (detail) mein ya kisi example ke saath samjhaun?* ✨`;
-    } else {
-        return `🧠 **QuickChat AI Insight on "${text}":**\n\nHere is a clear breakdown of your query:\n\n1. **Key Overview:** Understanding **${text}** involves looking at both its core fundamentals and real-world applications.\n2. **Best Practice:** Break the problem down into structured, actionable steps and verify each stage.\n3. **Deep Dive:** Would you like a **step-by-step tutorial, code implementation, real-world examples, or a summary** on this topic? Just let me know! ✨`;
+    // 7. OFFLINE FALLBACKS (Only if user has no internet / external APIs are completely unreachable)
+    if (/^(?:hi+|hello+|hey+|hlo+|hy+|namaste|namaskar|ram\s*ram|radhe\s*radhe|jai\s*shree\s*ram|assalamualaikum|salaam|good\s*(?:morning|afternoon|evening|night))[!.?]*$/i.test(lower)) {
+        return `Namaste! 👋😊 Main **QuickChat AI** bilkul taiyaar hoon. Aap mujhse koi bhi sawaal pooch sakte hain!`;
     }
+    if (/^(?:aap\s+)?(?:kaise\s+ho|kya\s+haal\s+hai|how\s+are\s+you|how\s+r\s+u)[!.?]*$/i.test(lower)) {
+        return "Main bilkul badiya aur super-active hoon! ⚡🤖 Bataiye, aaj aap kya poochna chahte hain?";
+    }
+
+    return `🤖 **QuickChat AI:** Aapka sawaal (*"${text}"*) mila, par abhi internet/AI server se connection slow hai. Kripya ek baar dobara poochein! 🔄`;
 }
 
-// Listen for AI response from Server Socket
+// Track handled AI requests so parallel Browser + Server LLM calls never duplicate
+const handledAiRequestIds = new Set();
 let pendingAiSafetyTimer = null;
+
 socket.on('ai response', async (data) => {
-    if (pendingAiSafetyTimer) {
-        clearTimeout(pendingAiSafetyTimer);
-        pendingAiSafetyTimer = null;
+    const reqId = data && data.requestId;
+    if (reqId && handledAiRequestIds.has(reqId)) {
+        return; // Already answered by parallel browser LLM call
     }
 
     if (data && !data.fallback && data.text) {
+        if (reqId) handledAiRequestIds.add(reqId);
+        if (pendingAiSafetyTimer) {
+            clearTimeout(pendingAiSafetyTimer);
+            pendingAiSafetyTimer = null;
+        }
         appendAiMessageToChat(data.text, data.image || null);
         return;
     }
 
-    // Fallback to Client-side Multi-Layered AI Brain
+    // Server triggered fallback -> let client brain handle if not already handled
+    if (reqId && handledAiRequestIds.has(reqId)) return;
     const fallbackReply = await generateLocalAutonomousBrainReply(
         data ? data.prompt : '',
         data ? data.hasImage : false,
         data ? data.hasAudio : false
     );
+    if (reqId && handledAiRequestIds.has(reqId)) return;
+    if (reqId) handledAiRequestIds.add(reqId);
+    if (pendingAiSafetyTimer) {
+        clearTimeout(pendingAiSafetyTimer);
+        pendingAiSafetyTimer = null;
+    }
     if (fallbackReply && typeof fallbackReply === 'object') {
         appendAiMessageToChat(fallbackReply.text, fallbackReply.image);
     } else if (fallbackReply) {
@@ -4327,53 +4314,64 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
 
         setAiThinkingStatus(true);
 
-        // Instant check for pure math or local commands so math/tables/time respond in <300ms
+        // 1. Instant check for pure math/tables so math responds in <300ms
         const instantMath = (!imageStr && !audioStr) ? tryEvaluateMathQuery(currentInputText) : null;
         if (instantMath) {
             setTimeout(() => {
                 appendAiMessageToChat(instantMath);
-            }, 320);
+            }, 300);
             return;
         }
 
-        // Build conversation history for context-aware LLM brain
+        // 2. Instant check for explicit AI Image Generation
+        const instantImgSubject = (!imageStr && !audioStr) ? detectAiImageRequest(currentInputText) : null;
+        if (instantImgSubject) {
+            setTimeout(() => {
+                const seed = Math.floor(Math.random() * 999999);
+                const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(instantImgSubject)}?width=768&height=768&nologo=true&seed=${seed}`;
+                appendAiMessageToChat(
+                    `🎨 Yeh lijiye **"${instantImgSubject}"** ki AI generated image! ✨\nAgar aapko koi aur style ya badlav chahiye toh batayein.`,
+                    imgUrl
+                );
+            }, 400);
+            return;
+        }
+
+        // 3. Build conversation history for context-aware LLM brain
+        const requestId = 'aireq_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
         const recentHistory = (chats['QuickChat AI'] || [])
-            .slice(-9, -1)
+            .slice(-7, -1)
             .map(m => ({
                 role: m.from === 'QuickChat AI' ? 'assistant' : 'user',
                 content: String(m.text || '')
             }));
 
+        // Emit to Server LLM AND run Direct Browser LLM in parallel so whichever responds first wins!
         if (socket && socket.connected) {
             socket.emit('ask ai', {
+                requestId,
                 prompt: currentInputText,
                 history: recentHistory,
                 hasImage: !!imageStr,
                 hasAudio: !!audioStr
             });
-
-            // Safety timeout in case server socket takes >7.5s
-            if (pendingAiSafetyTimer) clearTimeout(pendingAiSafetyTimer);
-            pendingAiSafetyTimer = setTimeout(async () => {
-                pendingAiSafetyTimer = null;
-                const backup = await generateLocalAutonomousBrainReply(currentInputText, !!imageStr, !!audioStr);
-                if (backup && typeof backup === 'object') {
-                    appendAiMessageToChat(backup.text, backup.image);
-                } else if (backup) {
-                    appendAiMessageToChat(backup);
-                }
-            }, 7500);
-        } else {
-            // Offline / Disconnected -> Run Client-Side AI Brain directly
-            setTimeout(async () => {
-                const reply = await generateLocalAutonomousBrainReply(currentInputText, !!imageStr, !!audioStr);
-                if (reply && typeof reply === 'object') {
-                    appendAiMessageToChat(reply.text, reply.image);
-                } else if (reply) {
-                    appendAiMessageToChat(reply);
-                }
-            }, 400);
         }
+
+        // Direct Browser LLM race (ensures fast, accurate LLM response even if server is cold-starting)
+        (async () => {
+            const reply = await generateLocalAutonomousBrainReply(currentInputText, !!imageStr, !!audioStr, recentHistory);
+            if (handledAiRequestIds.has(requestId)) return;
+            handledAiRequestIds.add(requestId);
+            if (pendingAiSafetyTimer) {
+                clearTimeout(pendingAiSafetyTimer);
+                pendingAiSafetyTimer = null;
+            }
+            if (reply && typeof reply === 'object') {
+                appendAiMessageToChat(reply.text, reply.image);
+            } else if (reply) {
+                appendAiMessageToChat(reply);
+            }
+        })();
     }
 };
 
