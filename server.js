@@ -62,6 +62,8 @@ const Message = mongoose.model('Message', new mongoose.Schema({
     isDeleted: { type: Boolean, default: false },
     isPinned: { type: Boolean, default: false },
     starredBy: { type: Array, default: [] },
+    status: { type: String, default: 'sent' }, // 'sent' | 'delivered' | 'read'
+    isRead: { type: Boolean, default: false },
     timestamp: Date 
 }, { strict: false }));
 
@@ -160,10 +162,18 @@ async function getUserMessages(number) {
             isDeleted: m.isDeleted || false,
             isPinned: m.isPinned || false,
             starredBy: m.starredBy || [],
+            status: m.isRead ? 'read' : (m.status || 'sent'),
+            isRead: !!m.isRead,
             timestamp: m.timestamp ? (typeof m.timestamp.toISOString === 'function' ? m.timestamp.toISOString() : m.timestamp) : new Date().toISOString()
         }));
     } else {
-        return loadDB().messages.filter(m => m.from === number || m.to === number);
+        return loadDB().messages
+            .filter(m => m.from === number || m.to === number)
+            .map(m => ({
+                ...m,
+                status: m.isRead ? 'read' : (m.status || 'sent'),
+                isRead: !!m.isRead
+            }));
     }
 }
 
@@ -251,6 +261,43 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Helper to mark undelivered messages as delivered when recipient comes online
+    async function markUndeliveredAsDelivered(recipientNumber) {
+        try {
+            await ensureDBReady();
+            let sendersToNotify = new Set();
+            if (useMongo || mongoose.connection.readyState === 1) {
+                const undelivered = await Message.find({ to: recipientNumber, status: 'sent', isRead: { $ne: true } }, 'from').lean();
+                undelivered.forEach(m => { if (m.from) sendersToNotify.add(m.from); });
+                if (undelivered.length > 0) {
+                    await Message.updateMany(
+                        { to: recipientNumber, status: 'sent', isRead: { $ne: true } },
+                        { $set: { status: 'delivered' } }
+                    );
+                }
+            } else {
+                let db = loadDB();
+                let updated = false;
+                db.messages.forEach(m => {
+                    if (m.to === recipientNumber && (!m.status || m.status === 'sent') && !m.isRead) {
+                        m.status = 'delivered';
+                        sendersToNotify.add(m.from);
+                        updated = true;
+                    }
+                });
+                if (updated) saveDB(db);
+            }
+            sendersToNotify.forEach(senderNum => {
+                const senderSock = connectedUsers[senderNum];
+                if (senderSock) {
+                    io.to(senderSock).emit('messages delivered', { by: recipientNumber });
+                }
+            });
+        } catch (e) {
+            console.error("Delivery status update error:", e);
+        }
+    }
+
     // LOGIN LOGIC
     socket.on('login', async ({ number, pin }) => {
         try {
@@ -268,6 +315,7 @@ io.on('connection', (socket) => {
             socketToPhone[socket.id] = number;
             console.log(`User logged in: ${number}`);
             
+            await markUndeliveredAsDelivered(number);
             const userMessages = await getUserMessages(number);
             socket.emit('login success', { number, history: userMessages });
         } catch (err) {
@@ -297,6 +345,7 @@ io.on('connection', (socket) => {
             connectedUsers[cleanNum] = socket.id;
             socketToPhone[socket.id] = cleanNum;
 
+            await markUndeliveredAsDelivered(cleanNum);
             const userMessages = await getUserMessages(cleanNum);
             socket.emit('login success', { number: cleanNum, history: userMessages });
         } catch (err) {
@@ -321,6 +370,7 @@ io.on('connection', (socket) => {
             socketToPhone[socket.id] = cleanNum;
             console.log(`User auto-reconnected: ${cleanNum}`);
 
+            await markUndeliveredAsDelivered(cleanNum);
             const userMessages = await getUserMessages(cleanNum);
             socket.emit('login success', { number: cleanNum, history: userMessages });
         } catch (err) {
@@ -341,6 +391,8 @@ io.on('connection', (socket) => {
 
             const timestamp = new Date();
             const msgId = data.id || ('msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6));
+            const receiverSocketId = connectedUsers[data.to];
+            const initialStatus = receiverSocketId ? 'delivered' : 'sent';
 
             const messageObj = {
                 id: msgId,
@@ -358,17 +410,18 @@ io.on('connection', (socket) => {
                 isDeleted: false,
                 isPinned: false,
                 starredBy: [],
+                status: initialStatus,
+                isRead: false,
                 timestamp: timestamp.toISOString()
             };
 
             // Save to DB
             await saveMessage(messageObj);
 
-            // Echo back to sender with confirmed ID
+            // Echo back to sender with confirmed ID and delivery status
             socket.emit('message sent', messageObj);
 
             // Send to receiver if online
-            const receiverSocketId = connectedUsers[data.to];
             if (receiverSocketId) {
                 io.to(receiverSocketId).emit('private message', messageObj);
             }
@@ -412,13 +465,37 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Read Receipts (Blue Ticks)
-    socket.on('mark read', ({ from }) => {
-        const myNumber = socketToPhone[socket.id];
-        if (!myNumber || !from) return;
-        const senderSocketId = connectedUsers[from];
-        if (senderSocketId) {
-            io.to(senderSocketId).emit('messages read', { by: myNumber });
+    // Read Receipts (Blue Ticks) - Only when recipient views the chat
+    socket.on('mark read', async ({ from }) => {
+        try {
+            const myNumber = socketToPhone[socket.id];
+            if (!myNumber || !from) return;
+
+            await ensureDBReady();
+            if (useMongo || mongoose.connection.readyState === 1) {
+                await Message.updateMany(
+                    { from: from, to: myNumber, isRead: { $ne: true } },
+                    { $set: { status: 'read', isRead: true } }
+                );
+            } else {
+                let db = loadDB();
+                let updated = false;
+                db.messages.forEach(m => {
+                    if (m.from === from && m.to === myNumber && !m.isRead) {
+                        m.status = 'read';
+                        m.isRead = true;
+                        updated = true;
+                    }
+                });
+                if (updated) saveDB(db);
+            }
+
+            const senderSocketId = connectedUsers[from];
+            if (senderSocketId) {
+                io.to(senderSocketId).emit('messages read', { by: myNumber });
+            }
+        } catch (err) {
+            console.error("Mark read error:", err);
         }
     });
 

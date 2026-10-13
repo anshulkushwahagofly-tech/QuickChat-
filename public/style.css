@@ -215,7 +215,7 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #d1d7db;
+    background-color: var(--wa-bg-body, #d1d7db);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -253,7 +253,7 @@ body::before {
 
 #onboarding-dots-btn {
     font-size: 19px;
-    color: #54656f;
+    color: #ffffff;
     cursor: pointer;
     padding: 8px 10px;
     border-radius: 50%;
@@ -261,16 +261,17 @@ body::before {
 }
 
 #onboarding-dots-btn:hover {
-    background-color: rgba(0, 0, 0, 0.06);
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
 .onboarding-dropdown {
     position: absolute;
     top: 40px;
     right: 0;
-    background: #ffffff;
-    box-shadow: 0 4px 16px rgba(11, 20, 26, 0.2);
-    border-radius: 4px;
+    background: var(--wa-bg-dropdown, #ffffff);
+    border: 1px solid var(--wa-border-dropdown, #e9edef);
+    box-shadow: 0 4px 16px rgba(11, 20, 26, 0.25);
+    border-radius: 6px;
     padding: 6px 0;
     min-width: 180px;
     z-index: 120;
@@ -279,7 +280,7 @@ body::before {
 .onboarding-menu-item {
     padding: 10px 18px;
     font-size: 14px;
-    color: #111b21;
+    color: var(--wa-text-dropdown, #111b21);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -288,11 +289,13 @@ body::before {
 }
 
 .onboarding-menu-item:hover {
-    background-color: #f5f6f6;
+    background-color: var(--wa-bg-dropdown-hover, #f5f6f6);
 }
 
 .login-box {
-    background: white;
+    background: var(--wa-bg-sidebar, #ffffff);
+    color: var(--wa-chat-title, #111b21);
+    border: 1px solid var(--wa-border-sidebar, transparent);
     padding: 40px 36px 36px 36px;
     border-radius: 8px;
     box-shadow: 0 17px 50px 0 rgba(11,20,26,.19), 0 12px 15px 0 rgba(11,20,26,.24);
@@ -340,12 +343,13 @@ body::before {
     max-width: 65vw;
     max-height: 65vw;
     object-fit: contain;
+    border-radius: 16px;
 }
 
 .wa-welcome-title {
     font-size: 26px;
     font-weight: 600;
-    color: #111b21;
+    color: var(--wa-chat-title, #111b21);
     margin-bottom: 14px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     text-align: center;
@@ -353,7 +357,7 @@ body::before {
 
 .wa-welcome-terms {
     font-size: 13.5px;
-    color: #54656f;
+    color: var(--wa-text-pill, #54656f);
     line-height: 1.5;
     margin-bottom: 10px;
     text-align: center;
@@ -362,7 +366,7 @@ body::before {
 
 .wa-welcome-subterms {
     font-size: 12.5px;
-    color: #8696a0;
+    color: var(--wa-chat-time, #8696a0);
     line-height: 1.45;
     margin-bottom: 22px;
     text-align: center;
@@ -370,7 +374,7 @@ body::before {
 }
 
 .wa-green-link {
-    color: #008069;
+    color: #00a884;
     text-decoration: none;
     font-weight: 500;
 }
@@ -389,13 +393,13 @@ body::before {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    border: 1px solid #e9edef;
+    border: 1px solid var(--wa-border-sidebar, #e9edef);
     border-radius: 20px;
     padding: 6px 16px;
-    color: #008069;
+    color: #00a884;
     font-size: 13.5px;
     font-weight: 500;
-    background: #ffffff;
+    background: var(--wa-bg-pill, #ffffff);
     cursor: pointer;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
@@ -409,7 +413,7 @@ body::before {
 }
 
 .wa-pill-btn {
-    background-color: #008069;
+    background-color: #00a884;
     color: #ffffff;
     border: none;
     border-radius: 24px;
@@ -422,7 +426,7 @@ body::before {
     transition: background-color 0.2s, transform 0.1s;
     letter-spacing: 0.2px;
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 128, 105, 0.3);
+    box-shadow: 0 2px 5px rgba(0, 168, 132, 0.3);
 }
 
 .wa-pill-btn:hover {
@@ -434,7 +438,7 @@ body::before {
 }
 
 .wa-screen-title {
-    color: #008069;
+    color: #00a884;
     font-size: 20px;
     font-weight: 600;
     margin-bottom: 12px;
@@ -442,7 +446,7 @@ body::before {
 }
 
 .wa-screen-desc {
-    color: #54656f;
+    color: var(--wa-text-pill, #54656f);
     font-size: 14px;
     line-height: 1.5;
     margin-bottom: 28px;
@@ -467,13 +471,13 @@ body::before {
     padding: 8px 4px;
     border-bottom: 1.5px solid #00a884;
     font-size: 16px;
-    color: #111b21;
+    color: var(--wa-chat-title, #111b21);
     cursor: pointer;
     margin-bottom: 14px;
 }
 
 .wa-country-row i {
-    color: #008069;
+    color: #00a884;
     font-size: 14px;
 }
 
@@ -488,7 +492,7 @@ body::before {
     border-bottom: 1.5px solid #00a884;
     padding: 8px 4px;
     font-size: 16px;
-    color: #111b21;
+    color: var(--wa-chat-title, #111b21);
     font-weight: 500;
     display: flex;
     align-items: center;
@@ -497,12 +501,12 @@ body::before {
 }
 
 .wa-plus {
-    color: #54656f;
+    color: var(--wa-text-pill, #54656f);
     font-size: 15px;
 }
 
 .wa-dial-code {
-    color: #111b21;
+    color: var(--wa-chat-title, #111b21);
     font-size: 16px;
 }
 
@@ -518,15 +522,19 @@ body::before {
     border: none;
     outline: none;
     font-size: 16px;
-    color: #111b21;
+    color: var(--wa-chat-title, #111b21);
     padding: 8px 4px;
     background: transparent;
     font-family: inherit;
 }
 
+.wa-number-input-box input::placeholder {
+    color: var(--wa-search-placeholder, #8696a0);
+}
+
 .wa-input-hint {
     font-size: 12px;
-    color: #8696a0;
+    color: var(--wa-chat-time, #8696a0);
     margin-top: 8px;
     text-align: center;
 }
@@ -558,18 +566,22 @@ body::before {
     letter-spacing: 8px;
     font-weight: bold;
     text-align: center;
-    color: #111b21;
+    color: var(--wa-chat-title, #111b21);
     width: 100%;
+}
+
+.wa-otp-input-wrapper input::placeholder {
+    color: var(--wa-search-placeholder, #8696a0);
 }
 
 .wa-otp-hint {
     font-size: 13px;
-    color: #8696a0;
+    color: var(--wa-chat-time, #8696a0);
 }
 
 .wa-resend-section {
     font-size: 13.5px;
-    color: #54656f;
+    color: var(--wa-text-pill, #54656f);
     margin-bottom: 26px;
     text-align: center;
 }
@@ -588,8 +600,12 @@ body::before {
     font-size: 20px;
     letter-spacing: 6px;
     text-align: center;
-    color: #111b21;
+    color: var(--wa-chat-title, #111b21);
     width: 100%;
+}
+
+.wa-pin-row input::placeholder {
+    color: var(--wa-search-placeholder, #8696a0);
 }
 
 .secure-badge {
@@ -786,7 +802,7 @@ body::before {
 
 .menu-divider {
     height: 1px;
-    background-color: #e9edef;
+    background-color: var(--wa-border-dropdown, #e9edef);
     margin: 6px 0;
 }
 
@@ -799,7 +815,7 @@ body::before {
 }
 
 .menu-item.logout:hover {
-    background-color: #fff1f2;
+    background-color: rgba(234, 0, 56, 0.12);
 }
 
 .desktop-avatar-wrapper {
@@ -839,13 +855,13 @@ body::before {
 
 .search-container {
     padding: 8px 12px;
-    background-color: #fff;
-    border-bottom: 1px solid #f2f2f2;
+    background-color: var(--wa-bg-search-wrap);
+    border-bottom: 1px solid var(--wa-border-search);
     display: block !important;
 }
 
 .search-box {
-    background-color: #f0f2f5;
+    background-color: var(--wa-bg-search-box);
     border-radius: 8px;
     padding: 7px 14px;
     display: flex;
@@ -859,7 +875,7 @@ body::before {
     width: 100%;
     outline: none;
     font-size: 14px;
-    color: #3b4a54;
+    color: var(--wa-search-text);
 }
 
 .chat-list {
@@ -871,17 +887,17 @@ body::before {
     display: flex;
     padding: 0 16px;
     cursor: pointer;
-    background-color: #fff;
+    background-color: var(--wa-bg-chat-item);
     transition: background 0.15s;
     align-items: center;
 }
 
 .chat-list-item:hover {
-    background-color: #f5f6f6;
+    background-color: var(--wa-bg-chat-hover);
 }
 
 .chat-list-item.active {
-    background-color: #f0f2f5;
+    background-color: var(--wa-bg-chat-active);
 }
 
 .chat-list-item .avatar {
@@ -892,7 +908,7 @@ body::before {
 
 .chat-info {
     flex: 1;
-    border-bottom: 1px solid #f2f2f2;
+    border-bottom: 1px solid var(--wa-border-chat);
     padding: 14px 0;
     display: flex;
     flex-direction: column;
@@ -908,7 +924,7 @@ body::before {
 }
 
 .chat-title-row h4 {
-    color: #111b21;
+    color: var(--wa-chat-title);
     font-weight: 500;
     font-size: 16px;
     white-space: nowrap;
@@ -917,7 +933,7 @@ body::before {
 }
 
 .chat-last-msg {
-    color: #667781;
+    color: var(--wa-chat-last-msg);
     font-size: 13.5px;
     white-space: nowrap;
     overflow: hidden;
@@ -936,10 +952,10 @@ body::before {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background-color: #f0f2f5;
+    background-color: var(--wa-bg-empty-state);
     border-bottom: 6px solid #00a884;
     text-align: center;
-    color: #41525d;
+    color: var(--wa-title-empty-state);
     padding: 30px;
 }
 
@@ -952,12 +968,12 @@ body::before {
 .empty-chat-state h2 {
     font-weight: 300;
     font-size: 32px;
-    color: #41525d;
+    color: var(--wa-title-empty-state);
     margin-bottom: 12px;
 }
 
 .empty-chat-state p {
-    color: #667781;
+    color: var(--wa-sub-empty-state);
     font-size: 14px;
     line-height: 20px;
     max-width: 460px;
@@ -968,7 +984,7 @@ body::before {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #8696a0;
+    color: var(--wa-sub-empty-state);
     font-size: 13px;
     margin-top: 10px;
 }
@@ -979,7 +995,7 @@ body::before {
     display: flex;
     flex-direction: column;
     height: 100%;
-    background-color: #efeae2;
+    background-color: var(--wa-bg-chat-panel);
     position: relative;
 }
 
@@ -998,13 +1014,13 @@ body::before {
 
 .chat-panel-header {
     height: 60px;
-    background-color: #f0f2f5;
+    background-color: var(--wa-bg-chat-header);
     padding: 10px 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     z-index: 2;
-    border-left: 1px solid #d1d7db;
+    border-left: 1px solid var(--wa-border-chat-header);
 }
 
 #back-btn {
@@ -1018,13 +1034,13 @@ body::before {
 }
 
 .chat-title h3 {
-    color: #111b21;
+    color: var(--wa-chat-header-title);
     font-weight: 500;
     font-size: 16px;
 }
 
 .chat-title .status {
-    color: #667781;
+    color: var(--wa-chat-header-status);
     font-size: 12.5px;
 }
 
@@ -1041,8 +1057,8 @@ body::before {
 /* Date Pill in Center ("TODAY") */
 .date-chip {
     align-self: center;
-    background-color: #ffffff;
-    color: #54656f;
+    background-color: var(--wa-bg-dropdown);
+    color: var(--wa-text-pill);
     font-size: 11.5px;
     font-weight: 500;
     padding: 5px 12px;
@@ -1055,7 +1071,7 @@ body::before {
 .sender-name-tag {
     font-size: 12px;
     font-weight: 600;
-    color: #1f7a8c;
+    color: #00a884;
     margin-bottom: 2px;
     display: block;
 }
@@ -1087,6 +1103,13 @@ body::before {
     box-shadow: 0 1px 0.5px rgba(11,20,26,.1);
 }
 
+html.dark-theme .encryption-msg,
+body.dark-theme .encryption-msg,
+.dark-theme .encryption-msg {
+    background-color: #182229;
+    color: #ffd279;
+}
+
 .message {
     max-width: 75%;
     padding: 6px 9px 8px 10px;
@@ -1095,24 +1118,27 @@ body::before {
     position: relative;
     word-wrap: break-word;
     box-shadow: 0 1px 0.5px rgba(11,20,26,.13);
-    color: #111b21;
+    color: var(--wa-bubble-recv-text);
     line-height: 19px;
 }
 
 .message.received {
-    background-color: #ffffff;
+    background-color: var(--wa-bubble-recv);
+    color: var(--wa-bubble-recv-text);
     align-self: flex-start;
     border-top-left-radius: 0;
 }
 
 .message.sent {
-    background-color: #d9fdd3; /* WhatsApp classic green bubble */
+    background-color: var(--wa-bubble-sent);
+    color: var(--wa-bubble-sent-text);
     align-self: flex-end;
     border-top-right-radius: 0;
 }
 
 .message-content {
     display: inline-block;
+    color: inherit;
 }
 
 .message-footer {
@@ -1126,17 +1152,29 @@ body::before {
 
 .message-time {
     font-size: 11px;
-    color: #667781;
+    color: var(--wa-bubble-sent-time);
 }
 
 .ticks {
-    color: #53bdeb; /* Blue double ticks */
-    font-size: 11px;
+    color: #8696a0;
+    font-size: 12px;
+}
+
+.ticks-sent,
+.ticks-delivered,
+.ticks.ticks-sent,
+.ticks.ticks-delivered {
+    color: #8696a0 !important;
+}
+
+.ticks-read,
+.ticks.ticks-read {
+    color: #53bdeb !important;
 }
 
 .chat-panel-input {
     min-height: 62px;
-    background-color: #f0f2f5;
+    background-color: var(--wa-bg-chat-input);
     padding: 8px 16px;
     display: flex;
     align-items: center;
@@ -1147,7 +1185,7 @@ body::before {
 .input-pill-wrapper {
     display: flex;
     flex: 1;
-    background: #ffffff;
+    background: var(--wa-bg-input-pill);
     border-radius: 25px;
     padding: 6px 14px;
     align-items: center;
@@ -1161,7 +1199,12 @@ body::before {
     outline: none;
     font-size: 15px;
     padding: 4px 0;
-    color: #111b21;
+    background: transparent !important;
+    color: var(--wa-input-text) !important;
+}
+
+#message-input::placeholder {
+    color: var(--wa-input-placeholder) !important;
 }
 
 .mic-circle-wrapper {
@@ -1188,14 +1231,14 @@ body::before {
 }
 
 .icon-btn {
-    color: #54656f;
+    color: var(--wa-input-icon);
     font-size: 22px;
     cursor: pointer;
     padding: 4px;
 }
 
 .icon-btn:hover {
-    color: #111b21;
+    color: var(--wa-title-header);
 }
 
 /* --- NEW CHAT / CONTACTS MODAL --- */
@@ -1214,7 +1257,9 @@ body::before {
 }
 
 .modal-content {
-    background: #ffffff;
+    background: var(--wa-bg-dropdown);
+    color: var(--wa-text-dropdown);
+    border: 1px solid var(--wa-border-dropdown);
     border-radius: 12px;
     width: 100%;
     max-width: 450px;
@@ -1232,12 +1277,13 @@ body::before {
 }
 
 .modal-header {
-    background-color: #008069;
-    color: white;
+    background-color: var(--wa-bg-drawer-header, #008069);
+    color: var(--wa-text-drawer-header, #ffffff);
     padding: 16px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--wa-border-dropdown);
 }
 
 .modal-header h3 {
@@ -1251,7 +1297,7 @@ body::before {
 .close-btn {
     background: transparent;
     border: none;
-    color: white;
+    color: var(--wa-text-drawer-header, #ffffff);
     font-size: 26px;
     cursor: pointer;
     line-height: 1;
@@ -1261,6 +1307,7 @@ body::before {
     padding: 20px;
     overflow-y: auto;
     flex: 1;
+    color: var(--wa-text-dropdown);
 }
 
 .new-chat-input-row {
@@ -1268,22 +1315,25 @@ body::before {
     align-items: center;
     margin-top: 10px;
     margin-bottom: 24px;
-    border: 1px solid #d1d7db;
+    border: 1px solid var(--wa-border-search);
+    background: var(--wa-bg-search-box);
     border-radius: 8px;
     overflow: hidden;
 }
 
 .country-prefix {
-    background: #f0f2f5;
+    background: var(--wa-bg-pill);
     padding: 10px 14px;
     font-weight: 600;
-    color: #54656f;
-    border-right: 1px solid #d1d7db;
+    color: var(--wa-text-pill);
+    border-right: 1px solid var(--wa-border-search);
 }
 
 .new-chat-input-row input {
     flex: 1;
     border: none;
+    background: transparent;
+    color: var(--wa-search-text);
     padding: 10px 12px;
     font-size: 16px;
     outline: none;
@@ -1307,12 +1357,12 @@ body::before {
 }
 
 .contacts-section h4 {
-    color: #008069;
+    color: #00a884;
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 12px;
-    border-bottom: 1px solid #f0f2f5;
+    border-bottom: 1px solid var(--wa-border-chat);
     padding-bottom: 6px;
 }
 
@@ -1333,7 +1383,7 @@ body::before {
 }
 
 .contact-card:hover {
-    background-color: #f0f2f5;
+    background-color: var(--wa-bg-chat-hover);
 }
 
 .contact-card .contact-info {
@@ -1342,18 +1392,18 @@ body::before {
 
 .contact-card .contact-number {
     font-weight: 500;
-    color: #111b21;
+    color: var(--wa-chat-title);
     font-size: 15px;
 }
 
 .contact-card .contact-sub {
     font-size: 12.5px;
-    color: #667781;
+    color: var(--wa-chat-last-msg);
 }
 
 .contact-card .chat-action-badge {
-    background-color: #e8f5e9;
-    color: #008069;
+    background-color: var(--wa-bg-pill-active);
+    color: var(--wa-text-pill-active);
     padding: 5px 10px;
     border-radius: 12px;
     font-size: 12px;
@@ -1367,7 +1417,8 @@ body::before {
     left: -100%;
     width: 100%;
     height: 100%;
-    background: #ffffff;
+    background: var(--wa-bg-sidebar);
+    color: var(--wa-chat-title);
     z-index: 150;
     display: flex;
     flex-direction: column;
@@ -1381,8 +1432,8 @@ body::before {
 
 .wa-drawer-header {
     height: 108px;
-    background-color: #008069;
-    color: #ffffff;
+    background-color: var(--wa-bg-drawer-header);
+    color: var(--wa-text-drawer-header);
     display: flex;
     align-items: flex-end;
     padding: 0 24px 20px 24px;
@@ -1398,7 +1449,7 @@ body::before {
 .wa-drawer-back-btn {
     background: transparent;
     border: none;
-    color: #ffffff;
+    color: var(--wa-text-drawer-header);
     font-size: 19px;
     cursor: pointer;
     padding: 4px;
@@ -1409,18 +1460,19 @@ body::before {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    background-color: var(--wa-bg-drawer-body);
 }
 
 .wa-drawer-direct-add {
     padding: 12px 16px;
-    background: #ffffff;
-    border-bottom: 1px solid #f0f2f5;
+    background: var(--wa-bg-sidebar);
+    border-bottom: 1px solid var(--wa-border-sidebar);
 }
 
 .wa-direct-input-row {
     display: flex;
     align-items: center;
-    background: #f0f2f5;
+    background: var(--wa-bg-search-box);
     border-radius: 8px;
     overflow: hidden;
     padding: 2px 8px;
@@ -1428,7 +1480,7 @@ body::before {
 
 .wa-direct-prefix {
     font-weight: 600;
-    color: #54656f;
+    color: var(--wa-text-pill);
     padding: 8px 6px 8px 8px;
     font-size: 14.5px;
 }
@@ -1440,7 +1492,7 @@ body::before {
     padding: 8px 6px;
     font-size: 15px;
     outline: none;
-    color: #111b21;
+    color: var(--wa-search-text);
 }
 
 .wa-direct-input-row button {
@@ -1465,7 +1517,7 @@ body::before {
     padding: 20px 24px 10px 24px;
     font-size: 12.5px;
     font-weight: 600;
-    color: #008069;
+    color: #00a884;
     letter-spacing: 0.5px;
 }
 
@@ -1487,7 +1539,7 @@ body::before {
 }
 
 .wa-profile-card {
-    background: #ffffff;
+    background: var(--wa-bg-drawer-card);
     padding: 14px 24px;
     margin-bottom: 10px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.06);
@@ -1495,7 +1547,7 @@ body::before {
 
 .wa-profile-label {
     font-size: 12.5px;
-    color: #008069;
+    color: #00a884;
     font-weight: 500;
     display: block;
     margin-bottom: 12px;
@@ -1505,7 +1557,7 @@ body::before {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: #111b21;
+    color: var(--wa-text-drawer-card);
     font-size: 15.5px;
 }
 
@@ -1518,14 +1570,14 @@ body::before {
 .wa-profile-hint {
     margin-top: 10px;
     font-size: 12.5px;
-    color: #8696a0;
+    color: var(--wa-text-pill);
     line-height: 1.45;
 }
 
 /* --- WHATSAPP EMOJI PICKER POPUP --- */
 .wa-emoji-picker {
-    background: #ffffff;
-    border-top: 1px solid #e9edef;
+    background: var(--wa-bg-emoji);
+    border-top: 1px solid var(--wa-border-emoji);
     padding: 10px 16px;
     max-height: 220px;
     overflow-y: auto;
@@ -1542,7 +1594,7 @@ body::before {
 .wa-emoji-tabs {
     display: flex;
     gap: 16px;
-    border-bottom: 1px solid #f0f2f5;
+    border-bottom: 1px solid var(--wa-border-emoji);
     padding-bottom: 8px;
     margin-bottom: 10px;
 }
@@ -1550,7 +1602,7 @@ body::before {
 .wa-emoji-tab {
     font-size: 13px;
     font-weight: 600;
-    color: #008069;
+    color: var(--wa-tab-emoji);
     cursor: pointer;
 }
 
@@ -1573,7 +1625,7 @@ body::before {
 }
 
 .wa-emoji-item:hover {
-    background-color: #f0f2f5;
+    background-color: var(--wa-hover-emoji);
     transform: scale(1.2);
 }
 
@@ -1583,20 +1635,22 @@ body::before {
     padding: 6px 10px 4px 10px;
     font-size: 14.5px;
     line-height: 19px;
-    color: #111b21;
+    color: var(--wa-bubble-recv-text);
     position: relative;
     box-shadow: 0 1px 0.5px rgba(11,20,26,.13);
     word-wrap: break-word;
 }
 
 .message.sent {
-    background-color: #d9fdd3 !important;
+    background-color: var(--wa-bubble-sent) !important;
+    color: var(--wa-bubble-sent-text) !important;
     align-self: flex-end;
     border-radius: 8px 8px 0px 8px !important;
 }
 
 .message.received {
-    background-color: #ffffff !important;
+    background-color: var(--wa-bubble-recv) !important;
+    color: var(--wa-bubble-recv-text) !important;
     align-self: flex-start;
     border-radius: 8px 8px 8px 0px !important;
 }
@@ -1613,12 +1667,12 @@ body::before {
 
 .message-time {
     font-size: 11px;
-    color: #667781;
+    color: var(--wa-bubble-sent-time);
 }
 
 .ticks {
-    font-size: 13px;
-    color: #53bdeb; /* WhatsApp blue ticks */
+    font-size: 12px;
+    color: #8696a0;
 }
 
 /* ========================================================
@@ -2505,8 +2559,8 @@ body::before {
 }
 
 .wa-dialog-btn-cancel:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--wa-chat-header-title, #e9edef);
+    background: var(--wa-bg-pill-hover, rgba(134, 150, 160, 0.15));
+    color: var(--wa-chat-header-title, #111b21);
 }
 
 .wa-dialog-btn-confirm {
@@ -2519,13 +2573,13 @@ body::before {
 }
 
 .wa-dialog-btn-extra {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--wa-chat-header-title, #e9edef);
-    border: 1px solid var(--wa-border-dropdown, rgba(255, 255, 255, 0.12));
+    background: var(--wa-bg-pill, #f0f2f5);
+    color: var(--wa-chat-header-title, #111b21);
+    border: 1px solid var(--wa-border-dropdown, #e9edef);
 }
 
 .wa-dialog-btn-extra:hover {
-    background: rgba(255, 255, 255, 0.16);
+    background: var(--wa-bg-pill-hover, #e9edef);
 }
 
 .wa-dialog-btn-danger {
@@ -2560,11 +2614,11 @@ body::before {
     align-items: center;
     justify-content: space-between;
     background: var(--wa-bg-pill, rgba(134, 150, 160, 0.12));
-    border: 1px solid var(--wa-border-pill, rgba(134, 150, 160, 0.2));
+    border: 1px solid var(--wa-border-sidebar, rgba(134, 150, 160, 0.25));
     border-radius: 10px;
     padding: 10px 14px;
     margin: 0 0 16px 0;
-    color: var(--wa-chat-header-title, #e9edef);
+    color: var(--wa-chat-title, #111b21);
     font-size: 13.5px;
     gap: 12px;
 }
@@ -2907,7 +2961,7 @@ body::before {
 .wa-audio-bar {
     width: 100%;
     height: 4px;
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(134, 150, 160, 0.35);
     border-radius: 2px;
     position: relative;
     overflow: hidden;
@@ -3023,8 +3077,8 @@ body::before {
 }
 
 .wa-poll-option-item {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(134, 150, 160, 0.14);
+    border: 1px solid rgba(134, 150, 160, 0.3);
     border-radius: 8px;
     padding: 8px 10px;
     margin-bottom: 6px;
@@ -3420,8 +3474,9 @@ body::before {
 }
 
 .wa-channel-follow-btn.following {
-    background: rgba(255, 255, 255, 0.15);
-    color: var(--wa-chat-header-title);
+    background: var(--wa-bg-pill, #f0f2f5);
+    color: var(--wa-chat-title, #111b21);
+    border: 1px solid var(--wa-border-chat, #e9edef);
 }
 
 .wa-new-community-btn {

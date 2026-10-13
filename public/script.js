@@ -844,8 +844,13 @@ socket.on('login success', (data) => {
             if (!friend) return;
             if (!chats[friend]) chats[friend] = [];
             const timeStr = formatTime(new Date(msg.timestamp));
-            const exists = chats[friend].some(m => m.id === msg.id || (m.time === timeStr && m.text === msg.text && m.from === msg.from));
-            if (!exists) {
+            const resolvedStatus = msg.isRead ? 'read' : (msg.status || 'sent');
+            const existingMsg = chats[friend].find(m => m.id === msg.id || (m.time === timeStr && m.text === msg.text && m.from === msg.from));
+            if (existingMsg) {
+                existingMsg.id = msg.id || existingMsg.id;
+                existingMsg.status = resolvedStatus;
+                existingMsg.isRead = !!msg.isRead;
+            } else {
                 chats[friend].push({
                     id: msg.id || ('msg_' + Date.now()),
                     from: msg.from,
@@ -861,6 +866,8 @@ socket.on('login success', (data) => {
                     isDeleted: msg.isDeleted || false,
                     isPinned: msg.isPinned || false,
                     starred: msg.starred || false,
+                    status: resolvedStatus,
+                    isRead: !!msg.isRead,
                     time: timeStr
                 });
             }
@@ -1132,6 +1139,29 @@ function setActiveFilter(filterName) {
     renderChatList(newChatInput ? newChatInput.value.trim().toLowerCase() : '');
 }
 
+function getTicksHTML(msg, isChatList = false) {
+    if (!msg) return '';
+    const isRead = msg.status === 'read' || msg.isRead === true;
+    const isDelivered = msg.status === 'delivered';
+    if (isChatList) {
+        if (isRead) {
+            return '<i class="fas fa-check-double ticks-read" style="font-size:11px; color:#53bdeb; margin-right:4px;" title="Seen"></i>';
+        } else if (isDelivered) {
+            return '<i class="fas fa-check-double ticks-delivered" style="font-size:11px; color:#8696a0; margin-right:4px;" title="Delivered"></i>';
+        } else {
+            return '<i class="fas fa-check ticks-sent" style="font-size:11px; color:#8696a0; margin-right:4px;" title="Sent"></i>';
+        }
+    } else {
+        if (isRead) {
+            return '<i class="fas fa-check-double ticks ticks-read" title="Seen"></i>';
+        } else if (isDelivered) {
+            return '<i class="fas fa-check-double ticks ticks-delivered" title="Delivered"></i>';
+        } else {
+            return '<i class="fas fa-check ticks ticks-sent" title="Sent"></i>';
+        }
+    }
+}
+
 function renderChatList(filter = '') {
     chatList.innerHTML = '';
     
@@ -1245,7 +1275,7 @@ function renderChatList(filter = '') {
         let lastMsgText = 'Tap to chat';
         if (lastMsg) {
             if (lastMsg.from === myNumber) {
-                lastMsgPrefix = '<i class="fas fa-check-double" style="font-size:11px; color:#53bdeb; margin-right:4px;"></i>';
+                lastMsgPrefix = getTicksHTML(lastMsg, true);
             }
             if (lastMsg.isDeleted) {
                 lastMsgText = '<i class="fas fa-ban" style="font-size:11px; margin-right:4px; opacity:0.7;"></i> Deleted message';
@@ -1426,6 +1456,7 @@ if (ctxChatUnread) {
         if (!friend) return;
         if ((unreadCounts[friend] || 0) > 0) {
             unreadCounts[friend] = 0;
+            socket.emit('mark read', { from: friend });
             showWhatsAppToast(`Marked as read`, 'info');
         } else {
             unreadCounts[friend] = 1;
@@ -1501,10 +1532,15 @@ function openChat(friendNumber) {
     }
     emptyState.style.display = 'none';
     chatPanel.style.display = 'flex';
-    activeChatTitle.innerText = "+91 " + friendNumber;
+    activeChatTitle.innerText = friendNumber === 'QuickChat AI' ? 'QuickChat AI' : "+91 " + friendNumber;
     
     // Add mobile active class to open full screen on mobile
     chatPanel.classList.add('active-mobile');
+    
+    // Notify server that recipient has viewed/seen the messages -> triggers Blue Ticks for sender!
+    if (friendNumber && friendNumber !== 'QuickChat AI') {
+        socket.emit('mark read', { from: friendNumber });
+    }
     
     renderChatList(); 
     renderMessages();
@@ -1895,6 +1931,8 @@ function sendMessage(imageStr = null, audioStr = null, msgType = 'text', locatio
         isDeleted: false,
         isPinned: false,
         starred: false,
+        status: 'sent',
+        isRead: false,
         time: timeNow
     };
 
@@ -2055,8 +2093,8 @@ function renderMessages() {
         msgElement.className = `message ${isMe ? 'sent' : 'received'}`;
         msgElement.id = 'msg-el-' + (msg.id || idx);
 
-        let senderTagHTML = !isMe ? `<span class="sender-name-tag">~+91 ${msg.from}</span>` : '';
-        let ticksHTML = isMe ? `<i class="fas fa-check-double ticks"></i>` : '';
+        let senderTagHTML = !isMe ? `<span class="sender-name-tag">~${msg.from === 'QuickChat AI' ? 'QuickChat AI' : '+91 ' + msg.from}</span>` : '';
+        let ticksHTML = isMe ? getTicksHTML(msg, false) : '';
 
         // Quoted block
         let quotedHTML = '';
@@ -2380,7 +2418,62 @@ if (msgCtxDelete) {
     };
 }
 
-// 11. Socket Listeners for Real-Time Messages & Actions
+// 11. Socket Listeners for Real-Time Messages, Delivery & Read Receipts (Blue Ticks)
+socket.on('message sent', (serverMsg) => {
+    if (!serverMsg || !serverMsg.to) return;
+    const friend = serverMsg.to;
+    if (chats[friend]) {
+        const msg = chats[friend].find(m => m.id === serverMsg.id);
+        if (msg && msg.status !== 'read' && !msg.isRead) {
+            msg.status = serverMsg.status || 'sent';
+            saveLocalCache();
+            if (activeChat === friend) renderMessages();
+            renderChatList();
+        }
+    }
+});
+
+socket.on('messages delivered', ({ by }) => {
+    if (!by || !chats[by]) return;
+    let updated = false;
+    chats[by].forEach(m => {
+        if (m.from === myNumber && m.status !== 'read' && !m.isRead) {
+            m.status = 'delivered';
+            updated = true;
+        }
+    });
+    if (updated) {
+        saveLocalCache();
+        if (activeChat === by) renderMessages();
+        renderChatList();
+    }
+});
+
+socket.on('messages read', ({ by }) => {
+    if (!by || !chats[by]) return;
+    let updated = false;
+    chats[by].forEach(m => {
+        if (m.from === myNumber && (m.status !== 'read' || !m.isRead)) {
+            m.status = 'read';
+            m.isRead = true;
+            updated = true;
+        }
+    });
+    if (updated) {
+        saveLocalCache();
+        if (activeChat === by) renderMessages();
+        renderChatList();
+    }
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && activeChat && activeChat !== 'QuickChat AI') {
+        unreadCounts[activeChat] = 0;
+        socket.emit('mark read', { from: activeChat });
+        renderChatList();
+    }
+});
+
 socket.on('private message', (data) => {
     const sender = data.from;
     const timeNow = formatTime(new Date(data.timestamp));
@@ -2402,16 +2495,21 @@ socket.on('private message', (data) => {
         isDeleted: data.isDeleted || false,
         isPinned: data.isPinned || false,
         starred: false,
+        status: 'delivered',
+        isRead: false,
         time: timeNow
     };
 
     chats[sender].push(receivedMsg);
 
-    if (activeChat === sender) {
+    if (activeChat === sender && !document.hidden) {
+        receivedMsg.status = 'read';
+        receivedMsg.isRead = true;
         renderMessages();
         socket.emit('mark read', { from: sender });
     } else {
         unreadCounts[sender] = (unreadCounts[sender] || 0) + 1;
+        if (activeChat === sender) renderMessages();
     }
     renderChatList();
     saveLocalCache();
@@ -3580,6 +3678,14 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
 
     if (currentChatTarget === 'QuickChat AI' && (currentInputText || imageStr || audioStr)) {
         setTimeout(() => {
+            if (chats['QuickChat AI']) {
+                chats['QuickChat AI'].forEach(m => {
+                    if (m.from === myNumber) {
+                        m.status = 'read';
+                        m.isRead = true;
+                    }
+                });
+            }
             const aiReplies = [
                 "I'm here to help! QuickChat features real-time messaging, HD voice/video calls, and end-to-end encryption. 🚀",
                 "Great question! You can click the green '+' button to start a chat with any 10-digit number.",
