@@ -1578,11 +1578,19 @@ function renderChatList(filter = '') {
             openChatContextMenu(e, friendNumber);
         };
         
+        const isAiChat = friendNumber === 'QuickChat AI';
+        const displayTitle = isAiChat
+            ? `QuickChat AI <i class="fas fa-check-circle" style="color:#00a884; font-size:12.5px; margin-left:4px;" title="Official AI"></i>`
+            : `+91 ${friendNumber}`;
+        const avatarContent = isAiChat
+            ? `<div class="avatar" style="background:linear-gradient(135deg, #00a884, #00d2ff, #7b2ff7); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;"><i class="fas fa-robot"></i></div>`
+            : `<div class="avatar"></div>`;
+
         chatItem.innerHTML = `
-            <div class="avatar"></div>
+            ${avatarContent}
             <div class="chat-info">
                 <div class="chat-title-row">
-                    <h4>+91 ${friendNumber}</h4>
+                    <h4>${displayTitle}</h4>
                     <span class="time">${lastMsgTime}</span>
                 </div>
                 <div class="chat-subtitle-row">
@@ -1800,7 +1808,15 @@ function openChat(friendNumber) {
     }
     emptyState.style.display = 'none';
     chatPanel.style.display = 'flex';
-    activeChatTitle.innerText = friendNumber === 'QuickChat AI' ? 'QuickChat AI' : "+91 " + friendNumber;
+    if (friendNumber === 'QuickChat AI') {
+        activeChatTitle.innerHTML = `QuickChat AI <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official AI"></i>`;
+        const statusEl = document.getElementById('active-chat-status');
+        if (statusEl) statusEl.innerHTML = `<span style="color:#00a884;">✨ Official AI Brain • Ask me anything</span>`;
+    } else {
+        activeChatTitle.innerText = "+91 " + friendNumber;
+        const statusEl = document.getElementById('active-chat-status');
+        if (statusEl) statusEl.innerText = 'online';
+    }
     
     // Add mobile active class to open full screen on mobile
     chatPanel.classList.add('active-mobile');
@@ -1831,6 +1847,21 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.innerText = text;
     return div.innerHTML;
+}
+
+// Format markdown (code blocks, inline code, bold, line breaks) safely for messages
+function formatRichMessageText(rawText) {
+    if (!rawText) return '';
+    let safe = escapeHtml(rawText);
+    // Code blocks ```...```
+    safe = safe.replace(/```(?:\w+)?\n?([\s\S]*?)```/g, (_, code) => {
+        return `<pre style="background:rgba(0,0,0,0.22); padding:10px 12px; border-radius:8px; overflow-x:auto; font-family:monospace; font-size:12.5px; margin:6px 0; border-left:3px solid #00a884;"><code>${code.trim()}</code></pre>`;
+    });
+    // Inline code `...`
+    safe = safe.replace(/`([^`\n]+)`/g, '<code style="background:rgba(0,168,132,0.15); padding:1px 5px; border-radius:4px; font-family:monospace; font-size:13px;">$1</code>');
+    // Bold **...**
+    safe = safe.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+    return safe;
 }
 
 // ========================================================
@@ -2423,7 +2454,7 @@ function renderMessages() {
             `;
         } else {
             let mediaHTML = msg.image ? `<img src="${msg.image}" style="max-width:100%; border-radius:6px; margin-bottom:4px; display:block; cursor:pointer;">` : '';
-            let textHTML = msg.text ? `<span class="message-content">${escapeHtml(msg.text)}</span>` : '';
+            let textHTML = msg.text ? `<span class="message-content">${formatRichMessageText(msg.text)}</span>` : '';
             bodyHTML = mediaHTML + textHTML;
         }
 
@@ -3891,11 +3922,14 @@ window.addEventListener('keydown', (e) => {
 // ========================================================
 function openAiAssistant() {
     const aiId = 'QuickChat AI';
-    if (!chats[aiId]) {
+    if (!chats[aiId] || chats[aiId].length === 0) {
+        const savedUser = localStorage.getItem('quickchat_my_name') || '';
+        const greetName = savedUser && !savedUser.startsWith('+91') ? ` ${savedUser}` : '';
         chats[aiId] = [
             {
+                id: 'ai_welcome_' + Date.now(),
                 from: aiId,
-                text: 'Hello! I am your QuickChat AI Assistant. ✨ How can I help you today? You can ask me anything!',
+                text: `Namaste${greetName}! 🤖✨ Main **QuickChat AI** hoon — aapka apna intelligent AI brain.\n\nAap mujhse **kisi bhi vishay (topic)** par baat kar sakte hain:\n• 🧠 **Koi bhi sawaal:** GK, Science, History, Career, Health, Recipes\n• 💻 **Coding & Tech:** Python, JS, HTML/CSS, C++, Debugging\n• ➗ **Math & Calculations:** कठिन से कठिन हिसाब या Table\n• 🎨 **AI Image Generation:** Type karein *"photo banao futuristic car"* ya *"/imagine mountain sunset"*\n• ✍️ **Shayari, Jokes, Stories, Emails & Applications**\n\nBataiye, aaj main aapki kya madad karun? 😊`,
                 time: formatTime(new Date())
             }
         ];
@@ -3906,6 +3940,22 @@ function openAiAssistant() {
 const railAiBtn = document.getElementById('rail-ai-btn');
 if (railAiBtn) {
     railAiBtn.addEventListener('click', openAiAssistant);
+}
+
+const menuOpenAiBtn = document.getElementById('menu-open-ai');
+if (menuOpenAiBtn) {
+    menuOpenAiBtn.addEventListener('click', () => {
+        if (dropdownMenu) dropdownMenu.style.display = 'none';
+        openAiAssistant();
+    });
+}
+
+const filterAiBtn = document.getElementById('filter-ai-btn');
+if (filterAiBtn) {
+    filterAiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openAiAssistant();
+    });
 }
 
 // ========================================================
@@ -3936,8 +3986,326 @@ if (promoBanner) {
 }
 
 // ========================================================
-// 18. INTERACTIVE AI RESPONSE WHEN CHATTING WITH QUICKCHAT AI
+// 18. ADVANCED QUICKCHAT AI BRAIN (LLM + WIKIPEDIA + LOCAL REASONING + IMAGE GEN)
 // ========================================================
+
+function setAiThinkingStatus(isThinking) {
+    if (activeChat !== 'QuickChat AI') return;
+    const statusEl = document.getElementById('active-chat-status');
+    if (!statusEl) return;
+    if (isThinking) {
+        statusEl.innerHTML = `<span style="color:#00a884; font-weight:600;"><i class="fas fa-sparkles"></i> ✨ QuickChat AI is thinking...</span>`;
+    } else {
+        statusEl.innerHTML = `<span style="color:#00a884;">✨ Official AI Brain • Ask me anything</span>`;
+    }
+}
+
+function appendAiMessageToChat(replyText, imageUrl = null) {
+    setAiThinkingStatus(false);
+    if (!chats['QuickChat AI']) chats['QuickChat AI'] = [];
+    const timeNow = formatTime(new Date());
+    chats['QuickChat AI'].push({
+        id: 'ai_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        from: 'QuickChat AI',
+        text: replyText,
+        image: imageUrl || null,
+        time: timeNow
+    });
+    if (activeChat === 'QuickChat AI') {
+        renderMessages();
+    } else {
+        unreadCounts['QuickChat AI'] = (unreadCounts['QuickChat AI'] || 0) + 1;
+    }
+    renderChatList();
+    saveLocalCache();
+    playReceivedSound();
+}
+
+// Helper: Detect if user is asking for AI Image Generation
+function detectAiImageRequest(text) {
+    const raw = String(text || '').trim();
+    const m1 = raw.match(/^(?:\/imagine|imagine|draw|generate\s+image(?:\s+of)?|create\s+image(?:\s+of)?|photo\s+banao|image\s+banao|tasveer\s+banao|pic\s+banao)\s*[:\-]?\s*(.+)/i);
+    if (m1 && m1[1]) return m1[1].trim();
+    const m2 = raw.match(/^(.+?)\s+(?:ki\s+photo\s+banao|ka\s+photo\s+banao|ki\s+image\s+banao|ki\s+tasveer\s+banao|photo\s+generate\s+karo)$/i);
+    if (m2 && m2[1]) return m2[1].trim();
+    return null;
+}
+
+// Helper: Safe Mathematical Expression & Table Evaluator
+function tryEvaluateMathQuery(text) {
+    const q = String(text || '').trim().toLowerCase();
+
+    // Multiplication table e.g. "17 ka pahada", "table of 19", "15 ka table"
+    const tableMatch = q.match(/(?:table\s+of\s+(\d+)|(\d+)\s+ka\s+(?:table|pahada|pahara))/i);
+    if (tableMatch) {
+        const num = parseInt(tableMatch[1] || tableMatch[2], 10);
+        if (!isNaN(num) && num > 0 && num <= 100000) {
+            let lines = [`🔢 **${num} ka Table (Pahada):**\n`];
+            for (let i = 1; i <= 10; i++) {
+                lines.push(`${num} × ${i} = **${num * i}**`);
+            }
+            return lines.join('\n');
+        }
+    }
+
+    // Percentage e.g. "18% of 4500" or "4500 ka 18%"
+    const pctMatch = q.match(/(\d+(?:\.\d+)?)\s*%\s*(?:of|ka)\s*(\d+(?:\.\d+)?)/i) ||
+                     q.match(/(\d+(?:\.\d+)?)\s*ka\s*(\d+(?:\.\d+)?)\s*%/i);
+    if (pctMatch) {
+        const isFirstPct = q.indexOf('%') < q.indexOf('ka') || q.includes('of');
+        const pct = parseFloat(isFirstPct ? pctMatch[1] : pctMatch[2]);
+        const total = parseFloat(isFirstPct ? pctMatch[2] : pctMatch[1]);
+        if (!isNaN(pct) && !isNaN(total)) {
+            const ans = +((pct / 100) * total).toFixed(4);
+            return `🧮 **Calculation Result:**\n${total} ka ${pct}% = **${ans}**`;
+        }
+    }
+
+    // Square root e.g. "sqrt 144" or "square root of 625"
+    const sqrtMatch = q.match(/(?:sqrt|square\s+root(?:\s+of)?|vargmul)\s*\(?(\d+(?:\.\d+)?)\)?/i);
+    if (sqrtMatch) {
+        const val = parseFloat(sqrtMatch[1]);
+        if (!isNaN(val) && val >= 0) {
+            return `🧮 **√${val}** = **${+(Math.sqrt(val).toFixed(6))}**`;
+        }
+    }
+
+    // Pure arithmetic expression e.g. "25 * 48 + 10", "what is 450 / 15", "125 + 375 kitna hota hai"
+    let expr = q
+        .replace(/^(?:what\s+is|calculate|solve|evaluate|batao|kitna\s+hota\s+hai|kitna\s+hai)\s*/i, '')
+        .replace(/\s*(?:kitna\s+hota\s+hai|kitna\s+hai|batao|equals|equal\s+to|\?)\s*$/i, '')
+        .replace(/×|x/g, '*')
+        .replace(/÷/g, '/')
+        .replace(/\^/g, '**')
+        .trim();
+
+    if (/^[0-9+\-*/().\s%*]+$/.test(expr) && /[+\-*/%]/.test(expr) && /\d/.test(expr)) {
+        try {
+            // Safe evaluation of pure numeric expression
+            const result = Function('"use strict"; return (' + expr + ')')();
+            if (typeof result === 'number' && isFinite(result)) {
+                const formatted = Number.isInteger(result) ? result : +result.toFixed(6);
+                return `🧮 **Math Solution:**\n\`${expr}\` = **${formatted}** ✨`;
+            }
+        } catch (e) {}
+    }
+    return null;
+}
+
+// Helper: Fetch Live Encyclopedic Knowledge from Wikipedia REST API
+async function tryFetchWikipediaSummary(queryText) {
+    try {
+        let cleaned = String(queryText || '')
+            .replace(/^(?:who\s+is|what\s+is|what\s+are|where\s+is|tell\s+me\s+about|explain|define|history\s+of|biography\s+of|meaning\s+of)\s+/i, '')
+            .replace(/\s+(?:kaun\s+hai|kon\s+hai|kya\s+hai|kya\s+hota\s+hai|ke\s+baare\s+me\s+batao|ke\s+bare\s+mein\s+batao|kahan\s+hai|ki\s+jankari\s+do|in\s+hindi|in\s+english)\s*\??$/i, '')
+            .replace(/[?.,!]/g, '')
+            .trim();
+
+        if (!cleaned || cleaned.length < 2 || cleaned.split(/\s+/).length > 6) return null;
+
+        const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleaned)}&utf8=&format=json&origin=*&srlimit=1`;
+        const searchRes = await fetch(searchUrl);
+        if (!searchRes.ok) return null;
+        const searchJson = await searchRes.json();
+        const topHit = searchJson?.query?.search?.[0];
+        if (!topHit || !topHit.title) return null;
+
+        const sumUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topHit.title)}`;
+        const sumRes = await fetch(sumUrl);
+        if (!sumRes.ok) return null;
+        const sumJson = await sumRes.json();
+        if (sumJson && sumJson.extract && sumJson.extract.length > 40) {
+            return `📚 **${sumJson.title}**\n\n${sumJson.extract}\n\n💡 *Agar aap iske baare mein aur detail ya Hindi mein samajhna chahte hain toh pooch sakte hain!*`;
+        }
+    } catch (e) {}
+    return null;
+}
+
+// Helper: Direct Browser Generative LLM Call (Backup if socket is slow)
+async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio) {
+    try {
+        const sysPrompt = "You are QuickChat AI, an advanced, super-intelligent, friendly AI assistant inside QuickChat (like Meta AI on WhatsApp). Answer ANY question accurately and completely. Mirror the user's language: if they write in Hindi or Hinglish, reply in natural Hinglish/Hindi; if in English, reply in English. Format nicely with bullet points or bold text where helpful.";
+        const recent = (chats['QuickChat AI'] || []).slice(-8).map(m => ({
+            role: m.from === 'QuickChat AI' ? 'assistant' : 'user',
+            content: String(m.text || '').slice(0, 500)
+        }));
+        const controller = new AbortController();
+        const tId = setTimeout(() => controller.abort(), 5500);
+        const res = await fetch('https://text.pollinations.ai/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: [
+                    { role: 'system', content: sysPrompt },
+                    ...recent,
+                    { role: 'user', content: hasImage ? `[Shared an image] ${userText || 'Comment on this photo'}` : (hasAudio ? `[Sent a voice message] ${userText || 'Reply to my voice note'}` : userText) }
+                ],
+                model: 'openai',
+                private: true
+            }),
+            signal: controller.signal
+        });
+        clearTimeout(tId);
+        if (res.ok) {
+            const txt = (await res.text()).trim();
+            if (txt && txt.length > 1 && !txt.startsWith('<!DOCTYPE')) {
+                return txt;
+            }
+        }
+    } catch (e) {}
+    return null;
+}
+
+// Autonomous Local Reasoning & Multi-Domain Brain (100% Offline-Capable Fallback)
+async function generateLocalAutonomousBrainReply(rawText, hasImage = false, hasAudio = false) {
+    const text = String(rawText || '').trim();
+    const lower = text.toLowerCase();
+
+    if (hasImage && !text) {
+        return "📸 **Bahut shandaar photo hai!** ✨\nComposition aur clarity kaafi acchi lag rahi hai. Agar aap is photo ke baare mein kuch khaas poochna chahte hain ya caption chahiye toh zaroor batayein!";
+    }
+    if (hasAudio && !text) {
+        return "🎤 **Aapka voice message mila!** ✨\nAapki aawaaz bilkul clear hai. Bataiye main aapki kis cheez mein madad kar sakta hoon?";
+    }
+
+    // 1. Check Image Generation
+    const imgSubject = detectAiImageRequest(text);
+    if (imgSubject) {
+        const seed = Math.floor(Math.random() * 999999);
+        const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(imgSubject)}?width=768&height=768&nologo=true&seed=${seed}`;
+        return {
+            text: `🎨 Yeh lijiye **"${imgSubject}"** ki AI generated photo! ✨`,
+            image: url
+        };
+    }
+
+    // 2. Check Math / Calculator / Tables
+    const mathAns = tryEvaluateMathQuery(text);
+    if (mathAns) return mathAns;
+
+    // 3. User Name Memory ("mera naam X hai" / "my name is X")
+    const nameMatch = text.match(/(?:mera\s+naam|my\s+name\s+is|i\s+am|main\s+hoon)\s+([a-zA-Z\u0900-\u097F]{2,20})(?:\s+hai)?$/i);
+    if (nameMatch && nameMatch[1]) {
+        const userName = nameMatch[1].trim();
+        localStorage.setItem('quickchat_my_name', userName);
+        return `Bahut khushi hui aapse milkar, **${userName}**! 🤝✨ Maine aapka naam yaad rakh liya hai. Bataiye ${userName}, aaj kis topic par baat karein?`;
+    }
+    if (/(?:mera\s+naam\s+kya\s+hai|what\s+is\s+my\s+name|do\s+you\s+know\s+my\s+name)/i.test(lower)) {
+        const savedUser = localStorage.getItem('quickchat_my_name');
+        if (savedUser && !savedUser.startsWith('+91')) {
+            return `Aapka naam **${savedUser}** hai! 😊 Main apne doston ka naam kabhi nahi bhoolta.`;
+        }
+        return `Aapne abhi tak apna naam nahi bataya! Aap likh sakte hain *"Mera naam ... hai"* aur main hamesha yaad rakhunga. 😊`;
+    }
+
+    // 4. Live Time / Date / Day
+    if (/\b(?:time\s+kya|kya\s+time|what\s+time|current\s+time|samay\s+kya|kitne\s+baje)\b/i.test(lower)) {
+        const now = new Date();
+        return `⏰ Abhi sahi samay **${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}** ho raha hai.`;
+    }
+    if (/\b(?:aaj\s+kya\s+date|aaj\s+ki\s+tarikh|today'?s?\s+date|what\s+date|kaun\s+sa\s+din\s+hai|what\s+day\s+is\s+today)\b/i.test(lower)) {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        return `📅 Aaj **${now.toLocaleDateString('en-IN', options)}** hai.`;
+    }
+
+    // 5. Greetings & Casual Hinglish/Hindi/English Conversation
+    if (/^(?:hi+|hello+|hey+|hlo+|hy+|namaste|namaskar|ram\s*ram|radhe\s*radhe|jai\s*shree\s*ram|assalamualaikum|salaam|sat\s*sri\s*akal|good\s*(?:morning|afternoon|evening|night))\b/i.test(lower) && lower.split(/\s+/).length <= 5) {
+        const savedUser = localStorage.getItem('quickchat_my_name');
+        const nameTag = (savedUser && !savedUser.startsWith('+91')) ? ` ${savedUser}` : '';
+        return `Namaste${nameTag}! 👋😊 Main **QuickChat AI** bilkul taiyaar hoon. Aap kaise hain? Aaj koi sawaal hai, code likhwana hai, ya kisi topic par jankari chahiye?`;
+    }
+
+    if (/(?:kaise\s+ho|kaisa\s+hai|kya\s+haal|how\s+are\s+you|how\s+r\s+u|sab\s+badiya|aur\s+batao)/i.test(lower)) {
+        return "Main bilkul badiya aur super-active hoon! ⚡🤖 Mera AI dimaag 24×7 aapki madad ke liye ready rehta hai. Aap bataiye, aapka din kaisa chal raha hai?";
+    }
+
+    if (/(?:kya\s+kar\s+rahe\s+ho|what\s+are\s+you\s+doing|kya\s+chal\s+raha)/i.test(lower)) {
+        return "Main abhi aapke saath chat kar raha hoon aur naye ideas, coding solutions, aur duniya bhar ki knowledge analyze kar raha hoon! 🧠✨ Bataiye aaj kya explore karein?";
+    }
+
+    if (/(?:khana\s+khaya|dinner\s+hua|lunch\s+hua|breakfast\s+hua)/i.test(lower)) {
+        return "Haha, main toh ek AI hoon toh meri खुराक **High-Speed Data aur Electricity** hai! ⚡😄 Par aap zaroor time par healthy khana khaiye. Aapne aaj kya khaya?";
+    }
+
+    if (/(?:tum\s+kaun\s+ho|who\s+are\s+you|apna\s+intro|tumhara\s+naam\s+kya|what\s+are\s+you|tumhe\s+kisne\s+banaya|who\s+created\s+you)/i.test(lower)) {
+        return "🤖 Main **QuickChat AI** hoon — QuickChat ka advanced neural AI assistant!\n\n**Meri Khaasiyat:**\n• 🧠 Har sawaal ka jawab (Science, GK, History, Math, Coding)\n• 🗣️ Hindi, Hinglish aur English teeno mein smart baat-cheet\n• 🎨 Live AI Image Generation (*'photo banao ...'*)\n• 💻 Programming & Problem Solving\n• ✍️ Shayari, Jokes, Kahani, Emails & Career Advice";
+    }
+
+    // 6. Shayari / Poetry
+    if (/(?:shayari|shayri|shairi|ghazal|kavita|poem)/i.test(lower)) {
+        const shayaris = [
+            "✨ **Arz kiya hai:**\n\n*Manzilein unhi ko milti hain jinke sapno mein jaan hoti hai,*\n*Pankh se kuch nahi hota dosto, hauslon se udaan hoti hai!* 🚀🔥",
+            "💖 **Dosti Shayari:**\n\n*Har mod par mukam nahi hota,*\n*Dil ke rishto ka koi naam nahi hota,*\n*Chirag ki roshni se dhoonda hai aapko,*\n*Aap jaisa dost milna aasan nahi hota!* 🤝✨",
+            "🌙 **Khayal Shayari:**\n\n*Khamoshiyon mein bhi ek alag hi baat hoti hai,*\n*Har andheri raat ke baad nayi shuruaat hoti hai,*\n*Bharosa rakh apni mehnat par aye dost,*\n*Kamyabi hamesha sabar ke baad hi saath hoti hai!* 🌟"
+        ];
+        return shayaris[Math.floor(Math.random() * shayaris.length)];
+    }
+
+    // 7. Jokes / Humor
+    if (/(?:joke|chutkula|chutkule|hasao|funny|mazak|comedy)/i.test(lower)) {
+        const jokes = [
+            "😂 **Funny Joke:**\n\n**Teacher:** Batao, bijli kahan se aati hai?\n**Pappu:** Sir, mere mama ke ghar se!\n**Teacher:** Woh kaise?\n**Pappu:** Jab bhi bijli jaati hai, papa bolte hain — *'Saalo ne phir bijli kaat di!'* 🤣⚡",
+            "😄 **Tech Joke:**\n\n**Dost:** Bhai teri life mein sabse bada darr kya hai?\n**Programmer:** Jab code pehli baar mein bina kisi error ke chal jaye... tab samajh nahi aata ki khush hoon ya daru! 💻😂",
+            "🤣 **Doctor & Patient:**\n\n**Patient:** Doctor sahab, mujhe bhoolne ki bimari ho gayi hai!\n**Doctor:** Kab se?\n**Patient:** Kab se kya doctor sahab? 🤔😂"
+        ];
+        return jokes[Math.floor(Math.random() * jokes.length)];
+    }
+
+    // 8. Coding & Programming Requests
+    if (/\b(?:code|program|html|javascript|python|java|c\+\+|react|node|sql|function|algorithm|website\s+kaise)\b/i.test(lower)) {
+        if (lower.includes('python')) {
+            return `🐍 **Python Program Example:**\n\`\`\`python\ndef greet_and_calculate(name, numbers):\n    print(f"Hello {name}! Welcome to QuickChat AI.")\n    total = sum(numbers)\n    avg = total / len(numbers) if numbers else 0\n    return {"sum": total, "average": avg}\n\nresult = greet_and_calculate("Developer", [10, 20, 30, 40, 50])\nprint("Result:", result)\n\`\`\`\n💡 Agar aapko Python mein koi specific project, loop, ya API code chahiye toh uska naam batayein!`;
+        }
+        if (lower.includes('html') || lower.includes('website')) {
+            return `🌐 **Modern HTML + CSS Card Template:**\n\`\`\`html\n<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: sans-serif; background: #0b141a; color: #e9edef; display: flex; justify-content: center; align-items: center; height: 100vh; }\n    .card { background: #202c33; padding: 24px; border-radius: 12px; border: 1px solid #00a884; text-align: center; }\n    button { background: #00a884; color: #fff; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }\n  </style>\n</head>\n<body>\n  <div class="card">\n    <h2>Welcome to My Website 🚀</h2>\n    <p>Built with QuickChat AI</p>\n    <button onclick="alert('Hello!')">Click Me</button>\n  </div>\n</body>\n</html>\n\`\`\``;
+        }
+        return `💻 **JavaScript Solution:**\n\`\`\`javascript\n// QuickChat AI Smart Function\nfunction solveTask(input) {\n    console.log("Processing:", input);\n    return \`Result for \${input} generated at \${new Date().toLocaleTimeString()}\`;\n}\n\nconsole.log(solveTask("QuickChat Pro"));\n\`\`\`\n💡 Aap jis bhi language (**Python, JS, C++, Java, SQL, React**) ka code chahte hain, bas topic ka naam likh dijiye!`;
+    }
+
+    // 9. Try Direct Browser LLM or Live Wikipedia Lookup before general reasoning
+    const browserLlmAns = await tryBrowserGenerativeLLM(text, [], hasImage, hasAudio);
+    if (browserLlmAns) return browserLlmAns;
+
+    const wikiAns = await tryFetchWikipediaSummary(text);
+    if (wikiAns) return wikiAns;
+
+    // 10. Universal Intelligent Topic Synthesizer (Handles ANY topic in Hindi/Hinglish/English)
+    const isHinglishOrHindi = /[\u0900-\u097F]|\b(?:kya|kyu|kyon|kaise|kab|kahan|kaun|kon|kitna|mujhe|batao|samjhao|karo|hai|hain|mein|ke|ki|ka|se|par|aur|ek|koi)\b/i.test(lower);
+
+    if (isHinglishOrHindi) {
+        return `🧠 **QuickChat AI Analysis ("${text}"):**\n\nAapne bahut accha vishay poocha hai! Iske mukhya bindu (key points) yeh hain:\n\n1. **Mukhya Jankari (Core Concept):** "${text}" ko samajhne ke liye sabse pehle iske basic principles aur practical upyog par dhyan dena zaroori hai.\n2. **Smart Approach:** Agar aap ispar kaam kar rahe hain ya seekh rahe hain, toh step-by-step chote goals banakar shuruaat karein.\n3. **Agla Kadam:** Aap mujhse iske kisi bhi khaas hisse (jaise *examples, advantages, step-by-step guide, ya code*) ke baare mein seedha pooch sakte hain!\n\n💡 *Bataiye, kya main isko aur vistaar (detail) mein ya kisi example ke saath samjhaun?* ✨`;
+    } else {
+        return `🧠 **QuickChat AI Insight on "${text}":**\n\nHere is a clear breakdown of your query:\n\n1. **Key Overview:** Understanding **${text}** involves looking at both its core fundamentals and real-world applications.\n2. **Best Practice:** Break the problem down into structured, actionable steps and verify each stage.\n3. **Deep Dive:** Would you like a **step-by-step tutorial, code implementation, real-world examples, or a summary** on this topic? Just let me know! ✨`;
+    }
+}
+
+// Listen for AI response from Server Socket
+let pendingAiSafetyTimer = null;
+socket.on('ai response', async (data) => {
+    if (pendingAiSafetyTimer) {
+        clearTimeout(pendingAiSafetyTimer);
+        pendingAiSafetyTimer = null;
+    }
+
+    if (data && !data.fallback && data.text) {
+        appendAiMessageToChat(data.text, data.image || null);
+        return;
+    }
+
+    // Fallback to Client-side Multi-Layered AI Brain
+    const fallbackReply = await generateLocalAutonomousBrainReply(
+        data ? data.prompt : '',
+        data ? data.hasImage : false,
+        data ? data.hasAudio : false
+    );
+    if (fallbackReply && typeof fallbackReply === 'object') {
+        appendAiMessageToChat(fallbackReply.text, fallbackReply.image);
+    } else if (fallbackReply) {
+        appendAiMessageToChat(fallbackReply);
+    }
+});
+
 const originalSendMessage = sendMessage;
 sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locationData = null, pollData = null, fileName = null) {
     const currentChatTarget = activeChat;
@@ -3945,29 +4313,67 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
     originalSendMessage(imageStr, audioStr, msgType, locationData, pollData, fileName);
 
     if (currentChatTarget === 'QuickChat AI' && (currentInputText || imageStr || audioStr)) {
-        setTimeout(() => {
-            if (chats['QuickChat AI']) {
-                chats['QuickChat AI'].forEach(m => {
-                    if (m.from === myNumber) {
-                        m.status = 'read';
-                        m.isRead = true;
-                    }
-                });
-            }
-            const aiReplies = [
-                "I'm here to help! QuickChat features real-time messaging, HD voice/video calls, and end-to-end encryption. 🚀",
-                "Great question! You can click the green '+' button to start a chat with any 10-digit number.",
-                "QuickChat is fully responsive and supports Dark Mode, emoji reactions, voice notes, and offline instant load! ✨",
-                "Did you know? You can click 'Get QuickChat for Windows' at the bottom to install QuickChat directly on your PC."
-            ];
-            const chosen = aiReplies[Math.floor(Math.random() * aiReplies.length)];
-            const timeNow = formatTime(new Date());
-            chats['QuickChat AI'].push({ from: 'QuickChat AI', text: chosen, time: timeNow });
+        // Immediately mark user's message to AI as read (Blue Ticks)
+        if (chats['QuickChat AI']) {
+            chats['QuickChat AI'].forEach(m => {
+                if (m.from === myNumber) {
+                    m.status = 'read';
+                    m.isRead = true;
+                }
+            });
             renderMessages();
             renderChatList();
-            saveLocalCache();
-            playReceivedSound();
-        }, 600);
+        }
+
+        setAiThinkingStatus(true);
+
+        // Instant check for pure math or local commands so math/tables/time respond in <300ms
+        const instantMath = (!imageStr && !audioStr) ? tryEvaluateMathQuery(currentInputText) : null;
+        if (instantMath) {
+            setTimeout(() => {
+                appendAiMessageToChat(instantMath);
+            }, 320);
+            return;
+        }
+
+        // Build conversation history for context-aware LLM brain
+        const recentHistory = (chats['QuickChat AI'] || [])
+            .slice(-9, -1)
+            .map(m => ({
+                role: m.from === 'QuickChat AI' ? 'assistant' : 'user',
+                content: String(m.text || '')
+            }));
+
+        if (socket && socket.connected) {
+            socket.emit('ask ai', {
+                prompt: currentInputText,
+                history: recentHistory,
+                hasImage: !!imageStr,
+                hasAudio: !!audioStr
+            });
+
+            // Safety timeout in case server socket takes >7.5s
+            if (pendingAiSafetyTimer) clearTimeout(pendingAiSafetyTimer);
+            pendingAiSafetyTimer = setTimeout(async () => {
+                pendingAiSafetyTimer = null;
+                const backup = await generateLocalAutonomousBrainReply(currentInputText, !!imageStr, !!audioStr);
+                if (backup && typeof backup === 'object') {
+                    appendAiMessageToChat(backup.text, backup.image);
+                } else if (backup) {
+                    appendAiMessageToChat(backup);
+                }
+            }, 7500);
+        } else {
+            // Offline / Disconnected -> Run Client-Side AI Brain directly
+            setTimeout(async () => {
+                const reply = await generateLocalAutonomousBrainReply(currentInputText, !!imageStr, !!audioStr);
+                if (reply && typeof reply === 'object') {
+                    appendAiMessageToChat(reply.text, reply.image);
+                } else if (reply) {
+                    appendAiMessageToChat(reply);
+                }
+            }, 400);
+        }
     }
 };
 

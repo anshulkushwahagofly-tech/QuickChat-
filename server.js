@@ -585,6 +585,80 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- ADVANCED QUICKCHAT AI BRAIN (Server LLM + Image Gen + Knowledge Engine) ---
+    socket.on('ask ai', async ({ prompt, history = [], hasImage = false, hasAudio = false }) => {
+        try {
+            const userText = String(prompt || '').trim();
+
+            // 1. Check if user wants AI Image Generation
+            const imgMatch = userText.match(/^(?:\/imagine|imagine|draw|generate\s+image(?:\s+of)?|create\s+image(?:\s+of)?|photo\s+banao|image\s+banao|tasveer\s+banao|pic\s+banao)\s*[:\-]?\s*(.+)/i) ||
+                             userText.match(/(.+?)\s+(?:ki\s+photo\s+banao|ka\s+photo\s+banao|ki\s+image\s+banao|ki\s+tasveer\s+banao|photo\s+generate\s+karo)$/i);
+            if (imgMatch && imgMatch[1]) {
+                const subject = imgMatch[1].trim();
+                const seed = Math.floor(Math.random() * 999999);
+                const imgUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(subject)}?width=768&height=768&nologo=true&seed=${seed}`;
+                return socket.emit('ai response', {
+                    text: `🎨 Yeh lijiye **"${subject}"** ki AI generated image! ✨\nAgar aapko koi aur style ya badlav chahiye toh batayein.`,
+                    image: imgUrl
+                });
+            }
+
+            // 2. Call Live Generative LLM API with conversation memory
+            const systemInstruction = [
+                "You are QuickChat AI, an ultra-intelligent, friendly, and deeply knowledgeable AI assistant integrated into QuickChat (just like Meta AI on WhatsApp).",
+                "You have your own advanced reasoning brain and can answer ANY question across all domains: coding/programming, mathematics, science, history, general knowledge, current affairs, career guidance, recipes, health/fitness, shayari, jokes, stories, translations, and daily life advice.",
+                "LANGUAGE RULE: Mirror the user's language and tone naturally. If they write in Hindi or Hinglish (Hindi written in English script, e.g. 'kya haal hai', 'mujhe batao'), reply in natural, warm Hinglish/Hindi. If they write in English, reply in clear English.",
+                "Be direct, accurate, helpful, and well-structured with appropriate emojis. Never say you cannot answer a general question."
+            ].join(" ");
+
+            const formattedHistory = Array.isArray(history)
+                ? history.slice(-8).map(m => ({
+                    role: m.role === 'assistant' ? 'assistant' : 'user',
+                    content: String(m.content || '').slice(0, 600)
+                }))
+                : [];
+
+            const messagesPayload = [
+                { role: 'system', content: systemInstruction },
+                ...formattedHistory,
+                {
+                    role: 'user',
+                    content: hasImage
+                        ? `[User shared a photo] ${userText || 'Describe and comment on this photo warmly.'}`
+                        : (hasAudio ? `[User sent a voice note] ${userText || 'Reply warmly to my voice message.'}` : userText)
+                }
+            ];
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 6500);
+
+            const response = await fetch('https://text.pollinations.ai/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: messagesPayload,
+                    model: 'openai',
+                    private: true
+                }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (response && response.ok) {
+                const aiText = (await response.text()).trim();
+                if (aiText && aiText.length > 1 && !aiText.startsWith('<!DOCTYPE')) {
+                    return socket.emit('ai response', { text: aiText });
+                }
+            }
+
+            // Trigger client fallback brain if external LLM returned empty
+            socket.emit('ai response', { fallback: true, prompt: userText, hasImage, hasAudio });
+        } catch (err) {
+            console.warn("AI external API fallback triggered:", err.message);
+            socket.emit('ai response', { fallback: true, prompt: String(prompt || ''), hasImage, hasAudio });
+        }
+    });
+
     socket.on('disconnect', () => {
         const phoneNumber = socketToPhone[socket.id];
         if (phoneNumber) {

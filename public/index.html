@@ -356,6 +356,7 @@
                     
                     <!-- Dropdown Menu -->
                     <div id="dropdown-menu" class="dropdown-menu" style="display:none;">
+                        <div class="menu-item" id="menu-open-ai"><i class="fas fa-robot" style="color:#00a884;"></i> QuickChat AI ✨</div>
                         <div class="menu-item" id="menu-new-chat"><i class="fas fa-user-plus"></i> New chat</div>
                         <div class="menu-item" id="menu-new-group"><i class="fas fa-users"></i> New group</div>
                         <div class="menu-item" id="menu-starred-msgs"><i class="fas fa-star"></i> Starred messages</div>
@@ -385,17 +386,17 @@
             <div class="search-container" id="search-container">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="new-chat-input" placeholder="Search or start new chat">
+                    <input type="text" id="new-chat-input" placeholder="Ask QuickChat AI or search">
                 </div>
             </div>
 
-            <!-- Modern Filter Pills Row (All, Unread, Favorites, Groups, +) -->
+            <!-- Modern Filter Pills Row (All, Unread, Favorites, Groups, ✨ AI) -->
             <div class="wa-filter-pills-row" id="wa-filter-pills-row">
                 <button class="wa-pill active" data-filter="all">All</button>
                 <button class="wa-pill" data-filter="unread">Unread</button>
                 <button class="wa-pill" data-filter="favorites">Favorites</button>
                 <button class="wa-pill" data-filter="groups">Groups</button>
-                <button class="wa-pill wa-pill-add" id="filter-add-btn" title="Add custom list">+</button>
+                <button class="wa-pill" id="filter-ai-btn" title="Chat with QuickChat AI" style="color:#00a884; font-weight:600;">✨ AI</button>
             </div>
             
             <!-- Chat List / Unread Empty State -->
@@ -998,7 +999,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=45"></script>
+    <script src="script.js?v=46"></script>
     <script src="webrtc.js?v=5"></script>
 </body>
 </html>
