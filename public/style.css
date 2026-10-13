@@ -239,16 +239,160 @@ body::before {
     top: 0;
     left: 0;
     width: 100%;
-    height: 56px;
+    max-width: 1050px;
+    right: 0;
+    margin: 0 auto;
+    height: 64px;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
-    padding: 0 20px;
+    padding: 0 24px;
     z-index: 110;
+}
+
+.onboarding-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ffffff;
+}
+
+.onboarding-brand-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: #ffffff;
+}
+
+.onboarding-brand-title {
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    color: #ffffff;
+}
+
+.onboarding-official-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 14px;
+    margin-right: 8px;
+}
+
+/* Realistic Carrier SMS Push Notification Banner */
+.wa-sms-push-banner {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-130%);
+    width: 92%;
+    max-width: 440px;
+    background: var(--wa-bg-dropdown, #202c33);
+    color: var(--wa-chat-title, #e9edef);
+    border: 1px solid rgba(0, 168, 132, 0.45);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+    z-index: 9999;
+    transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wa-sms-push-banner.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+.wa-sms-push-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #00a884;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.wa-sms-push-body {
+    flex: 1;
+    text-align: left;
+    cursor: pointer;
+    min-width: 0;
+}
+
+.wa-sms-push-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #00a884;
+    margin-bottom: 3px;
+    letter-spacing: 0.3px;
+}
+
+.wa-sms-time {
+    color: var(--wa-chat-time, #8696a0);
+    font-weight: 400;
+}
+
+.wa-sms-push-text {
+    font-size: 13px;
+    line-height: 1.35;
+    color: var(--wa-chat-title, #111b21);
+}
+
+.wa-sms-push-text strong {
+    color: #00a884;
+    font-size: 14px;
+    letter-spacing: 1px;
+}
+
+.wa-sms-push-action {
+    background: #00a884;
+    color: #ffffff;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s;
+}
+
+.wa-sms-push-action:hover {
+    background: #017560;
+}
+
+.wa-sms-push-close {
+    background: transparent;
+    border: none;
+    color: var(--wa-chat-time, #8696a0);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
 }
 
 .onboarding-menu-wrapper {
     position: relative;
+    display: flex;
+    align-items: center;
 }
 
 #onboarding-dots-btn {
@@ -454,6 +598,19 @@ body::before {
     max-width: 380px;
 }
 
+.wa-verified-app-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 168, 132, 0.12);
+    color: #00a884;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 16px;
+    margin-bottom: 10px;
+}
+
 .wa-input-section {
     width: 100%;
     max-width: 290px;
@@ -461,6 +618,12 @@ body::before {
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative;
+}
+
+.wa-country-selector-wrap {
+    width: 100%;
+    position: relative;
 }
 
 .wa-country-row {
@@ -474,11 +637,46 @@ body::before {
     color: var(--wa-chat-title, #111b21);
     cursor: pointer;
     margin-bottom: 14px;
+    user-select: none;
 }
 
 .wa-country-row i {
     color: #00a884;
     font-size: 14px;
+}
+
+.wa-country-dropdown {
+    position: absolute;
+    top: 42px;
+    left: 0;
+    width: 100%;
+    background: var(--wa-bg-dropdown, #ffffff);
+    border: 1px solid var(--wa-border-dropdown, #e9edef);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    z-index: 150;
+    max-height: 210px;
+    overflow-y: auto;
+}
+
+.wa-country-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    font-size: 14.5px;
+    color: var(--wa-chat-title, #111b21);
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.wa-country-option:hover {
+    background: var(--wa-bg-dropdown-hover, #f5f6f6);
+}
+
+.wa-country-option strong {
+    color: #00a884;
+    font-weight: 600;
 }
 
 .wa-phone-row {
@@ -526,6 +724,7 @@ body::before {
     padding: 8px 4px;
     background: transparent;
     font-family: inherit;
+    letter-spacing: 0.5px;
 }
 
 .wa-number-input-box input::placeholder {
@@ -547,31 +746,76 @@ body::before {
 
 .wa-otp-section {
     width: 100%;
-    max-width: 240px;
-    margin: 15px auto 16px auto;
+    max-width: 320px;
+    margin: 12px auto 18px auto;
     text-align: center;
 }
 
-.wa-otp-input-wrapper {
-    border-bottom: 2px solid #00a884;
-    padding: 4px 0;
-    margin-bottom: 6px;
+/* 6 Individual Segmented OTP Digit Boxes */
+.wa-otp-boxes {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    margin: 6px auto;
 }
 
-.wa-otp-input-wrapper input {
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 26px;
-    letter-spacing: 8px;
-    font-weight: bold;
-    text-align: center;
+.wa-otp-digit {
+    width: 40px;
+    height: 48px;
+    border: 1.5px solid var(--wa-border-sidebar, #d1d7db);
+    border-bottom: 2.5px solid #00a884;
+    border-radius: 8px;
+    background: var(--wa-bg-input-pill, rgba(0, 168, 132, 0.04));
     color: var(--wa-chat-title, #111b21);
-    width: 100%;
+    font-size: 21px;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    transition: all 0.15s ease;
 }
 
-.wa-otp-input-wrapper input::placeholder {
-    color: var(--wa-search-placeholder, #8696a0);
+.wa-otp-digit:focus {
+    border-color: #00a884;
+    box-shadow: 0 0 0 3px rgba(0, 168, 132, 0.18);
+    transform: translateY(-1px);
+}
+
+.wa-otp-digit.filled {
+    border-color: #00a884;
+    background: rgba(0, 168, 132, 0.1);
+}
+
+.wa-otp-sep {
+    color: var(--wa-chat-sub, #8696a0);
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 2px;
+}
+
+.wa-sms-detect-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    background: rgba(0, 168, 132, 0.12);
+    border: 1px solid rgba(0, 168, 132, 0.35);
+    color: var(--wa-chat-title, #111b21);
+    font-size: 13px;
+}
+
+.wa-sms-detect-pill i {
+    color: #00a884;
+    font-size: 15px;
+}
+
+.wa-sms-detect-pill b {
+    color: #00a884;
+    letter-spacing: 0.8px;
+    cursor: pointer;
 }
 
 .wa-otp-hint {
@@ -582,8 +826,81 @@ body::before {
 .wa-resend-section {
     font-size: 13.5px;
     color: var(--wa-text-pill, #54656f);
-    margin-bottom: 26px;
+    margin-bottom: 22px;
     text-align: center;
+}
+
+/* Official Profile Setup Step */
+.wa-verified-banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0, 168, 132, 0.14);
+    color: #00a884;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+}
+
+.wa-onboarding-avatar-wrap {
+    position: relative;
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    margin: 4px auto 22px auto;
+    background: var(--wa-bg-input-pill, #f0f2f5);
+    border: 2.5px solid #00a884;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wa-onboarding-avatar-wrap img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.wa-onboarding-cam-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #00a884;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border: 2px solid var(--wa-bg-sidebar, #ffffff);
+}
+
+.wa-profile-name-input-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    border-bottom: 2px solid #00a884;
+    padding: 6px 4px;
+    gap: 8px;
+}
+
+.wa-profile-name-input-row input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 16px;
+    color: var(--wa-chat-title, #111b21);
+}
+
+.wa-profile-name-input-row input::placeholder {
+    color: var(--wa-search-placeholder, #8696a0);
 }
 
 .wa-pin-row {
@@ -608,14 +925,20 @@ body::before {
     color: var(--wa-search-placeholder, #8696a0);
 }
 
-.secure-badge {
-    margin-top: 25px;
-    color: #8696a0;
+.wa-login-footer {
+    margin-top: 26px;
+    padding-top: 14px;
+    border-top: 1px solid var(--wa-border-sidebar, rgba(134, 150, 160, 0.15));
+    color: var(--wa-chat-time, #8696a0);
     font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 6px;
+}
+
+.wa-login-footer i {
+    color: #00a884;
 }
 
 /* Instant Login State (Zero-delay reload, no connecting flash) */

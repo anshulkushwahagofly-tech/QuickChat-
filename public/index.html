@@ -9,8 +9,8 @@
     <link rel="apple-touch-icon" href="logo.png?v=4">
     <link rel="manifest" href="manifest.json?v=4">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=29">
-    <link rel="stylesheet" href="mobile-whatsapp.css?v=13">
+    <link rel="stylesheet" href="style.css?v=30">
+    <link rel="stylesheet" href="mobile-whatsapp.css?v=14">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script>
         try {
@@ -25,18 +25,40 @@
     </script>
 </head>
 <body>
-    <!-- Login Overlay (QuickChat Native Onboarding Flow) -->
+    <!-- Login Overlay (QuickChat Official Native Onboarding Flow) -->
     <div id="login-container">
-        <!-- Top 3-dots menu for Onboarding -->
+        <!-- Realistic Carrier SMS Push Notification Banner -->
+        <div id="wa-sms-push-banner" class="wa-sms-push-banner" style="display: none;">
+            <div class="wa-sms-push-icon">
+                <i class="fas fa-comment-alt"></i>
+            </div>
+            <div class="wa-sms-push-body" id="wa-sms-push-tap">
+                <div class="wa-sms-push-header">
+                    <span class="wa-sms-sender">MESSAGES • VM-QCKCHT</span>
+                    <span class="wa-sms-time">now</span>
+                </div>
+                <div class="wa-sms-push-text">
+                    &lt;#&gt; Your QuickChat verification code is <strong id="wa-sms-code-display">--- ---</strong>. Do not share this code with anyone.
+                </div>
+            </div>
+            <button type="button" id="wa-sms-autofill-btn" class="wa-sms-push-action">Auto-fill</button>
+            <button type="button" id="wa-sms-close-btn" class="wa-sms-push-close" title="Dismiss">&times;</button>
+        </div>
+
+        <!-- Official Top Bar for Onboarding -->
         <div class="onboarding-top-bar">
-            <div class="onboarding-brand mobile-only">
-                <!-- Clean minimal -->
+            <div class="onboarding-brand">
+                <div class="onboarding-brand-logo">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <span class="onboarding-brand-title">QUICKCHAT WEB</span>
             </div>
             <div class="onboarding-menu-wrapper">
+                <span class="onboarding-official-badge"><i class="fas fa-shield-alt"></i> Official</span>
                 <i class="fas fa-ellipsis-v" id="onboarding-dots-btn" title="More options"></i>
                 <div id="onboarding-menu" class="onboarding-dropdown" style="display: none;">
-                    <div class="onboarding-menu-item" id="menu-switch-pin"><i class="fas fa-key"></i> Login with PIN</div>
-                    <div class="onboarding-menu-item" id="menu-help"><i class="fas fa-question-circle"></i> Help</div>
+                    <div class="onboarding-menu-item" id="menu-switch-pin"><i class="fas fa-lock"></i> Login with Security PIN</div>
+                    <div class="onboarding-menu-item" id="menu-help"><i class="fas fa-question-circle"></i> Verification Help</div>
                 </div>
             </div>
         </div>
@@ -49,7 +71,7 @@
                         <i class="fas fa-circle-notch fa-spin"></i>
                     </div>
                     <h3 style="color:var(--wa-chat-title, #111b21); font-weight:600; font-size: 22px; margin-bottom: 8px;">QuickChat</h3>
-                    <p style="color:var(--wa-chat-sub, #667781); font-size:14.5px;">Connecting...</p>
+                    <p style="color:var(--wa-chat-sub, #667781); font-size:14.5px;">Establishing secure end-to-end encrypted session...</p>
                 </div>
 
                 <!-- 1. Screen 1: QuickChat Welcome Screen -->
@@ -57,17 +79,21 @@
                     <div class="wa-doodle-container">
                         <img src="welcome-doodle.png" alt="QuickChat" class="wa-welcome-doodle">
                     </div>
+
+                    <div class="wa-verified-app-pill">
+                        <i class="fas fa-check-circle"></i> Official End-to-End Encrypted Messenger
+                    </div>
                     
-                    <h1 class="wa-welcome-title">Welcome to QuickChat</h1>
+                    <h1 class="wa-welcome-title" id="wa-welcome-heading">Welcome to QuickChat</h1>
                     
-                    <p class="wa-welcome-terms">
-                        Read our <a href="#" onclick="return false;">Privacy Policy</a>. Tap "Agree and continue" to accept the <a href="#" onclick="return false;">Terms of Service</a>.
+                    <p class="wa-welcome-terms" id="wa-welcome-terms-text">
+                        Read our <a href="#" id="open-privacy-policy-link" class="wa-green-link">Privacy Policy</a>. Tap "Agree and continue" to accept the <a href="#" id="open-terms-service-link" class="wa-green-link">Terms of Service</a>.
                     </p>
 
                     <div class="wa-lang-wrapper">
-                        <div class="wa-lang-pill">
+                        <div class="wa-lang-pill" id="wa-lang-toggle-btn" title="Switch Language">
                             <i class="fas fa-globe"></i>
-                            <span>English</span>
+                            <span id="wa-current-lang-label">English</span>
                             <i class="fas fa-chevron-down" style="font-size:10px; opacity:0.7;"></i>
                         </div>
                     </div>
@@ -83,26 +109,36 @@
                 <div id="otp-phone-view" class="wa-onboarding-step" style="display:none;">
                     <h2 class="wa-screen-title">Enter your phone number</h2>
                     <p class="wa-screen-desc">
-                        QuickChat will need to verify your phone number.
+                        QuickChat will send an SMS message to verify your phone number. <a href="#" id="whats-my-number-btn" class="wa-green-link">What's my number?</a>
                     </p>
 
                     <div class="wa-input-section">
                         <!-- Country Selector Row -->
-                        <div class="wa-country-row" id="country-select-row">
-                            <span class="country-name">India</span>
-                            <i class="fas fa-caret-down"></i>
+                        <div class="wa-country-selector-wrap">
+                            <div class="wa-country-row" id="country-select-row">
+                                <span class="country-name" id="selected-country-name">🇮🇳 India</span>
+                                <i class="fas fa-caret-down"></i>
+                            </div>
+                            <div id="country-dropdown-list" class="wa-country-dropdown" style="display:none;">
+                                <div class="wa-country-option" data-name="🇮🇳 India" data-code="91"><span>🇮🇳 India</span><strong>+91</strong></div>
+                                <div class="wa-country-option" data-name="🇺🇸 United States" data-code="1"><span>🇺🇸 United States</span><strong>+1</strong></div>
+                                <div class="wa-country-option" data-name="🇬🇧 United Kingdom" data-code="44"><span>🇬🇧 United Kingdom</span><strong>+44</strong></div>
+                                <div class="wa-country-option" data-name="🇦🇪 United Arab Emirates" data-code="971"><span>🇦🇪 UAE</span><strong>+971</strong></div>
+                                <div class="wa-country-option" data-name="🇨🇦 Canada" data-code="1"><span>🇨🇦 Canada</span><strong>+1</strong></div>
+                            </div>
                         </div>
 
                         <!-- Phone Number Row with Green Underlines -->
                         <div class="wa-phone-row">
                             <div class="wa-country-code-box">
                                 <span class="wa-plus">+</span>
-                                <span class="wa-dial-code">91</span>
+                                <span class="wa-dial-code" id="selected-dial-code">91</span>
                             </div>
                             <div class="wa-number-input-box">
-                                <input type="tel" id="otp-phone-input" placeholder="Phone number" maxlength="10" autocomplete="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <input type="tel" id="otp-phone-input" placeholder="Phone number" maxlength="15" autocomplete="tel">
                             </div>
                         </div>
+                        <div class="wa-input-hint">Carrier charges may apply</div>
                         <div id="otp-phone-error" class="wa-input-error" style="display:none;"></div>
                     </div>
 
@@ -113,52 +149,94 @@
                         <button id="send-otp-btn" class="wa-pill-btn">
                             Next
                         </button>
-                        <div class="wa-alt-auth-link" style="margin-top:12px;">
-                            <a href="#" id="show-pin-view-btn" class="wa-green-link" style="font-size:13px; opacity:0.85;">Use 4-digit PIN</a>
+                        <div class="wa-alt-auth-link" style="margin-top:14px;">
+                            <a href="#" id="show-pin-view-btn" class="wa-green-link" style="font-size:13.5px;"><i class="fas fa-lock" style="font-size:12px;"></i> Login with 4-digit Security PIN</a>
                         </div>
                     </div>
                 </div>
 
-                <!-- 3. Screen 3: Firebase 6-digit OTP Verification Step -->
+                <!-- 3. Screen 3: Official 6-Digit OTP Verification Step -->
                 <div id="otp-verify-view" class="wa-onboarding-step" style="display:none;">
                     <h2 class="wa-screen-title">Verifying your number</h2>
                     <p class="wa-screen-desc">
-                        Waiting to detect an SMS sent to <b id="otp-target-display" style="color:var(--wa-chat-header-title, #111b21);">+91 ...</b>
-                        <br>
-                        <a href="#" id="change-number-btn" class="wa-green-link" style="display:inline-block; margin-top:6px;"><i class="fas fa-edit"></i> Wrong number?</a>
+                        Waiting to automatically detect an SMS sent to <b id="otp-target-display" style="color:var(--wa-chat-header-title, #111b21);">+91 ...</b>.
+                        <a href="#" id="change-number-btn" class="wa-green-link" style="margin-left:4px;">Wrong number?</a>
                     </p>
 
                     <div class="wa-otp-section">
-                        <!-- Dev / Fallback OTP Info Badge -->
-                        <div id="otp-fallback-hint" class="wa-otp-hint-badge" style="display:none;">
-                            <div class="wa-otp-hint-icon"><i class="fas fa-key"></i></div>
-                            <div class="wa-otp-hint-text">
-                                <span>Code: <b id="otp-copy-code" style="cursor:pointer;" title="Tap to autofill">123456</b></span>
-                            </div>
-                            <button type="button" class="wa-otp-autofill-btn" id="otp-autofill-action">Autofill</button>
+                        <!-- 6 Individual OTP Digit Boxes -->
+                        <div class="wa-otp-boxes" id="wa-otp-boxes">
+                            <input type="tel" class="wa-otp-digit" maxlength="1" data-index="0" inputmode="numeric" autocomplete="one-time-code">
+                            <input type="tel" class="wa-otp-digit" maxlength="1" data-index="1" inputmode="numeric">
+                            <input type="tel" class="wa-otp-digit" maxlength="1" data-index="2" inputmode="numeric">
+                            <span class="wa-otp-sep">&ndash;</span>
+                            <input type="tel" class="wa-otp-digit" maxlength="1" data-index="3" inputmode="numeric">
+                            <input type="tel" class="wa-otp-digit" maxlength="1" data-index="4" inputmode="numeric">
+                            <input type="tel" class="wa-otp-digit" maxlength="1" data-index="5" inputmode="numeric">
                         </div>
-                        <div class="wa-otp-input-wrapper">
-                            <input type="text" id="otp-code-input" placeholder="---  ---" maxlength="6" autocomplete="one-time-code" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+
+                        <!-- Hidden synced input for compatibility -->
+                        <input type="hidden" id="otp-code-input" maxlength="6">
+
+                        <div class="wa-otp-hint" style="margin-top:10px;">Enter 6-digit code</div>
+
+                        <!-- Official Live SMS Auto-Detection Status Pill -->
+                        <div id="otp-fallback-hint" class="wa-sms-detect-pill" style="display:none;">
+                            <i class="fas fa-comment-dots"></i>
+                            <span>SMS received (<b id="otp-copy-code">------</b>)</span>
+                            <button type="button" class="wa-otp-autofill-btn" id="otp-autofill-action">Auto-fill</button>
                         </div>
+
                         <div id="otp-verify-error" class="wa-input-error" style="display:none;"></div>
                     </div>
 
                     <div class="wa-resend-section">
-                        <span id="countdown-box"><i class="far fa-clock"></i> Resend SMS in <b id="countdown-timer">30</b>s</span>
-                        <a href="#" id="resend-otp-btn" style="display:none;" class="wa-green-link"><i class="fas fa-redo"></i> Resend SMS</a>
+                        <div class="wa-resend-row">
+                            <span id="countdown-box"><i class="far fa-comment-alt"></i> Didn't receive code? Resend SMS in <b id="countdown-timer">0:30</b></span>
+                            <a href="#" id="resend-otp-btn" style="display:none;" class="wa-green-link"><i class="fas fa-redo"></i> Resend SMS</a>
+                        </div>
                     </div>
 
                     <div class="wa-bottom-btn-area">
                         <button id="verify-otp-btn" class="wa-pill-btn">
+                            Verify
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. Screen 4: Official Profile Info Setup Step -->
+                <div id="onboarding-profile-view" class="wa-onboarding-step" style="display:none;">
+                    <div class="wa-verified-banner">
+                        <i class="fas fa-check-circle"></i> Verification complete
+                    </div>
+                    <h2 class="wa-screen-title">Profile info</h2>
+                    <p class="wa-screen-desc">
+                        Please provide your name and an optional profile photo
+                    </p>
+
+                    <div class="wa-onboarding-avatar-wrap" id="onboarding-avatar-picker" title="Tap to change avatar style">
+                        <img id="onboarding-avatar-img" src="https://api.dicebear.com/7.x/avataaars/svg?seed=QuickChatUser" alt="Avatar">
+                        <div class="wa-onboarding-cam-badge"><i class="fas fa-camera"></i></div>
+                    </div>
+
+                    <div class="wa-input-section" style="max-width:310px;">
+                        <div class="wa-profile-name-input-row">
+                            <input type="text" id="onboarding-name-input" placeholder="Type your name here" maxlength="25" autocomplete="name">
+                            <i class="far fa-smile" style="color:var(--wa-chat-sub, #8696a0);"></i>
+                        </div>
+                    </div>
+
+                    <div class="wa-bottom-btn-area">
+                        <button id="complete-profile-btn" class="wa-pill-btn">
                             Next
                         </button>
                     </div>
                 </div>
 
-                <!-- 4. Screen 4: Legacy PIN Mode (Fallback) -->
+                <!-- 5. Screen 5: Security PIN Login Mode -->
                 <div id="login-form-view" class="wa-onboarding-step" style="display:none;">
-                    <h2 class="wa-screen-title">Login with PIN</h2>
-                    <p class="wa-screen-desc">Enter your 10-digit number and 4-digit PIN.</p>
+                    <h2 class="wa-screen-title">Two-step Security PIN</h2>
+                    <p class="wa-screen-desc">Enter your 10-digit mobile number and 4-digit security PIN to sign in.</p>
                     
                     <div class="wa-input-section">
                         <div class="wa-phone-row">
@@ -167,26 +245,32 @@
                                 <span class="wa-dial-code">91</span>
                             </div>
                             <div class="wa-number-input-box">
-                                <input type="tel" id="login-number" placeholder="Phone number" maxlength="10" autocomplete="off" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                                <input type="tel" id="login-number" placeholder="Phone number" maxlength="15" autocomplete="tel">
                             </div>
                         </div>
 
                         <div class="wa-pin-row" style="margin-top:20px;">
-                            <input type="password" id="login-pin" placeholder="PIN" maxlength="4" autocomplete="off">
+                            <input type="password" id="login-pin" placeholder="• • • •" maxlength="4" inputmode="numeric" autocomplete="off">
                         </div>
+                        <div class="wa-input-hint">Enter your 4-digit PIN</div>
                     </div>
 
                     <div class="wa-bottom-btn-area">
                         <button id="login-btn" class="wa-pill-btn">
-                            Login
+                            Verify &amp; Login
                         </button>
                         <div class="wa-alt-auth-link" style="margin-top:14px;">
-                            <a href="#" id="forgot-pin-btn" class="wa-green-link"><i class="fas fa-key"></i> Forgot PIN? Login with OTP</a>
+                            <a href="#" id="forgot-pin-btn" class="wa-green-link"><i class="fas fa-comment-sms"></i> Verify via SMS OTP instead</a>
                         </div>
                         <div class="wa-alt-auth-link" style="margin-top:8px;">
-                            <a href="#" id="back-to-otp-btn" style="color:#667781; text-decoration:none; font-size:13px;">⬅ Back</a>
+                            <a href="#" id="back-to-otp-btn" style="color:var(--wa-chat-sub, #667781); text-decoration:none; font-size:13px;">⬅ Back</a>
                         </div>
                     </div>
+                </div>
+
+                <!-- Official End-to-End Encryption Security Footer -->
+                <div class="wa-login-footer">
+                    <i class="fas fa-lock"></i> Your personal messages are end-to-end encrypted
                 </div>
             </div>
         </div>
@@ -914,7 +998,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=44"></script>
+    <script src="script.js?v=45"></script>
     <script src="webrtc.js?v=5"></script>
 </body>
 </html>

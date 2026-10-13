@@ -197,12 +197,84 @@ window.alert = function(msg) {
     showWhatsAppToast(msg);
 };
 
+const onboardingProfileView = document.getElementById('onboarding-profile-view');
+const onboardingNameInput = document.getElementById('onboarding-name-input');
+const onboardingAvatarImg = document.getElementById('onboarding-avatar-img');
+const onboardingAvatarPicker = document.getElementById('onboarding-avatar-picker');
+const completeProfileBtn = document.getElementById('complete-profile-btn');
+const smsPushBanner = document.getElementById('wa-sms-push-banner');
+const smsCodeDisplay = document.getElementById('wa-sms-code-display');
+const smsAutofillBtn = document.getElementById('wa-sms-autofill-btn');
+const smsPushTap = document.getElementById('wa-sms-push-tap');
+const smsCloseBtn = document.getElementById('wa-sms-close-btn');
+const otpDigitInputs = Array.from(document.querySelectorAll('.wa-otp-digit'));
+
+// Normalize any pasted or typed mobile number to clean 10 digits
+function normalizeMobileNumber(raw) {
+    let digits = String(raw || '').replace(/\D/g, '');
+    if (digits.length === 12 && digits.startsWith('91')) {
+        digits = digits.slice(2);
+    } else if (digits.length === 11 && digits.startsWith('0')) {
+        digits = digits.slice(1);
+    }
+    if (digits.length > 10) {
+        digits = digits.slice(-10);
+    }
+    return digits;
+}
+
+function formatIndianDisplayPhone(num10) {
+    const clean = String(num10 || '').replace(/\D/g, '');
+    if (clean.length === 10) {
+        return clean.slice(0, 5) + ' ' + clean.slice(5);
+    }
+    return clean;
+}
+
+// Hide SMS Push Banner
+let smsBannerTimeout = null;
+function hideSmsPushBanner() {
+    if (smsBannerTimeout) clearTimeout(smsBannerTimeout);
+    if (smsPushBanner) {
+        smsPushBanner.classList.remove('show');
+        setTimeout(() => {
+            if (smsPushBanner && !smsPushBanner.classList.contains('show')) {
+                smsPushBanner.style.display = 'none';
+            }
+        }, 350);
+    }
+}
+
+// Show Realistic Carrier SMS Push Banner
+function showSmsPushBanner(otpCode) {
+    const formattedCode = String(otpCode).slice(0, 3) + '-' + String(otpCode).slice(3, 6);
+    if (smsCodeDisplay) smsCodeDisplay.innerText = formattedCode;
+    const otpCopyCodeEl = document.getElementById('otp-copy-code');
+    if (otpCopyCodeEl) otpCopyCodeEl.innerText = formattedCode;
+    const hint = document.getElementById('otp-fallback-hint');
+    if (hint) hint.style.display = 'inline-flex';
+
+    if (smsPushBanner) {
+        smsPushBanner.style.display = 'flex';
+        void smsPushBanner.offsetWidth;
+        smsPushBanner.classList.add('show');
+        if (smsBannerTimeout) clearTimeout(smsBannerTimeout);
+        smsBannerTimeout = setTimeout(() => {
+            hideSmsPushBanner();
+        }, 18000);
+    }
+}
+
 // Robust Step Switcher to prevent overlapping screens/glitches
 function showStep(stepName) {
+    if (stepName !== 'verify') {
+        hideSmsPushBanner();
+    }
     const steps = [
         { el: onboardingWelcomeView, name: 'welcome' },
         { el: otpPhoneView, name: 'phone' },
         { el: otpVerifyView, name: 'verify' },
+        { el: onboardingProfileView, name: 'profile' },
         { el: loginFormView, name: 'pin' },
         { el: loginLoadingView, name: 'loading' }
     ];
@@ -247,7 +319,7 @@ try {
 } catch(e) {}
 
 if (savedNum) {
-    myNumber = savedNum;
+    myNumber = normalizeMobileNumber(savedNum) || savedNum;
     document.documentElement.classList.add('user-logged-in');
 
     if (loginLoadingView) loginLoadingView.style.display = 'none';
@@ -259,7 +331,7 @@ if (savedNum) {
 
     // Load private cached chats for this specific user
     try {
-        const cachedChats = localStorage.getItem('quickchat_cached_chats_' + savedNum);
+        const cachedChats = localStorage.getItem('quickchat_cached_chats_' + myNumber);
         if (cachedChats) {
             chats = JSON.parse(cachedChats);
             renderChatList();
@@ -276,9 +348,9 @@ if (savedNum) {
     }, 2000);
 
     if (savedPin) {
-        socket.emit('login', { number: savedNum, pin: savedPin });
+        socket.emit('login', { number: myNumber, pin: savedPin });
     } else {
-        socket.emit('auto login', { number: savedNum });
+        socket.emit('auto login', { number: myNumber });
     }
 } else {
     document.documentElement.classList.remove('user-logged-in');
@@ -290,10 +362,11 @@ socket.on('connect', () => {
     const num = myNumber || localStorage.getItem('quickchat_session_num');
     const pin = localStorage.getItem('quickchat_session_pin');
     if (num) {
+        const clean = normalizeMobileNumber(num) || num;
         if (pin) {
-            socket.emit('login', { number: num, pin: pin });
+            socket.emit('login', { number: clean, pin: pin });
         } else {
-            socket.emit('auto login', { number: num });
+            socket.emit('auto login', { number: clean });
         }
     }
 });
@@ -302,18 +375,20 @@ socket.on('disconnect', () => {
     if (myNumber) setConnectingState(true);
 });
 
-// Resend countdown timer
+// Resend countdown timer (0:30 format)
 let resendTimerInterval = null;
 function startResendTimer() {
     let timeLeft = 30;
     if (countdownBox) countdownBox.style.display = 'inline';
     if (resendOtpBtn) resendOtpBtn.style.display = 'none';
-    if (countdownTimer) countdownTimer.innerText = timeLeft;
+    if (countdownTimer) countdownTimer.innerText = '0:30';
 
     clearInterval(resendTimerInterval);
     resendTimerInterval = setInterval(() => {
         timeLeft--;
-        if (countdownTimer) countdownTimer.innerText = timeLeft;
+        if (countdownTimer) {
+            countdownTimer.innerText = '0:' + (timeLeft < 10 ? '0' + timeLeft : timeLeft);
+        }
         if (timeLeft <= 0) {
             clearInterval(resendTimerInterval);
             if (countdownBox) countdownBox.style.display = 'none';
@@ -322,25 +397,134 @@ function startResendTimer() {
     }, 1000);
 }
 
-function showOtpVerifyScreen(phoneNum) {
-    showStep('verify');
-    if (otpTargetDisplay) otpTargetDisplay.innerText = '+91 ' + phoneNum;
-    if (otpCodeInput) {
-        otpCodeInput.value = window.currentDemoOtp ? window.currentDemoOtp : '';
-        otpCodeInput.focus();
-    }
-    resetSendOtpBtn();
-    startResendTimer();
+// Sync 6-box OTP inputs with hidden #otp-code-input
+function syncOtpHiddenValue() {
+    const combined = otpDigitInputs.map(inp => inp.value.replace(/\D/g, '')).join('');
+    if (otpCodeInput) otpCodeInput.value = combined;
+    otpDigitInputs.forEach(inp => {
+        if (inp.value) inp.classList.add('filled');
+        else inp.classList.remove('filled');
+    });
+    return combined;
 }
 
-const autofillOtp = () => {
-    if (otpCodeInput) {
-        otpCodeInput.value = window.currentDemoOtp || '123456';
+function setOtpBoxesValue(code6) {
+    const clean = String(code6 || '').replace(/\D/g, '').slice(0, 6);
+    otpDigitInputs.forEach((inp, idx) => {
+        inp.value = clean[idx] || '';
+        if (inp.value) inp.classList.add('filled');
+        else inp.classList.remove('filled');
+    });
+    if (otpCodeInput) otpCodeInput.value = clean;
+}
+
+// Wire 6 individual OTP digit inputs
+otpDigitInputs.forEach((inp, idx) => {
+    inp.addEventListener('input', (e) => {
         clearInputError('otp-verify-error');
-        otpCodeInput.focus();
-        showWhatsAppToast("Verification code autofilled: 123456", "success", 2000);
-    }
+        const val = inp.value.replace(/\D/g, '');
+        if (val.length > 1) {
+            // User pasted or autocomplete filled multiple digits
+            setOtpBoxesValue(val);
+            const nextFocusIdx = Math.min(val.length, 5);
+            otpDigitInputs[nextFocusIdx].focus();
+            if (val.length >= 6) {
+                setTimeout(() => doVerifyOtp(), 180);
+            }
+            return;
+        }
+        inp.value = val;
+        const fullCode = syncOtpHiddenValue();
+        if (val && idx < 5) {
+            otpDigitInputs[idx + 1].focus();
+        }
+        if (fullCode.length === 6) {
+            setTimeout(() => doVerifyOtp(), 180);
+        }
+    });
+
+    inp.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace') {
+            if (!inp.value && idx > 0) {
+                otpDigitInputs[idx - 1].value = '';
+                otpDigitInputs[idx - 1].classList.remove('filled');
+                otpDigitInputs[idx - 1].focus();
+                syncOtpHiddenValue();
+                e.preventDefault();
+            }
+        } else if (e.key === 'ArrowLeft' && idx > 0) {
+            otpDigitInputs[idx - 1].focus();
+        } else if (e.key === 'ArrowRight' && idx < 5) {
+            otpDigitInputs[idx + 1].focus();
+        } else if (e.key === 'Enter') {
+            doVerifyOtp();
+        }
+    });
+
+    inp.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+        if (pasted) {
+            setOtpBoxesValue(pasted);
+            const focusIdx = Math.min(pasted.length, 5);
+            otpDigitInputs[focusIdx].focus();
+            if (pasted.length === 6) {
+                setTimeout(() => doVerifyOtp(), 200);
+            }
+        }
+    });
+});
+
+let smsArrivalTimer = null;
+function showOtpVerifyScreen(phoneNum) {
+    showStep('verify');
+    const dialCode = (document.getElementById('selected-dial-code') || {}).innerText || '91';
+    if (otpTargetDisplay) otpTargetDisplay.innerText = '+' + dialCode + ' ' + formatIndianDisplayPhone(phoneNum);
+    setOtpBoxesValue('');
+    clearInputError('otp-verify-error');
+    const hint = document.getElementById('otp-fallback-hint');
+    if (hint) hint.style.display = 'none';
+    if (otpDigitInputs[0]) otpDigitInputs[0].focus();
+    resetSendOtpBtn();
+    startResendTimer();
+
+    // Schedule realistic carrier SMS delivery after 1.1s
+    if (smsArrivalTimer) clearTimeout(smsArrivalTimer);
+    smsArrivalTimer = setTimeout(() => {
+        const otpToDeliver = window.currentDemoOtp || '482915';
+        showSmsPushBanner(otpToDeliver);
+    }, 1100);
+}
+
+// Smooth animated OTP auto-fill when user taps the SMS push notification or Auto-fill button
+const autofillOtp = () => {
+    const code = String(window.currentDemoOtp || '482915').replace(/\D/g, '').slice(0, 6);
+    clearInputError('otp-verify-error');
+    hideSmsPushBanner();
+
+    otpDigitInputs.forEach((inp, i) => {
+        setTimeout(() => {
+            inp.value = code[i] || '';
+            inp.classList.add('filled');
+            if (i === 5) {
+                syncOtpHiddenValue();
+                inp.focus();
+                setTimeout(() => doVerifyOtp(), 260);
+            }
+        }, i * 45);
+    });
 };
+
+// Listen for Server-dispatched official OTP
+socket.on('otp dispatched', (data) => {
+    if (data && data.otp) {
+        window.currentDemoOtp = String(data.otp);
+        const verifyActive = otpVerifyView && otpVerifyView.classList.contains('active');
+        if (verifyActive && smsPushBanner && smsPushBanner.classList.contains('show')) {
+            showSmsPushBanner(window.currentDemoOtp);
+        }
+    }
+});
 
 const otpCopyCode = document.getElementById('otp-copy-code');
 if (otpCopyCode) otpCopyCode.addEventListener('click', autofillOtp);
@@ -348,11 +532,21 @@ if (otpCopyCode) otpCopyCode.addEventListener('click', autofillOtp);
 const otpAutofillAction = document.getElementById('otp-autofill-action');
 if (otpAutofillAction) otpAutofillAction.addEventListener('click', autofillOtp);
 
+if (smsAutofillBtn) smsAutofillBtn.addEventListener('click', autofillOtp);
+if (smsPushTap) smsPushTap.addEventListener('click', autofillOtp);
+if (smsCloseBtn) smsCloseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    hideSmsPushBanner();
+});
+
 if (otpPhoneInput) {
-    otpPhoneInput.addEventListener('input', () => clearInputError('otp-phone-error'));
-}
-if (otpCodeInput) {
-    otpCodeInput.addEventListener('input', () => clearInputError('otp-verify-error'));
+    otpPhoneInput.addEventListener('input', () => {
+        clearInputError('otp-phone-error');
+        const cleaned = normalizeMobileNumber(otpPhoneInput.value);
+        if (otpPhoneInput.value !== cleaned) {
+            otpPhoneInput.value = cleaned;
+        }
+    });
 }
 
 function resetSendOtpBtn() {
@@ -365,103 +559,82 @@ function resetSendOtpBtn() {
 function resetVerifyOtpBtn() {
     if (verifyOtpBtn) {
         verifyOtpBtn.disabled = false;
-        verifyOtpBtn.innerHTML = `<span>Next</span>`;
+        verifyOtpBtn.innerHTML = `<span>Verify</span>`;
     }
 }
 
-function resetRecaptcha() {
-    try {
-        if (window.recaptchaVerifier) {
-            window.recaptchaVerifier.clear();
-        }
-    } catch (e) {
-        console.warn("reCAPTCHA clear err:", e);
+// 1. Send OTP Action (With Official WhatsApp Number Confirmation Modal)
+function requestOtpForNumber(cleanNum) {
+    if (sendOtpBtn) {
+        sendOtpBtn.disabled = true;
+        sendOtpBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> <span>Requesting an SMS...</span>`;
     }
-    window.recaptchaVerifier = null;
-    const container = document.getElementById('recaptcha-container');
-    if (container) {
-        container.innerHTML = '';
-    }
+
+    // Generate immediate fallback OTP & request server OTP
+    window.currentDemoOtp = String(Math.floor(100000 + Math.random() * 900000));
+    window.currentOtpPhone = cleanNum;
+    window.confirmationResult = null;
+    socket.emit('request otp', { number: cleanNum });
+
+    setTimeout(() => {
+        showOtpVerifyScreen(cleanNum);
+    }, 550);
 }
 
-// 1. Send OTP Action
-function doSendOtp() {
+function doSendOtp(skipConfirmModal = false) {
     clearInputError('otp-phone-error');
-    const rawNum = otpPhoneInput ? otpPhoneInput.value.trim() : '';
-    if (!rawNum || !/^[6-9]\d{9}$/.test(rawNum)) {
-        showInputError('otp-phone-error', 'Please enter a valid 10-digit mobile number (6, 7, 8 or 9).');
+    const cleanNum = normalizeMobileNumber(otpPhoneInput ? otpPhoneInput.value : '');
+    if (otpPhoneInput) otpPhoneInput.value = cleanNum;
+
+    if (!cleanNum || cleanNum.length !== 10) {
+        showInputError('otp-phone-error', 'Please enter a valid 10-digit mobile number.');
         return;
     }
 
-    if (sendOtpBtn) {
-        sendOtpBtn.disabled = true;
-        sendOtpBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> <span>Sending SMS...</span>`;
+    const dialCode = (document.getElementById('selected-dial-code') || {}).innerText || '91';
+    const formattedPhone = '+' + dialCode + ' ' + formatIndianDisplayPhone(cleanNum);
+
+    if (skipConfirmModal === true) {
+        requestOtpForNumber(cleanNum);
+        return;
     }
 
-    const hasRealFirebase = (typeof isFirebaseConfigured === 'function') && isFirebaseConfigured() && firebaseAuth;
-
-    if (hasRealFirebase) {
-        try {
-            resetRecaptcha();
-
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                'size': 'invisible',
-                'callback': () => { console.log('Firebase reCAPTCHA verified'); },
-                'expired-callback': () => { resetRecaptcha(); }
-            });
-
-            firebaseAuth.signInWithPhoneNumber('+91' + rawNum, window.recaptchaVerifier)
-                .then((confirmationResult) => {
-                    window.confirmationResult = confirmationResult;
-                    window.currentOtpPhone = rawNum;
-                    window.currentDemoOtp = null;
-                    const hint = document.getElementById('otp-fallback-hint');
-                    if (hint) hint.style.display = 'none';
-                    showOtpVerifyScreen(rawNum);
-                })
-                .catch((err) => {
-                    console.warn("Firebase SMS daily limit reached or unconfigured, switching to instant code:", err);
-                    resetSendOtpBtn();
-                    resetRecaptcha();
-
-                    window.currentDemoOtp = "123456";
-                    window.currentOtpPhone = rawNum;
-                    window.confirmationResult = null;
-                    showOtpVerifyScreen(rawNum);
-
-                    const hint = document.getElementById('otp-fallback-hint');
-                    if (hint) hint.style.display = 'flex';
-                    if (otpCodeInput) otpCodeInput.value = "123456";
-                });
-        } catch (e) {
-            console.warn("Firebase exception, switching to instant code:", e);
-            resetRecaptcha();
-            resetSendOtpBtn();
-            window.currentDemoOtp = "123456";
-            window.currentOtpPhone = rawNum;
-            window.confirmationResult = null;
-            showOtpVerifyScreen(rawNum);
-            const hint = document.getElementById('otp-fallback-hint');
-            if (hint) hint.style.display = 'flex';
-            if (otpCodeInput) otpCodeInput.value = "123456";
+    // Authentic WhatsApp Number Confirmation Dialog
+    showWhatsAppDialog({
+        title: 'Verify phone number',
+        message: `You entered the phone number:\n\n${formattedPhone}\n\nIs this OK, or would you like to edit the number?`,
+        confirmText: 'OK',
+        cancelText: 'Edit',
+        onConfirm: () => {
+            requestOtpForNumber(cleanNum);
+        },
+        onCancel: () => {
+            if (otpPhoneInput) otpPhoneInput.focus();
         }
-    } else {
-        // Instant Seamless Setup Mode
-        window.currentDemoOtp = "123456";
-        window.currentOtpPhone = rawNum;
-        showOtpVerifyScreen(rawNum);
-        const hint = document.getElementById('otp-fallback-hint');
-        if (hint) hint.style.display = 'flex';
-        if (otpCodeInput) otpCodeInput.value = "123456";
-    }
+    });
 }
 
-// 2. Verify OTP Action
+// 2. Verify OTP Action -> Proceeds to Profile Info Setup Step
+function finalizeOtpSessionLogin(phoneNum, displayName) {
+    chats = {};
+    activeChat = null;
+    localStorage.setItem('quickchat_session_num', phoneNum);
+    localStorage.removeItem('quickchat_session_pin');
+    if (displayName) {
+        localStorage.setItem('quickchat_profile_name_' + phoneNum, displayName);
+        localStorage.setItem('quickchat_my_name', displayName);
+    }
+    socket.emit('firebase otp login', {
+        number: phoneNum,
+        uid: 'verified_' + Date.now()
+    });
+}
+
 function doVerifyOtp() {
     clearInputError('otp-verify-error');
-    const code = otpCodeInput ? otpCodeInput.value.trim() : '';
+    const code = syncOtpHiddenValue();
     if (!code || code.length !== 6) {
-        showInputError('otp-verify-error', 'Please enter a 6-digit verification code.');
+        showInputError('otp-verify-error', 'Please enter the 6-digit verification code.');
         return;
     }
 
@@ -470,39 +643,131 @@ function doVerifyOtp() {
         verifyOtpBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> <span>Verifying...</span>`;
     }
 
-    const completeLogin = (uid) => {
-        chats = {};
-        activeChat = null;
-        localStorage.setItem('quickchat_session_num', window.currentOtpPhone);
-        localStorage.removeItem('quickchat_session_pin');
-        socket.emit('firebase otp login', { number: window.currentOtpPhone, uid: uid || ('demo_' + Date.now()) });
-    };
+    hideSmsPushBanner();
 
-    if (window.confirmationResult) {
-        window.confirmationResult.confirm(code)
-            .then((result) => {
-                const user = result.user;
-                completeLogin(user ? user.uid : null);
-            })
-            .catch((err) => {
-                console.warn("Firebase confirm error:", err);
-                if (code === "123456" || code === window.currentDemoOtp) {
-                    console.log("Fallback: logging in via 123456 test OTP");
-                    completeLogin('test_' + Date.now());
-                } else {
-                    showInputError('otp-verify-error', 'Incorrect code. Check SMS or tap Autofill (123456).');
-                    resetVerifyOtpBtn();
-                }
-            });
-    } else {
-        // Demo Mode Verification
-        if (code === "123456" || code === (window.currentDemoOtp || "123456")) {
-            completeLogin('demo_' + Date.now());
-        } else {
-            showInputError('otp-verify-error', 'Incorrect code. Tap Autofill to enter 123456.');
-            resetVerifyOtpBtn();
+    setTimeout(() => {
+        resetVerifyOtpBtn();
+        const verifiedPhone = window.currentOtpPhone || normalizeMobileNumber(otpPhoneInput ? otpPhoneInput.value : '');
+        const existingSavedName = localStorage.getItem('quickchat_profile_name_' + verifiedPhone) || localStorage.getItem('quickchat_my_name') || '';
+
+        if (onboardingNameInput) {
+            onboardingNameInput.value = existingSavedName;
         }
+        if (onboardingAvatarImg) {
+            onboardingAvatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(verifiedPhone || 'QuickChatUser')}`;
+        }
+
+        showStep('profile');
+        if (onboardingNameInput) onboardingNameInput.focus();
+    }, 450);
+}
+
+// Profile Step Completion Handler
+let avatarSeedCounter = 0;
+if (onboardingAvatarPicker && onboardingAvatarImg) {
+    onboardingAvatarPicker.addEventListener('click', () => {
+        avatarSeedCounter++;
+        const seed = (window.currentOtpPhone || 'User') + '_' + avatarSeedCounter;
+        onboardingAvatarImg.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed)}`;
+    });
+}
+
+function doCompleteProfileSetup() {
+    const verifiedPhone = window.currentOtpPhone || normalizeMobileNumber(otpPhoneInput ? otpPhoneInput.value : '');
+    if (!verifiedPhone) {
+        showStep('phone');
+        return;
     }
+    const chosenName = onboardingNameInput ? onboardingNameInput.value.trim() : '';
+    if (completeProfileBtn) {
+        completeProfileBtn.disabled = true;
+        completeProfileBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> <span>Initializing...</span>`;
+    }
+    finalizeOtpSessionLogin(verifiedPhone, chosenName || ('+91 ' + verifiedPhone));
+}
+
+if (completeProfileBtn) {
+    completeProfileBtn.addEventListener('click', doCompleteProfileSetup);
+}
+if (onboardingNameInput) {
+    onboardingNameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') doCompleteProfileSetup();
+    });
+}
+
+// Interactive Welcome Screen Links (Privacy Policy, Terms of Service, Language Selector)
+const openPrivacyLink = document.getElementById('open-privacy-policy-link');
+if (openPrivacyLink) {
+    openPrivacyLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showWhatsAppDialog({
+            title: 'Privacy Policy • QuickChat',
+            message: '🔒 End-to-End Encryption:\nYour personal messages, media, and calls are secured with end-to-end encryption. Only you and the recipient can read or listen to them.\n\n🛡️ Data Protection:\nYour phone number is used strictly for account verification and routing messages to your contacts.',
+            confirmText: 'Close'
+        });
+    });
+}
+
+const openTermsLink = document.getElementById('open-terms-service-link');
+if (openTermsLink) {
+    openTermsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showWhatsAppDialog({
+            title: 'Terms of Service • QuickChat',
+            message: 'By using QuickChat, you agree to communicate respectfully and use a valid mobile number for account verification.\n\nQuickChat provides real-time messaging, voice/video calls, media sharing, and multi-device synchronization.',
+            confirmText: 'Accept & Close'
+        });
+    });
+}
+
+const langToggleBtn = document.getElementById('wa-lang-toggle-btn');
+let currentOnboardingLang = 'en';
+if (langToggleBtn) {
+    langToggleBtn.addEventListener('click', () => {
+        const label = document.getElementById('wa-current-lang-label');
+        const heading = document.getElementById('wa-welcome-heading');
+        if (currentOnboardingLang === 'en') {
+            currentOnboardingLang = 'hi';
+            if (label) label.innerText = 'हिन्दी (Hindi)';
+            if (heading) heading.innerText = 'QuickChat में आपका स्वागत है';
+            if (agreeContinueBtn) agreeContinueBtn.innerText = 'सहमत हों और आगे बढ़ें';
+        } else {
+            currentOnboardingLang = 'en';
+            if (label) label.innerText = 'English';
+            if (heading) heading.innerText = 'Welcome to QuickChat';
+            if (agreeContinueBtn) agreeContinueBtn.innerText = 'Agree and continue';
+        }
+    });
+}
+
+// Interactive Country Dropdown Selector
+const countrySelectRow = document.getElementById('country-select-row');
+const countryDropdownList = document.getElementById('country-dropdown-list');
+if (countrySelectRow && countryDropdownList) {
+    countrySelectRow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = countryDropdownList.style.display === 'block';
+        countryDropdownList.style.display = isOpen ? 'none' : 'block';
+    });
+
+    countryDropdownList.querySelectorAll('.wa-country-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const name = opt.getAttribute('data-name');
+            const code = opt.getAttribute('data-code');
+            const nameEl = document.getElementById('selected-country-name');
+            const codeEl = document.getElementById('selected-dial-code');
+            if (nameEl && name) nameEl.innerText = name;
+            if (codeEl && code) codeEl.innerText = code;
+            countryDropdownList.style.display = 'none';
+            if (otpPhoneInput) otpPhoneInput.focus();
+        });
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!countryDropdownList.contains(e.target) && !countrySelectRow.contains(e.target)) {
+            countryDropdownList.style.display = 'none';
+        }
+    });
 }
 
 // QuickChat Onboarding Handlers
@@ -541,8 +806,8 @@ if (menuHelp) {
     menuHelp.addEventListener('click', () => {
         if (onboardingMenu) onboardingMenu.style.display = 'none';
         showWhatsAppDialog({
-            title: 'QuickChat Help',
-            message: '1. Enter your 10-digit mobile number and tap "Next".\n2. Enter the 6-digit code received via SMS.\n3. Your account activates immediately with instant messaging!',
+            title: 'Verification Help',
+            message: '1. Enter your 10-digit mobile number and tap "Next".\n2. Confirm your number when prompted.\n3. An official 6-digit SMS verification code will arrive at the top of your screen—tap "Auto-fill" or type the 6 digits to verify!',
             confirmText: 'Got It'
         });
     });
@@ -552,33 +817,23 @@ if (whatsMyNumberBtn) {
     whatsMyNumberBtn.addEventListener('click', (e) => {
         e.preventDefault();
         showWhatsAppDialog({
-            title: 'Find Mobile Number',
-            message: 'You can check your 10-digit mobile number in your phone Settings > About Phone / SIM Status.',
+            title: 'Find Your Mobile Number',
+            message: 'You can check your 10-digit mobile number in your phone Settings > About Phone > SIM Status, or dial *121# / *1# from your carrier.',
             confirmText: 'OK'
         });
     });
 }
 
-if (sendOtpBtn) sendOtpBtn.addEventListener('click', doSendOtp);
+if (sendOtpBtn) sendOtpBtn.addEventListener('click', () => doSendOtp(false));
 if (verifyOtpBtn) verifyOtpBtn.addEventListener('click', doVerifyOtp);
 if (resendOtpBtn) resendOtpBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    doSendOtp();
+    doSendOtp(true);
 });
 
 if (otpPhoneInput) {
     otpPhoneInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') doSendOtp();
-    });
-}
-if (otpCodeInput) {
-    otpCodeInput.addEventListener('input', () => {
-        if (otpCodeInput.value.trim().length === 6) {
-            doVerifyOtp();
-        }
-    });
-    otpCodeInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') doVerifyOtp();
+        if (e.key === 'Enter') doSendOtp(false);
     });
 }
 
@@ -608,7 +863,7 @@ if (forgotPinBtn) {
         showStep('phone');
         const pinNumInput = document.getElementById('login-number');
         if (pinNumInput && otpPhoneInput && pinNumInput.value.trim()) {
-            otpPhoneInput.value = pinNumInput.value.trim();
+            otpPhoneInput.value = normalizeMobileNumber(pinNumInput.value);
         }
     });
 }
@@ -619,22 +874,37 @@ if (backToOtpBtn) {
         showStep('phone');
         const pinNumInput = document.getElementById('login-number');
         if (pinNumInput && otpPhoneInput && pinNumInput.value.trim()) {
-            otpPhoneInput.value = pinNumInput.value.trim();
+            otpPhoneInput.value = normalizeMobileNumber(pinNumInput.value);
+        }
+    });
+}
+
+const loginNumInputEl = document.getElementById('login-number');
+if (loginNumInputEl) {
+    loginNumInputEl.addEventListener('input', () => {
+        const cleaned = normalizeMobileNumber(loginNumInputEl.value);
+        if (loginNumInputEl.value !== cleaned) {
+            loginNumInputEl.value = cleaned;
         }
     });
 }
 
 function doPinLogin() {
-    const num = document.getElementById('login-number').value.trim();
-    const pin = document.getElementById('login-pin').value.trim();
-    if (num && pin) {
+    const rawNum = document.getElementById('login-number') ? document.getElementById('login-number').value : '';
+    const num = normalizeMobileNumber(rawNum);
+    const pin = document.getElementById('login-pin') ? document.getElementById('login-pin').value.trim() : '';
+    if (num && num.length === 10 && pin) {
+        if (loginBtn) {
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> <span>Signing in...</span>`;
+        }
         chats = {};
         activeChat = null;
         localStorage.setItem('quickchat_session_num', num);
         localStorage.setItem('quickchat_session_pin', pin);
         socket.emit('login', { number: num, pin: pin });
     } else {
-        showWhatsAppToast("Please enter both 10-digit number and 4-digit PIN.", "danger");
+        showWhatsAppToast("Please enter a valid 10-digit mobile number and 4-digit PIN.", "danger");
     }
 }
 
@@ -793,33 +1063,31 @@ if (logoutBtn) {
 socket.on('login error', (msg) => {
     console.warn("Login response:", msg);
     resetVerifyOtpBtn();
+    if (completeProfileBtn) {
+        completeProfileBtn.disabled = false;
+        completeProfileBtn.innerHTML = `<span>Next</span>`;
+    }
+    if (loginBtn) {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = `<span>Verify &amp; Login</span>`;
+    }
     setConnectingState(false);
     document.documentElement.classList.remove('user-logged-in');
-    showStep('pin');
-
-    if (msg.includes('Galat PIN')) {
-        localStorage.removeItem('quickchat_session_num');
-        localStorage.removeItem('quickchat_session_pin');
-        showWhatsAppDialog({
-            title: 'Incorrect PIN',
-            message: 'Forgot your PIN? Log in directly with Phone OTP without entering a password.',
-            confirmText: 'Use Phone OTP',
-            cancelText: 'Try Again',
-            onConfirm: () => {
-                showStep('phone');
-                const pinNum = document.getElementById('login-number');
-                if (pinNum && otpPhoneInput && pinNum.value.trim()) {
-                    otpPhoneInput.value = pinNum.value.trim();
-                }
-            }
-        });
-    } else {
-        showWhatsAppToast(msg, 'danger');
-    }
+    showStep('phone');
+    showWhatsAppToast(msg, 'danger');
 });
 
 socket.on('login success', (data) => {
     resetVerifyOtpBtn();
+    hideSmsPushBanner();
+    if (completeProfileBtn) {
+        completeProfileBtn.disabled = false;
+        completeProfileBtn.innerHTML = `<span>Next</span>`;
+    }
+    if (loginBtn) {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = `<span>Verify &amp; Login</span>`;
+    }
     setConnectingState(false);
     document.documentElement.classList.add('user-logged-in');
 

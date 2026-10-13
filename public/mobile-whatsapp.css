@@ -669,12 +669,30 @@
     .onboarding-top-bar {
         position: relative !important;
         width: 100% !important;
-        height: 52px !important;
+        height: 56px !important;
         display: flex !important;
-        justify-content: flex-end !important;
+        justify-content: space-between !important;
         align-items: center !important;
-        padding: 6px 14px 0 14px !important;
+        padding: 8px 16px 0 16px !important;
         box-sizing: border-box !important;
+    }
+
+    .onboarding-brand-logo {
+        background: #00a884 !important;
+        color: #ffffff !important;
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 19px !important;
+    }
+
+    .onboarding-brand-title {
+        color: var(--wa-chat-title) !important;
+        font-size: 13.5px !important;
+    }
+
+    .onboarding-official-badge {
+        background: rgba(0, 168, 132, 0.14) !important;
+        color: #00a884 !important;
     }
 
     #onboarding-dots-btn {
