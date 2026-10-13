@@ -3727,13 +3727,7 @@ if (settingItemStorage) {
     settingItemStorage.onclick = () => openDrawer('storage-drawer');
 }
 
-const settingItemShortcuts = document.getElementById('setting-item-shortcuts');
-if (settingItemShortcuts) {
-    settingItemShortcuts.onclick = () => {
-        const modal = document.getElementById('shortcuts-modal');
-        if (modal) modal.style.display = 'flex';
-    };
-}
+
 
 const settingItemHelp = document.getElementById('setting-item-help');
 if (settingItemHelp) {
@@ -5229,18 +5223,12 @@ wallpaperChoices.forEach(choice => {
 });
 
 // ========================================================
-// 15. SHORTCUTS MODAL & GLOBAL HOTKEYS
 // ========================================================
-const shortcutsModal = document.getElementById('shortcuts-modal');
-const closeShortcutsModalBtn = document.getElementById('close-shortcuts-modal-btn');
-if (closeShortcutsModalBtn && shortcutsModal) {
-    closeShortcutsModalBtn.onclick = () => shortcutsModal.style.display = 'none';
-}
-
+// 15. GLOBAL KEYBOARD NAVIGATION
+// ========================================================
 window.addEventListener('keydown', (e) => {
     // Escape closes popups & drawers
     if (e.key === 'Escape') {
-        if (shortcutsModal) shortcutsModal.style.display = 'none';
         if (wallpaperModal) wallpaperModal.style.display = 'none';
         if (addStatusModal) addStatusModal.style.display = 'none';
         if (statusViewerModal && statusViewerModal.style.display === 'flex') closeStatusViewer();
