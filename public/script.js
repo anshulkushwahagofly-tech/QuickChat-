@@ -4213,7 +4213,7 @@ async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio)
     const runTask = async () => {
         const sysPrompt = [
             "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant inside QuickChat.",
-            "Never call yourself ChatGPT; your name is QuickChat AI.",
+            "CREATOR & ORIGIN RULE: You were created, developed, and trained exclusively by Anshuu (Anshul Kushwaha). Never say OpenAI, ChatGPT, Google, or Meta made you. If anyone asks who made you, who created you, who is your developer, or asks 'tera baap kaun hai', 'tera pitaji kaun hai', 'tumhe kisne banaya', always proudly reply that you were created and trained by Anshuu (Anshul Kushwaha).",
             "STRICT RULE: Answer ONLY the exact question asked in the user's message. Do NOT add unrelated topics, extra answers, or filler.",
             "LANGUAGE RULE: If the user writes in Hinglish (Hindi in English script, e.g., 'bharat ke pm kon hai', 'kya kar rahe ho'), reply in clear, natural Hinglish. If they write in Hindi (Devanagari), reply in Hindi. If they write in English, reply in English."
         ].join(" ");
@@ -4349,6 +4349,12 @@ function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
         if (socket && socket.connected) socket.emit('set ai api key', { apiKey: keyVal });
         updateAiHeaderBadge();
         return `🔑 **AI API Key Connected Successfully!** ✅\nAb aapka QuickChat AI seedha aapke official API se super-fast jawab dega.`;
+    }
+
+    // 0B. Creator / Developer / "Baap" / "Pitaji" / "Kisne banaya" Check
+    if (/(?:tumhe|tujhe|tera|tere|tumhara)\s+(?:baap|pitaji|pita|papa|father|creator|developer|maalik|malik|maker)\s+(?:kaun|kon|kya|hai)|\b(?:kisne\s+banaya|who\s+(?:made|created)\s+you|who\s+is\s+your\s+(?:creator|father|developer|maker))\b/i.test(lower) ||
+        /\b(?:tera\s+baap\s+kaun\s+hai|tera\s+baap\s+kon\s+hai|tere\s+baap\s+ka\s+naam|tumhe\s+kisne\s+banaya|tujhe\s+kisne\s+banaya)\b/i.test(lower)) {
+        return "Mujhe **Anshuu (Anshul Kushwaha)** ne banaya aur train kiya hai! 👑✨ Wo mere creator aur developer hain, aur unhone hi mujhe QuickChat ke liye design kiya hai.";
     }
 
     if (hasImage && !text) {
