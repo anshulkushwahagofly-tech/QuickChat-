@@ -356,6 +356,7 @@
                     
                     <!-- Dropdown Menu -->
                     <div id="dropdown-menu" class="dropdown-menu" style="display:none;">
+                        <div class="menu-item" id="menu-open-profile"><i class="fas fa-user-circle"></i> Profile</div>
                         <div class="menu-item" id="menu-open-ai"><i class="fas fa-robot" style="color:#00a884;"></i> QuickChat AI ✨</div>
                         <div class="menu-item" id="menu-new-chat"><i class="fas fa-user-plus"></i> New chat</div>
                         <div class="menu-item" id="menu-new-group"><i class="fas fa-users"></i> New group</div>
@@ -450,31 +451,73 @@
                     <h3>Profile</h3>
                 </div>
                 <div class="wa-drawer-body">
+                    <!-- 1. Big Avatar with WhatsApp Camera Overlay -->
                     <div class="wa-profile-avatar-section">
-                        <div class="wa-profile-big-avatar" id="profile-big-avatar">
-                            <div class="avatar" style="width:160px; height:160px; margin:0 auto;"></div>
+                        <div class="wa-profile-big-avatar" id="profile-big-avatar" title="Change profile photo">
+                            <div class="avatar" id="profile-big-avatar-img" style="width:160px; height:160px; margin:0 auto; background-size:cover; background-position:center;"></div>
+                            <div class="wa-profile-avatar-overlay">
+                                <i class="fas fa-camera"></i>
+                                <span>CHANGE<br>PROFILE PHOTO</span>
+                            </div>
                         </div>
+                        <input type="file" id="profile-photo-file-input" accept="image/*" style="display:none;">
                     </div>
-                    <div class="wa-profile-card">
+
+                    <!-- 2. Your Name Card (WhatsApp inline editable) -->
+                    <div class="wa-profile-card" id="profile-name-card">
                         <span class="wa-profile-label">Your name</span>
-                        <div class="wa-profile-val-row">
+                        <!-- View mode -->
+                        <div class="wa-profile-val-row" id="profile-name-view-row">
                             <span id="profile-display-name">QuickChat User</span>
-                            <i class="fas fa-pen wa-profile-edit-icon" id="edit-profile-name-btn" title="Edit name"></i>
+                            <button type="button" class="wa-profile-edit-btn" id="edit-profile-name-btn" title="Edit name"><i class="fas fa-pen"></i></button>
+                        </div>
+                        <!-- Edit mode -->
+                        <div class="wa-profile-edit-row" id="profile-name-edit-row" style="display:none;">
+                            <input type="text" id="profile-name-input" maxlength="25" placeholder="Your name" autocomplete="off">
+                            <span class="wa-profile-char-count" id="profile-name-char-count">25</span>
+                            <div class="wa-profile-edit-actions">
+                                <button type="button" class="wa-profile-action-btn check" id="save-profile-name-btn" title="Save name"><i class="fas fa-check"></i></button>
+                                <button type="button" class="wa-profile-action-btn cancel" id="cancel-profile-name-btn" title="Cancel"><i class="fas fa-times"></i></button>
+                            </div>
                         </div>
                         <p class="wa-profile-hint">This is not your username or pin. This name will be visible to your QuickChat contacts.</p>
                     </div>
-                    <div class="wa-profile-card">
+
+                    <!-- 3. About Card (WhatsApp editable + standard presets) -->
+                    <div class="wa-profile-card" id="profile-about-card">
                         <span class="wa-profile-label">About</span>
-                        <div class="wa-profile-val-row">
+                        <!-- View mode -->
+                        <div class="wa-profile-val-row" id="profile-about-view-row">
                             <span id="profile-display-about">Hey there! I am using QuickChat.</span>
-                            <i class="fas fa-pen wa-profile-edit-icon" id="edit-profile-about-btn" title="Edit about"></i>
+                            <button type="button" class="wa-profile-edit-btn" id="edit-profile-about-btn" title="Edit about"><i class="fas fa-pen"></i></button>
+                        </div>
+                        <!-- Edit mode -->
+                        <div class="wa-profile-edit-row" id="profile-about-edit-row" style="display:none;">
+                            <input type="text" id="profile-about-input" maxlength="139" placeholder="Your status" autocomplete="off">
+                            <span class="wa-profile-char-count" id="profile-about-char-count">139</span>
+                            <div class="wa-profile-edit-actions">
+                                <button type="button" class="wa-profile-action-btn check" id="save-profile-about-btn" title="Save about"><i class="fas fa-check"></i></button>
+                                <button type="button" class="wa-profile-action-btn cancel" id="cancel-profile-about-btn" title="Cancel"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp Preset Status Choices -->
+                        <div class="wa-profile-presets-section" id="profile-about-presets-section">
+                            <span class="wa-profile-presets-title">Select your status</span>
+                            <div class="wa-profile-presets-list" id="profile-about-presets-list">
+                                <!-- Populated dynamically with checkmarks -->
+                            </div>
                         </div>
                     </div>
+
+                    <!-- 4. Phone Number Card -->
                     <div class="wa-profile-card">
-                        <span class="wa-profile-label">Phone number</span>
+                        <span class="wa-profile-label">Phone</span>
                         <div class="wa-profile-val-row">
                             <span id="profile-display-phone" style="font-weight:600; color:var(--wa-chat-header-title, #111b21);">+91 ...</span>
+                            <i class="fas fa-shield-alt" style="color:#00a884; font-size:15px;" title="Verified Phone"></i>
                         </div>
+                        <p class="wa-profile-hint">Your phone number is verified and end-to-end encrypted.</p>
                     </div>
                 </div>
             </div>
@@ -981,6 +1024,82 @@
         <div class="menu-item logout" id="msg-ctx-delete"><i class="fas fa-trash-alt"></i> Delete message</div>
     </div>
 
+    <!-- WhatsApp Profile Photo Options Modal / Action Sheet -->
+    <div id="profile-photo-options-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content wa-photo-action-sheet" style="max-width:380px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-camera"></i> Profile photo</h3>
+                <button type="button" id="close-photo-options-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body wa-photo-action-list">
+                <button type="button" class="wa-photo-action-item" id="btn-view-profile-photo">
+                    <i class="fas fa-eye"></i>
+                    <span>View photo</span>
+                </button>
+                <button type="button" class="wa-photo-action-item" id="btn-take-profile-photo">
+                    <i class="fas fa-camera"></i>
+                    <span>Take photo</span>
+                </button>
+                <button type="button" class="wa-photo-action-item" id="btn-upload-profile-photo">
+                    <i class="fas fa-image"></i>
+                    <span>Upload photo</span>
+                </button>
+                <button type="button" class="wa-photo-action-item" id="btn-roll-profile-avatar">
+                    <i class="fas fa-magic"></i>
+                    <span>Generate Avatar style</span>
+                </button>
+                <button type="button" class="wa-photo-action-item danger" id="btn-remove-profile-photo">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Remove photo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Profile Camera Capture Modal -->
+    <div id="profile-camera-modal" class="modal-overlay" style="display:none;">
+        <div class="modal-content wa-camera-modal-box" style="max-width:440px;">
+            <div class="modal-header">
+                <h3><i class="fas fa-camera"></i> Take photo</h3>
+                <button type="button" id="close-camera-modal-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body wa-camera-view-body">
+                <div class="wa-camera-preview-wrapper">
+                    <video id="profile-camera-video" autoplay playsinline muted></video>
+                    <div class="wa-camera-circle-guide"></div>
+                </div>
+                <div class="wa-camera-controls">
+                    <button type="button" id="camera-flip-btn" class="wa-camera-ctrl-btn" title="Switch camera" style="display:none;">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button type="button" id="camera-capture-btn" class="wa-camera-shutter-btn" title="Capture photo">
+                        <i class="fas fa-camera"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Full-screen Photo Lightbox Viewer -->
+    <div id="wa-photo-lightbox" class="wa-lightbox-overlay" style="display:none;">
+        <div class="wa-lightbox-header">
+            <div class="wa-lightbox-title-wrap">
+                <button type="button" id="lightbox-close-btn" class="wa-lightbox-back-btn" title="Back">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <span id="lightbox-user-name" class="wa-lightbox-user-name">Profile photo</span>
+            </div>
+            <div class="wa-lightbox-actions">
+                <a id="lightbox-download-btn" class="wa-lightbox-action-btn" download="profile-photo.jpg" title="Download">
+                    <i class="fas fa-download"></i>
+                </a>
+            </div>
+        </div>
+        <div class="wa-lightbox-body">
+            <img id="lightbox-img" src="" alt="Profile Photo">
+        </div>
+    </div>
+
     <!-- WhatsApp In-App Confirmation / Action Dialog -->
     <div id="wa-dialog-overlay" class="wa-dialog-overlay">
         <div class="wa-dialog-box" role="dialog" aria-modal="true">
@@ -999,7 +1118,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=55"></script>
+    <script src="script.js?v=56"></script>
     <script src="webrtc.js?v=5"></script>
 </body>
 </html>

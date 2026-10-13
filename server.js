@@ -53,9 +53,14 @@ if (MONGODB_URI) {
 
 // Mongoose Schemas
 const User = mongoose.model('User', new mongoose.Schema({ 
-    number: String, 
-    pin: String 
-}));
+    number: { type: String, index: true }, 
+    pin: String,
+    name: { type: String, default: '' },
+    about: { type: String, default: 'Hey there! I am using QuickChat.' },
+    avatar: { type: String, default: '' },
+    registeredAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+}, { strict: false }));
 const Message = mongoose.model('Message', new mongoose.Schema({ 
     id: String,
     from: String, 
@@ -121,9 +126,18 @@ async function ensureDBReady() {
 async function getUser(number) {
     await ensureDBReady();
     if (useMongo || mongoose.connection.readyState === 1) {
-        return await User.findOne({ number: number });
+        return await User.findOne({ number: number }).lean();
     }
-    return loadDB().users[number] ? { pin: loadDB().users[number].pin } : null;
+    const user = loadDB().users[number];
+    return user ? {
+        number,
+        pin: user.pin,
+        name: user.name || '',
+        about: user.about || 'Hey there! I am using QuickChat.',
+        avatar: user.avatar || '',
+        registeredAt: user.registeredAt,
+        updatedAt: user.updatedAt
+    } : null;
 }
 
 let cachedAllUsers = null;
@@ -140,9 +154,104 @@ async function createUser(number, pin) {
         );
     } else {
         let db = loadDB();
-        db.users[number] = { pin, registeredAt: new Date().toISOString() };
+        if (!db.users[number]) {
+            db.users[number] = { 
+                pin, 
+                name: '', 
+                about: 'Hey there! I am using QuickChat.', 
+                avatar: '', 
+                registeredAt: new Date().toISOString() 
+            };
+        } else {
+            db.users[number].pin = pin;
+        }
         saveDB(db);
     }
+}
+
+async function saveUserProfile(number, profileData = {}) {
+    await ensureDBReady();
+    const cleanNum = validateRealIndianNumber(number).number || number;
+    const updateObj = { updatedAt: new Date().toISOString() };
+    if (profileData.name !== undefined) updateObj.name = String(profileData.name).trim().slice(0, 50);
+    if (profileData.about !== undefined) updateObj.about = String(profileData.about).trim().slice(0, 200);
+    if (profileData.avatar !== undefined) updateObj.avatar = String(profileData.avatar).trim();
+
+    if (useMongo || mongoose.connection.readyState === 1) {
+        const doc = await User.findOneAndUpdate(
+            { number: cleanNum },
+            { $set: updateObj },
+            { upsert: true, new: true }
+        ).lean();
+        return {
+            number: cleanNum,
+            name: (doc && doc.name) || updateObj.name || '',
+            about: (doc && doc.about) || updateObj.about || 'Hey there! I am using QuickChat.',
+            avatar: (doc && doc.avatar) || updateObj.avatar || ''
+        };
+    } else {
+        let db = loadDB();
+        if (!db.users[cleanNum]) {
+            db.users[cleanNum] = { pin: '0000', registeredAt: new Date().toISOString() };
+        }
+        Object.assign(db.users[cleanNum], updateObj);
+        saveDB(db);
+        return {
+            number: cleanNum,
+            name: db.users[cleanNum].name || '',
+            about: db.users[cleanNum].about || 'Hey there! I am using QuickChat.',
+            avatar: db.users[cleanNum].avatar || ''
+        };
+    }
+}
+
+async function getUserProfile(number) {
+    const user = await getUser(number);
+    if (user) {
+        return {
+            number: user.number || number,
+            name: user.name || '',
+            about: user.about || 'Hey there! I am using QuickChat.',
+            avatar: user.avatar || ''
+        };
+    }
+    return {
+        number,
+        name: '',
+        about: 'Hey there! I am using QuickChat.',
+        avatar: ''
+    };
+}
+
+async function getMultipleProfiles(numbers = []) {
+    await ensureDBReady();
+    const profiles = {};
+    if (!Array.isArray(numbers) || numbers.length === 0) return profiles;
+    
+    if (useMongo || mongoose.connection.readyState === 1) {
+        const docs = await User.find({ number: { $in: numbers } }, 'number name about avatar').lean();
+        docs.forEach(d => {
+            profiles[d.number] = {
+                number: d.number,
+                name: d.name || '',
+                about: d.about || 'Hey there! I am using QuickChat.',
+                avatar: d.avatar || ''
+            };
+        });
+    } else {
+        const db = loadDB();
+        numbers.forEach(num => {
+            if (db.users[num]) {
+                profiles[num] = {
+                    number: num,
+                    name: db.users[num].name || '',
+                    about: db.users[num].about || 'Hey there! I am using QuickChat.',
+                    avatar: db.users[num].avatar || ''
+                };
+            }
+        });
+    }
+    return profiles;
 }
 async function saveMessage(msgObj) {
     await ensureDBReady();
@@ -275,7 +384,8 @@ io.on('connection', (socket) => {
 
             await markUndeliveredAsDelivered(cleanNum);
             const userMessages = await getUserMessages(cleanNum);
-            socket.emit('login success', { number: cleanNum, history: userMessages });
+            const userProfile = await getUserProfile(cleanNum);
+            socket.emit('login success', { number: cleanNum, history: userMessages, profile: userProfile });
         } catch (err) {
             console.error("Signup error:", err);
             socket.emit('login error', 'Server error. Please try again.');
@@ -343,7 +453,8 @@ io.on('connection', (socket) => {
 
             await markUndeliveredAsDelivered(cleanNum);
             const userMessages = await getUserMessages(cleanNum);
-            socket.emit('login success', { number: cleanNum, history: userMessages });
+            const userProfile = await getUserProfile(cleanNum);
+            socket.emit('login success', { number: cleanNum, history: userMessages, profile: userProfile });
         } catch (err) {
             console.error("Login error:", err);
             socket.emit('login error', 'Server error. Please try again.');
@@ -373,7 +484,8 @@ io.on('connection', (socket) => {
 
             await markUndeliveredAsDelivered(cleanNum);
             const userMessages = await getUserMessages(cleanNum);
-            socket.emit('login success', { number: cleanNum, history: userMessages });
+            const userProfile = await getUserProfile(cleanNum);
+            socket.emit('login success', { number: cleanNum, history: userMessages, profile: userProfile });
         } catch (err) {
             console.error("OTP Login error:", err);
             socket.emit('login error', 'OTP verification server error.');
@@ -398,9 +510,56 @@ io.on('connection', (socket) => {
 
             await markUndeliveredAsDelivered(cleanNum);
             const userMessages = await getUserMessages(cleanNum);
-            socket.emit('login success', { number: cleanNum, history: userMessages });
+            const userProfile = await getUserProfile(cleanNum);
+            socket.emit('login success', { number: cleanNum, history: userMessages, profile: userProfile });
         } catch (err) {
             console.error("Auto login error:", err);
+        }
+    });
+
+    // --- REAL-TIME WHATSAPP PROFILE SYSTEM ---
+    socket.on('update profile', async (profileData) => {
+        try {
+            const senderNumber = socketToPhone[socket.id] || (profileData && profileData.number);
+            if (!senderNumber || !profileData) return;
+            const cleanNum = validateRealIndianNumber(senderNumber).number || senderNumber;
+            const savedProfile = await saveUserProfile(cleanNum, profileData);
+            socket.emit('profile updated', { success: true, profile: savedProfile });
+            // Broadcast live profile update to all connected contacts
+            io.emit('user profile changed', savedProfile);
+            console.log(`[PROFILE] Updated for +91 ${cleanNum}: Name="${savedProfile.name}", About="${savedProfile.about}", Avatar=${savedProfile.avatar ? 'Yes' : 'No'}`);
+        } catch (err) {
+            console.error("Profile update error:", err);
+            socket.emit('profile updated', { success: false, message: 'Failed to update profile.' });
+        }
+    });
+
+    socket.on('get user profile', async ({ number }, callback) => {
+        try {
+            if (!number) return;
+            const cleanNum = validateRealIndianNumber(number).number || number;
+            const profile = await getUserProfile(cleanNum);
+            if (typeof callback === 'function') {
+                callback(profile);
+            } else {
+                socket.emit('user profile data', profile);
+            }
+        } catch (err) {
+            console.error("Get user profile error:", err);
+        }
+    });
+
+    socket.on('get contacts profiles', async ({ numbers }, callback) => {
+        try {
+            if (!Array.isArray(numbers)) return;
+            const profiles = await getMultipleProfiles(numbers);
+            if (typeof callback === 'function') {
+                callback(profiles);
+            } else {
+                socket.emit('contacts profiles data', profiles);
+            }
+        } catch (err) {
+            console.error("Get contacts profiles error:", err);
         }
     });
 

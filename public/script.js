@@ -329,6 +329,10 @@ if (savedNum) {
     if (myNumberPreview) myNumberPreview.innerText = '+91 ' + myNumber;
     if (myDisplayNumber) myDisplayNumber.innerText = "QuickChat";
 
+    if (typeof loadMyProfile === 'function') {
+        loadMyProfile();
+    }
+
     // Load private cached chats for this specific user
     try {
         const cachedChats = localStorage.getItem('quickchat_cached_chats_' + myNumber);
@@ -1094,6 +1098,13 @@ socket.on('login success', (data) => {
     myNumber = data.number;
     chats = {}; // Fresh isolated chat store for this specific user session
 
+    if (typeof loadMyProfile === 'function') {
+        loadMyProfile(data.profile);
+    }
+    if (typeof fetchContactsProfiles === 'function') {
+        fetchContactsProfiles();
+    }
+
     // Load this user's private cached chats (if any)
     try {
         const raw = localStorage.getItem('quickchat_cached_chats_' + myNumber);
@@ -1165,6 +1176,9 @@ socket.on('login success', (data) => {
     
     renderChatList();
     saveLocalCache();
+    if (typeof updateAllUserAvatarElements === 'function') {
+        updateAllUserAvatarElements();
+    }
 });
 
 socket.on('all users', () => {
@@ -1198,14 +1212,12 @@ function closeNewChatDrawer() {
 }
 
 function openProfileDrawer() {
-    if (profileDrawer) {
-        if (profileDisplayPhone) profileDisplayPhone.innerText = '+91 ' + (myNumber || '');
-        profileDrawer.classList.add('active');
-    }
+    if (typeof renderProfileDrawer === 'function') renderProfileDrawer();
+    openDrawer('profile-drawer');
 }
 
 function closeProfileDrawer() {
-    if (profileDrawer) profileDrawer.classList.remove('active');
+    closeDrawer('profile-drawer');
 }
 
 if (headerNewChatBtn) headerNewChatBtn.addEventListener('click', openNewChatDrawer);
@@ -1593,12 +1605,13 @@ function renderChatList(filter = '') {
         };
         
         const isAiChat = friendNumber === 'QuickChat AI';
+        const contactProfile = isAiChat ? null : (typeof getContactProfile === 'function' ? getContactProfile(friendNumber) : null);
         const displayTitle = isAiChat
             ? `QuickChat AI <i class="fas fa-check-circle" style="color:#00a884; font-size:12.5px; margin-left:4px;" title="Official AI"></i>`
-            : `+91 ${friendNumber}`;
+            : escapeHtml(contactProfile?.name || `+91 ${friendNumber}`);
         const avatarContent = isAiChat
             ? `<div class="avatar" style="background:linear-gradient(135deg, #00a884, #00d2ff, #7b2ff7); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;"><i class="fas fa-robot"></i></div>`
-            : `<div class="avatar"></div>`;
+            : `<div class="avatar" style="${typeof getAvatarStyle === 'function' ? getAvatarStyle(friendNumber) : ''}"></div>`;
 
         chatItem.innerHTML = `
             ${avatarContent}
@@ -1822,11 +1835,18 @@ function openChat(friendNumber) {
     }
     emptyState.style.display = 'none';
     chatPanel.style.display = 'flex';
+    const activeAvatarEl = document.getElementById('active-chat-avatar');
     if (friendNumber === 'QuickChat AI') {
         activeChatTitle.innerHTML = `QuickChat AI <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official AI"></i>`;
         const statusEl = document.getElementById('active-chat-status');
         if (statusEl) {
             statusEl.innerHTML = `<span style="color:#00a884;">online</span>`;
+        }
+        if (activeAvatarEl) {
+            activeAvatarEl.style.backgroundImage = 'none';
+            activeAvatarEl.style.background = 'linear-gradient(135deg, #00a884, #00d2ff, #7b2ff7)';
+            activeAvatarEl.innerHTML = '<i class="fas fa-robot" style="color:#fff; font-size:18px;"></i>';
+            activeAvatarEl.onclick = null;
         }
         if (chats['QuickChat AI'] && chats['QuickChat AI'].length > 0) {
             chats['QuickChat AI'].forEach(m => {
@@ -1836,9 +1856,24 @@ function openChat(friendNumber) {
             });
         }
     } else {
-        activeChatTitle.innerText = "+91 " + friendNumber;
+        const cp = typeof getContactProfile === 'function' ? getContactProfile(friendNumber) : null;
+        activeChatTitle.innerText = (cp && cp.name) || ("+91 " + friendNumber);
         const statusEl = document.getElementById('active-chat-status');
         if (statusEl) statusEl.innerText = 'online';
+        if (activeAvatarEl) {
+            activeAvatarEl.innerHTML = '';
+            activeAvatarEl.style.background = '';
+            const avUrl = (cp && cp.avatar) || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(friendNumber)}`;
+            activeAvatarEl.style.backgroundImage = `url('${avUrl}')`;
+            activeAvatarEl.style.backgroundSize = 'cover';
+            activeAvatarEl.style.backgroundPosition = 'center';
+            activeAvatarEl.onclick = (e) => {
+                e.stopPropagation();
+                if (typeof openPhotoLightbox === 'function') {
+                    openPhotoLightbox(avUrl, (cp && cp.name) || ('+91 ' + friendNumber));
+                }
+            };
+        }
     }
     
     // Add mobile active class to open full screen on mobile
@@ -2975,6 +3010,7 @@ function openDrawer(drawerId) {
         if (drawerId === 'starred-messages-drawer') renderStarredDrawer();
         if (drawerId === 'contact-info-drawer') renderContactInfoDrawer();
         if (drawerId === 'settings-drawer') renderSettingsDrawer();
+        if (drawerId === 'profile-drawer') renderProfileDrawer();
     }
 }
 
@@ -2990,6 +3026,9 @@ function closeAllDrawers() {
 // Drawer Back / Close Button Handlers
 const closeSettingsBtn = document.getElementById('close-settings-drawer');
 if (closeSettingsBtn) closeSettingsBtn.onclick = () => closeDrawer('settings-drawer');
+
+const closeProfileBtn = document.getElementById('close-profile-drawer');
+if (closeProfileBtn) closeProfileBtn.onclick = () => closeDrawer('profile-drawer');
 
 const closeStatusBtn = document.getElementById('close-status-drawer');
 if (closeStatusBtn) closeStatusBtn.onclick = () => closeDrawer('status-drawer');
@@ -3491,10 +3530,11 @@ function renderStarredDrawer() {
 function renderSettingsDrawer() {
     const nameEl = document.getElementById('settings-profile-name');
     const aboutEl = document.getElementById('settings-profile-about');
-    const savedName = localStorage.getItem('quickchat_user_name') || 'QuickChat User';
-    const savedAbout = localStorage.getItem('quickchat_user_about') || 'Hey there! I am using QuickChat.';
-    if (nameEl) nameEl.innerText = savedName;
-    if (aboutEl) aboutEl.innerText = savedAbout;
+    if (nameEl) nameEl.innerText = (typeof myProfile !== 'undefined' && myProfile.name) || ('+91 ' + (myNumber || 'User'));
+    if (aboutEl) aboutEl.innerText = (typeof myProfile !== 'undefined' && myProfile.about) || 'Hey there! I am using QuickChat.';
+    if (typeof updateAllUserAvatarElements === 'function') {
+        updateAllUserAvatarElements();
+    }
 }
 
 const settingsOpenProfileBtn = document.getElementById('settings-open-profile-btn');
@@ -3571,23 +3611,564 @@ if (settingsLogoutBtn) {
 }
 
 // ========================================================
+// 10.5 REAL-TIME WHATSAPP PROFILE & DP SYSTEM (A TO Z)
+// ========================================================
+
+const WHATSAPP_ABOUT_PRESETS = [
+    "Available",
+    "Busy",
+    "At school",
+    "At the movies",
+    "At work",
+    "Battery about to die",
+    "Can't talk, QuickChat only",
+    "In a meeting",
+    "At the gym",
+    "Sleeping",
+    "Urgent calls only"
+];
+
+let myProfile = {
+    name: '',
+    about: 'Hey there! I am using QuickChat.',
+    avatar: ''
+};
+
+let contactsProfiles = {};
+try {
+    const cachedContacts = localStorage.getItem('quickchat_contacts_profiles');
+    if (cachedContacts) contactsProfiles = JSON.parse(cachedContacts);
+} catch(e) {}
+
+// Helper to get contact profile
+function getContactProfile(number) {
+    if (!number) return { name: '', about: 'Hey there! I am using QuickChat.', avatar: '' };
+    if (number === myNumber) return myProfile;
+    if (number === 'QuickChat AI') {
+        return {
+            name: 'QuickChat AI',
+            about: 'Official AI Assistant created by Anshuu (Anshul Kushwaha)',
+            avatar: ''
+        };
+    }
+    return contactsProfiles[number] || {
+        name: '+91 ' + number,
+        about: 'Hey there! I am using QuickChat.',
+        avatar: ''
+    };
+}
+
+// Helper to get avatar CSS background style
+function getAvatarStyle(phone) {
+    if (!phone || phone === 'QuickChat AI') return '';
+    const prof = getContactProfile(phone);
+    if (prof && prof.avatar) {
+        return `background-image:url('${prof.avatar}'); background-size:cover; background-position:center;`;
+    }
+    const seed = encodeURIComponent(phone);
+    return `background-image:url('https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}'); background-size:cover; background-position:center;`;
+}
+
+// Update all user avatar elements on screen
+function updateAllUserAvatarElements() {
+    const num = myNumber || localStorage.getItem('quickchat_session_num') || '';
+    const userAvatarUrl = myProfile.avatar || (num ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(num)}` : '');
+    
+    // Rail avatar
+    const railAvatar = document.getElementById('rail-user-avatar');
+    if (railAvatar && userAvatarUrl) {
+        railAvatar.style.backgroundImage = `url('${userAvatarUrl}')`;
+        railAvatar.style.backgroundSize = 'cover';
+        railAvatar.style.backgroundPosition = 'center';
+    }
+
+    // Settings drawer avatar
+    const settingsAvatar = document.getElementById('settings-avatar-preview');
+    if (settingsAvatar && userAvatarUrl) {
+        settingsAvatar.style.backgroundImage = `url('${userAvatarUrl}')`;
+        settingsAvatar.style.backgroundSize = 'cover';
+        settingsAvatar.style.backgroundPosition = 'center';
+    }
+
+    // Profile big avatar
+    const bigAvatarImg = document.getElementById('profile-big-avatar-img');
+    if (bigAvatarImg && userAvatarUrl) {
+        bigAvatarImg.style.backgroundImage = `url('${userAvatarUrl}')`;
+        bigAvatarImg.style.backgroundSize = 'cover';
+        bigAvatarImg.style.backgroundPosition = 'center';
+    }
+
+    // Onboarding avatar
+    const onboardingAvatar = document.getElementById('onboarding-avatar-img');
+    if (onboardingAvatar && userAvatarUrl) {
+        onboardingAvatar.src = userAvatarUrl;
+    }
+}
+
+// Load current user profile from server or local cache
+function loadMyProfile(serverProfile) {
+    const num = myNumber || localStorage.getItem('quickchat_session_num') || '';
+    const localName = (num && localStorage.getItem('quickchat_profile_name_' + num)) || localStorage.getItem('quickchat_my_name') || '';
+    const localAbout = (num && localStorage.getItem('quickchat_profile_about_' + num)) || localStorage.getItem('quickchat_user_about') || 'Hey there! I am using QuickChat.';
+    const localAvatar = (num && localStorage.getItem('quickchat_profile_avatar_' + num)) || '';
+
+    myProfile.name = (serverProfile && serverProfile.name) || localName || ('+91 ' + (num || 'User'));
+    myProfile.about = (serverProfile && serverProfile.about) || localAbout || 'Hey there! I am using QuickChat.';
+    myProfile.avatar = (serverProfile && serverProfile.avatar) || localAvatar || '';
+
+    if (num) {
+        localStorage.setItem('quickchat_profile_name_' + num, myProfile.name);
+        localStorage.setItem('quickchat_profile_about_' + num, myProfile.about);
+        if (myProfile.avatar) localStorage.setItem('quickchat_profile_avatar_' + num, myProfile.avatar);
+        localStorage.setItem('quickchat_my_name', myProfile.name);
+        localStorage.setItem('quickchat_user_name', myProfile.name);
+        localStorage.setItem('quickchat_user_about', myProfile.about);
+    }
+
+    updateAllUserAvatarElements();
+}
+
+// Save my profile to server and localStorage
+function saveMyProfileToServer(silent = false) {
+    const num = myNumber || localStorage.getItem('quickchat_session_num');
+    if (num) {
+        localStorage.setItem('quickchat_profile_name_' + num, myProfile.name);
+        localStorage.setItem('quickchat_profile_about_' + num, myProfile.about);
+        localStorage.setItem('quickchat_my_name', myProfile.name);
+        localStorage.setItem('quickchat_user_name', myProfile.name);
+        localStorage.setItem('quickchat_user_about', myProfile.about);
+        if (myProfile.avatar) {
+            localStorage.setItem('quickchat_profile_avatar_' + num, myProfile.avatar);
+        } else {
+            localStorage.removeItem('quickchat_profile_avatar_' + num);
+        }
+    }
+
+    if (socket && socket.connected) {
+        socket.emit('update profile', {
+            number: num,
+            name: myProfile.name,
+            about: myProfile.about,
+            avatar: myProfile.avatar
+        });
+    }
+
+    updateAllUserAvatarElements();
+    renderProfileDrawer();
+    renderSettingsDrawer();
+    if (!silent) {
+        showWhatsAppToast("Profile updated successfully", "success");
+    }
+}
+
+// Fetch contacts profiles
+function fetchContactsProfiles() {
+    const numbers = Object.keys(chats).filter(n => n !== 'QuickChat AI' && n !== myNumber);
+    if (numbers.length > 0 && socket && socket.connected) {
+        socket.emit('get contacts profiles', { numbers });
+    }
+}
+
+// Compress image via HTML5 Canvas (max 320x320 JPEG for fast performance)
+function compressProfileImage(file, callback) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 320;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_SIZE) {
+                    height = Math.round((height * MAX_SIZE) / width);
+                    width = MAX_SIZE;
+                }
+            } else {
+                if (height > MAX_SIZE) {
+                    width = Math.round((width * MAX_SIZE) / height);
+                    height = MAX_SIZE;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            callback(compressedDataUrl);
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Render Profile Drawer
+function renderProfileDrawer() {
+    const bigAvatarImg = document.getElementById('profile-big-avatar-img');
+    const nameDisplay = document.getElementById('profile-display-name');
+    const aboutDisplay = document.getElementById('profile-display-about');
+    const phoneDisplay = document.getElementById('profile-display-phone');
+    const presetsList = document.getElementById('profile-about-presets-list');
+
+    const num = myNumber || localStorage.getItem('quickchat_session_num') || '';
+    const userAvatarUrl = myProfile.avatar || (num ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(num)}` : '');
+
+    if (bigAvatarImg && userAvatarUrl) {
+        bigAvatarImg.style.backgroundImage = `url('${userAvatarUrl}')`;
+        bigAvatarImg.style.backgroundSize = 'cover';
+        bigAvatarImg.style.backgroundPosition = 'center';
+    }
+
+    if (nameDisplay) {
+        nameDisplay.innerText = myProfile.name || ('+91 ' + (num || 'User'));
+    }
+    if (aboutDisplay) {
+        aboutDisplay.innerText = myProfile.about || 'Hey there! I am using QuickChat.';
+    }
+    if (phoneDisplay) {
+        phoneDisplay.innerText = '+91 ' + (num ? formatIndianDisplayPhone(num) : '...');
+    }
+
+    // Render Status Presets
+    if (presetsList) {
+        presetsList.innerHTML = '';
+        WHATSAPP_ABOUT_PRESETS.forEach(preset => {
+            const isCurrent = (myProfile.about || '').trim() === preset.trim();
+            const item = document.createElement('div');
+            item.className = 'wa-profile-preset-item' + (isCurrent ? ' active' : '');
+            item.innerHTML = `
+                <span>${preset}</span>
+                <i class="fas fa-check" style="${isCurrent ? 'display:inline-block;' : 'display:none;'}"></i>
+            `;
+            item.onclick = () => {
+                myProfile.about = preset;
+                saveMyProfileToServer();
+            };
+            presetsList.appendChild(item);
+        });
+    }
+
+    // Reset edit rows to view mode
+    const nameViewRow = document.getElementById('profile-name-view-row');
+    const nameEditRow = document.getElementById('profile-name-edit-row');
+    if (nameViewRow) nameViewRow.style.display = 'flex';
+    if (nameEditRow) nameEditRow.style.display = 'none';
+
+    const aboutViewRow = document.getElementById('profile-about-view-row');
+    const aboutEditRow = document.getElementById('profile-about-edit-row');
+    if (aboutViewRow) aboutViewRow.style.display = 'flex';
+    if (aboutEditRow) aboutEditRow.style.display = 'none';
+}
+
+// Setup Profile Event Listeners
+function setupProfileListeners() {
+    // 1. Name inline edit
+    const editNameBtn = document.getElementById('edit-profile-name-btn');
+    const nameViewRow = document.getElementById('profile-name-view-row');
+    const nameEditRow = document.getElementById('profile-name-edit-row');
+    const nameInput = document.getElementById('profile-name-input');
+    const nameCharCount = document.getElementById('profile-name-char-count');
+    const saveNameBtn = document.getElementById('save-profile-name-btn');
+    const cancelNameBtn = document.getElementById('cancel-profile-name-btn');
+
+    if (editNameBtn && nameViewRow && nameEditRow && nameInput) {
+        editNameBtn.onclick = () => {
+            nameViewRow.style.display = 'none';
+            nameEditRow.style.display = 'flex';
+            nameInput.value = myProfile.name || '';
+            if (nameCharCount) nameCharCount.innerText = 25 - nameInput.value.length;
+            nameInput.focus();
+        };
+
+        nameInput.oninput = () => {
+            if (nameCharCount) nameCharCount.innerText = 25 - nameInput.value.length;
+        };
+
+        const doSaveName = () => {
+            const val = nameInput.value.trim();
+            if (val) {
+                myProfile.name = val;
+                saveMyProfileToServer();
+            }
+            nameViewRow.style.display = 'flex';
+            nameEditRow.style.display = 'none';
+        };
+
+        if (saveNameBtn) saveNameBtn.onclick = doSaveName;
+        nameInput.onkeypress = (e) => {
+            if (e.key === 'Enter') doSaveName();
+        };
+
+        if (cancelNameBtn) {
+            cancelNameBtn.onclick = () => {
+                nameViewRow.style.display = 'flex';
+                nameEditRow.style.display = 'none';
+            };
+        }
+    }
+
+    // 2. About inline edit
+    const editAboutBtn = document.getElementById('edit-profile-about-btn');
+    const aboutViewRow = document.getElementById('profile-about-view-row');
+    const aboutEditRow = document.getElementById('profile-about-edit-row');
+    const aboutInput = document.getElementById('profile-about-input');
+    const aboutCharCount = document.getElementById('profile-about-char-count');
+    const saveAboutBtn = document.getElementById('save-profile-about-btn');
+    const cancelAboutBtn = document.getElementById('cancel-profile-about-btn');
+
+    if (editAboutBtn && aboutViewRow && aboutEditRow && aboutInput) {
+        editAboutBtn.onclick = () => {
+            aboutViewRow.style.display = 'none';
+            aboutEditRow.style.display = 'flex';
+            aboutInput.value = myProfile.about || '';
+            if (aboutCharCount) aboutCharCount.innerText = 139 - aboutInput.value.length;
+            aboutInput.focus();
+        };
+
+        aboutInput.oninput = () => {
+            if (aboutCharCount) aboutCharCount.innerText = 139 - aboutInput.value.length;
+        };
+
+        const doSaveAbout = () => {
+            const val = aboutInput.value.trim();
+            if (val) {
+                myProfile.about = val;
+                saveMyProfileToServer();
+            }
+            aboutViewRow.style.display = 'flex';
+            aboutEditRow.style.display = 'none';
+        };
+
+        if (saveAboutBtn) saveAboutBtn.onclick = doSaveAbout;
+        aboutInput.onkeypress = (e) => {
+            if (e.key === 'Enter') doSaveAbout();
+        };
+
+        if (cancelAboutBtn) {
+            cancelAboutBtn.onclick = () => {
+                aboutViewRow.style.display = 'flex';
+                aboutEditRow.style.display = 'none';
+            };
+        }
+    }
+
+    // 3. Profile Big Avatar Click -> Open Action Modal
+    const bigAvatarWrap = document.getElementById('profile-big-avatar');
+    const photoOptionsModal = document.getElementById('profile-photo-options-modal');
+    const closePhotoOptionsBtn = document.getElementById('close-photo-options-btn');
+
+    if (bigAvatarWrap && photoOptionsModal) {
+        bigAvatarWrap.onclick = () => {
+            photoOptionsModal.style.display = 'flex';
+        };
+    }
+    if (closePhotoOptionsBtn && photoOptionsModal) {
+        closePhotoOptionsBtn.onclick = () => {
+            photoOptionsModal.style.display = 'none';
+        };
+    }
+
+    // Modal Action: View Photo (Lightbox)
+    const btnViewPhoto = document.getElementById('btn-view-profile-photo');
+    if (btnViewPhoto) {
+        btnViewPhoto.onclick = () => {
+            if (photoOptionsModal) photoOptionsModal.style.display = 'none';
+            openPhotoLightbox(
+                myProfile.avatar || (myNumber ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(myNumber)}` : ''),
+                myProfile.name || 'Your profile photo'
+            );
+        };
+    }
+
+    // Modal Action: Upload Photo
+    const btnUploadPhoto = document.getElementById('btn-upload-profile-photo');
+    const photoFileInput = document.getElementById('profile-photo-file-input');
+    if (btnUploadPhoto && photoFileInput) {
+        btnUploadPhoto.onclick = () => {
+            if (photoOptionsModal) photoOptionsModal.style.display = 'none';
+            photoFileInput.click();
+        };
+        photoFileInput.onchange = (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file) {
+                compressProfileImage(file, (compressedDataUrl) => {
+                    myProfile.avatar = compressedDataUrl;
+                    saveMyProfileToServer();
+                });
+            }
+            photoFileInput.value = '';
+        };
+    }
+
+    // Modal Action: Take Photo (Camera)
+    const btnTakePhoto = document.getElementById('btn-take-profile-photo');
+    const cameraModal = document.getElementById('profile-camera-modal');
+    const cameraVideo = document.getElementById('profile-camera-video');
+    const closeCameraBtn = document.getElementById('close-camera-modal-btn');
+    const cameraCaptureBtn = document.getElementById('camera-capture-btn');
+    let cameraStream = null;
+
+    if (btnTakePhoto && cameraModal && cameraVideo) {
+        btnTakePhoto.onclick = async () => {
+            if (photoOptionsModal) photoOptionsModal.style.display = 'none';
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 640 }, facingMode: 'user' }
+                });
+                cameraVideo.srcObject = cameraStream;
+                cameraModal.style.display = 'flex';
+            } catch (err) {
+                console.error("Camera access error:", err);
+                showWhatsAppToast("Camera not accessible. Please choose 'Upload photo'.", "danger");
+            }
+        };
+
+        const stopCamera = () => {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+            }
+            if (cameraModal) cameraModal.style.display = 'none';
+        };
+
+        if (closeCameraBtn) closeCameraBtn.onclick = stopCamera;
+
+        if (cameraCaptureBtn) {
+            cameraCaptureBtn.onclick = () => {
+                if (!cameraVideo) return;
+                const canvas = document.createElement('canvas');
+                const size = 320;
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+
+                // Center square crop
+                const vWidth = cameraVideo.videoWidth || 320;
+                const vHeight = cameraVideo.videoHeight || 320;
+                const minSide = Math.min(vWidth, vHeight);
+                const sx = (vWidth - minSide) / 2;
+                const sy = (vHeight - minSide) / 2;
+
+                ctx.drawImage(cameraVideo, sx, sy, minSide, minSide, 0, 0, size, size);
+                const capturedDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+
+                myProfile.avatar = capturedDataUrl;
+                stopCamera();
+                saveMyProfileToServer();
+            };
+        }
+    }
+
+    // Modal Action: Generate / Roll Avatar Style
+    const btnRollAvatar = document.getElementById('btn-roll-profile-avatar');
+    let avatarSeedCounter = 0;
+    if (btnRollAvatar) {
+        btnRollAvatar.onclick = () => {
+            if (photoOptionsModal) photoOptionsModal.style.display = 'none';
+            avatarSeedCounter++;
+            const styles = ['avataaars', 'bottts', 'personas', 'lorelei'];
+            const chosenStyle = styles[avatarSeedCounter % styles.length];
+            const randomSeed = (myNumber || 'User') + '_' + Math.random().toString(36).substr(2, 6);
+            myProfile.avatar = `https://api.dicebear.com/7.x/${chosenStyle}/svg?seed=${encodeURIComponent(randomSeed)}`;
+            saveMyProfileToServer();
+        };
+    }
+
+    // Modal Action: Remove Photo
+    const btnRemovePhoto = document.getElementById('btn-remove-profile-photo');
+    if (btnRemovePhoto) {
+        btnRemovePhoto.onclick = () => {
+            if (photoOptionsModal) photoOptionsModal.style.display = 'none';
+            myProfile.avatar = '';
+            saveMyProfileToServer();
+        };
+    }
+
+    // Lightbox Modal Handlers
+    const lightboxModal = document.getElementById('wa-photo-lightbox');
+    const lightboxCloseBtn = document.getElementById('lightbox-close-btn');
+    if (lightboxCloseBtn && lightboxModal) {
+        lightboxCloseBtn.onclick = () => {
+            lightboxModal.style.display = 'none';
+        };
+    }
+    if (lightboxModal) {
+        lightboxModal.onclick = (e) => {
+            if (e.target === lightboxModal || e.target.classList.contains('wa-lightbox-body')) {
+                lightboxModal.style.display = 'none';
+            }
+        };
+    }
+
+    // 3-dots Menu "Profile" option
+    const menuOpenProfile = document.getElementById('menu-open-profile');
+    if (menuOpenProfile) {
+        menuOpenProfile.onclick = () => {
+            closeDropdownMenu();
+            openProfileDrawer();
+        };
+    }
+}
+
+// Lightbox opener helper
+function openPhotoLightbox(photoUrl, name) {
+    const lightbox = document.getElementById('wa-photo-lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxTitle = document.getElementById('lightbox-user-name');
+    const lightboxDownload = document.getElementById('lightbox-download-btn');
+
+    if (lightbox && lightboxImg) {
+        lightboxImg.src = photoUrl || 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png';
+        if (lightboxTitle) lightboxTitle.innerText = name || 'Profile photo';
+        if (lightboxDownload) lightboxDownload.href = lightboxImg.src;
+        lightbox.style.display = 'flex';
+    }
+}
+
+// ========================================================
 // 11. CONTACT INFO DRAWER
 // ========================================================
 function renderContactInfoDrawer() {
     const body = document.getElementById('contact-info-body');
     if (!body || !activeChat) return;
     const isMuted = mutedChats.includes(activeChat);
-    const msgCount = (chats[activeChat] || []).length;
+    const isAi = activeChat === 'QuickChat AI';
+    const cp = isAi ? { name: 'QuickChat AI', about: 'Official AI Assistant created by Anshuu (Anshul Kushwaha)', avatar: '' } : getContactProfile(activeChat);
+    const msgList = chats[activeChat] || [];
+    const mediaCount = msgList.filter(m => m.image || m.audio).length;
+    const contactAvatar = isAi ? '' : (cp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(activeChat)}`);
+
+    const avatarHTML = isAi
+        ? `<div class="avatar" style="width:120px; height:120px; margin:0 auto 14px auto; background:linear-gradient(135deg, #00a884, #00d2ff, #7b2ff7); display:flex; align-items:center; justify-content:center; color:#fff; font-size:42px;"><i class="fas fa-robot"></i></div>`
+        : `<div class="avatar" id="contact-info-big-avatar" style="width:120px; height:120px; margin:0 auto 14px auto; background-image:url('${contactAvatar}'); background-size:cover; background-position:center; cursor:pointer;" title="Click to view photo"></div>`;
 
     body.innerHTML = `
         <div style="background:var(--wa-bg-drawer-card); padding:24px 16px; text-align:center; border-bottom:1px solid var(--wa-border-drawer);">
-            <div class="avatar" style="width:120px; height:120px; margin:0 auto 14px auto; font-size:42px;"></div>
-            <div style="font-size:18px; font-weight:600; color:var(--wa-text-drawer-card);">+91 ${activeChat}</div>
+            ${avatarHTML}
+            <div style="font-size:18px; font-weight:600; color:var(--wa-text-drawer-card);">${escapeHtml(cp.name || ('+91 ' + activeChat))}</div>
             <div style="font-size:13px; color:var(--wa-text-pill); margin-top:4px;">online</div>
         </div>
         <div class="wa-profile-card">
             <span class="wa-profile-label">About</span>
-            <div class="wa-profile-val-row">Hey there! I am using QuickChat.</div>
+            <div class="wa-profile-val-row" style="font-size:15px; color:var(--wa-text-drawer-card);">${escapeHtml(cp.about || 'Hey there! I am using QuickChat.')}</div>
+        </div>
+        ${!isAi ? `
+        <div class="wa-profile-card">
+            <span class="wa-profile-label">Phone number</span>
+            <div class="wa-profile-val-row">
+                <span style="font-weight:600; color:var(--wa-chat-header-title, #111b21);">+91 ${formatIndianDisplayPhone(activeChat)}</span>
+                <i class="fas fa-shield-alt" style="color:#00a884; font-size:15px;" title="Verified"></i>
+            </div>
+        </div>` : ''}
+        <div class="wa-profile-card">
+            <span class="wa-profile-label">Media, links and docs</span>
+            <div class="wa-profile-val-row">
+                <span>${mediaCount} shared files</span>
+                <i class="fas fa-chevron-right wa-profile-edit-icon"></i>
+            </div>
         </div>
         <div class="wa-settings-list" style="margin-top:10px;">
             <div class="wa-settings-item" id="info-mute-toggle">
@@ -3611,14 +4192,23 @@ function renderContactInfoDrawer() {
                     <div class="wa-settings-item-desc">Messages and calls are end-to-end encrypted. Tap to verify.</div>
                 </div>
             </div>
+            ${!isAi ? `
             <div class="wa-settings-item logout" id="info-block-btn">
                 <i class="fas fa-ban wa-settings-item-icon" style="color:#ea4335;"></i>
                 <div class="wa-settings-item-content">
                     <div class="wa-settings-item-title" style="color:#ea4335;">Block +91 ${activeChat}</div>
                 </div>
-            </div>
+            </div>` : ''}
         </div>
     `;
+
+    // Click contact big avatar to open lightbox
+    const contactBigAvatar = document.getElementById('contact-info-big-avatar');
+    if (contactBigAvatar && contactAvatar) {
+        contactBigAvatar.onclick = () => {
+            openPhotoLightbox(contactAvatar, cp.name || ('+91 ' + activeChat));
+        };
+    }
 
     const infoMuteToggle = document.getElementById('info-mute-toggle');
     if (infoMuteToggle) {
@@ -3651,6 +4241,65 @@ if (chatHeaderInfoClickable) {
         if (activeChat) openDrawer('contact-info-drawer');
     });
 }
+
+// Socket Real-time Profile Listeners
+socket.on('user profile changed', (data) => {
+    if (!data || !data.number) return;
+    contactsProfiles[data.number] = {
+        name: data.name || ('+91 ' + data.number),
+        about: data.about || 'Hey there! I am using QuickChat.',
+        avatar: data.avatar || ''
+    };
+    try {
+        localStorage.setItem('quickchat_contacts_profiles', JSON.stringify(contactsProfiles));
+    } catch(e) {}
+
+    if (data.number === myNumber) {
+        myProfile.name = data.name || myProfile.name;
+        myProfile.about = data.about || myProfile.about;
+        if (data.avatar !== undefined) myProfile.avatar = data.avatar;
+        updateAllUserAvatarElements();
+        renderProfileDrawer();
+        renderSettingsDrawer();
+    }
+
+    if (activeChat === data.number) {
+        const cp = getContactProfile(data.number);
+        const titleEl = document.getElementById('active-chat-title');
+        if (titleEl) titleEl.innerText = cp.name || ('+91 ' + data.number);
+        const av = document.getElementById('active-chat-avatar');
+        if (av) {
+            const avUrl = cp.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(data.number)}`;
+            av.style.backgroundImage = `url('${avUrl}')`;
+            av.style.backgroundSize = 'cover';
+        }
+        const contactDrawer = document.getElementById('contact-info-drawer');
+        if (contactDrawer && contactDrawer.classList.contains('active')) {
+            renderContactInfoDrawer();
+        }
+    }
+    renderChatList();
+});
+
+socket.on('contacts profiles data', (data) => {
+    if (data && typeof data === 'object') {
+        Object.assign(contactsProfiles, data);
+        try {
+            localStorage.setItem('quickchat_contacts_profiles', JSON.stringify(contactsProfiles));
+        } catch(e) {}
+        renderChatList();
+        if (activeChat && contactsProfiles[activeChat]) {
+            const cp = contactsProfiles[activeChat];
+            const titleEl = document.getElementById('active-chat-title');
+            if (titleEl) titleEl.innerText = cp.name || ('+91 ' + activeChat);
+            const av = document.getElementById('active-chat-avatar');
+            if (av && cp.avatar) {
+                av.style.backgroundImage = `url('${cp.avatar}')`;
+                av.style.backgroundSize = 'cover';
+            }
+        }
+    }
+});
 
 // ========================================================
 // 12. CHAT HEADER MENU & ACTIONS
@@ -4591,4 +5240,16 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
         })();
     }
 };
+
+// Initialize Profile Subsystem on DOM ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof loadMyProfile === 'function') loadMyProfile();
+        if (typeof setupProfileListeners === 'function') setupProfileListeners();
+    });
+} else {
+    if (typeof loadMyProfile === 'function') loadMyProfile();
+    if (typeof setupProfileListeners === 'function') setupProfileListeners();
+}
+
 
