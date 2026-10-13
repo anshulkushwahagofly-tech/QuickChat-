@@ -595,8 +595,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- ADVANCED QUICKCHAT AI BRAIN (Server LLM + Image Gen + Auto-Retry) ---
-    socket.on('ask ai', async ({ requestId, prompt, history = [], hasImage = false, hasAudio = false }) => {
+    // --- ADVANCED QUICKCHAT AI BRAIN (Supports Google Gemini, Groq, OpenAI, OpenRouter + Built-in Free API) ---
+    socket.on('set ai api key', ({ apiKey }) => {
+        if (typeof apiKey === 'string') {
+            global.customAiApiKey = apiKey.trim();
+        }
+    });
+
+    socket.on('ask ai', async ({ requestId, prompt, history = [], hasImage = false, hasAudio = false, apiKey = '' }) => {
         try {
             const userText = String(prompt || '').trim();
 
@@ -614,7 +620,7 @@ io.on('connection', (socket) => {
                 });
             }
 
-            // 2. Call Live Generative LLM API with clean conversation memory & auto-retry
+            // 2. Prepare conversation memory & system instructions
             const systemInstruction = [
                 "You are QuickChat AI, an intelligent, accurate, and friendly AI assistant inside QuickChat (like Meta AI on WhatsApp).",
                 "Never call yourself ChatGPT; your name is QuickChat AI.",
@@ -635,17 +641,92 @@ io.on('connection', (socket) => {
                     }))
                 : [];
 
+            const userContent = hasImage
+                ? `[User shared a photo] ${userText || 'Describe and comment on this photo warmly.'}`
+                : (hasAudio ? `[User sent a voice note] ${userText || 'Reply warmly to my voice message.'}` : userText);
+
             const messagesPayload = [
                 { role: 'system', content: systemInstruction },
                 ...formattedHistory,
-                {
-                    role: 'user',
-                    content: hasImage
-                        ? `[User shared a photo] ${userText || 'Describe and comment on this photo warmly.'}`
-                        : (hasAudio ? `[User sent a voice note] ${userText || 'Reply warmly to my voice message.'}` : userText)
-                }
+                { role: 'user', content: userContent }
             ];
 
+            const activeKey = String(
+                apiKey ||
+                global.customAiApiKey ||
+                process.env.GEMINI_API_KEY ||
+                process.env.GROQ_API_KEY ||
+                process.env.OPENAI_API_KEY ||
+                process.env.OPENROUTER_API_KEY ||
+                ''
+            ).trim();
+
+            // 2A. If a Custom API Key (Gemini / Groq / OpenRouter / OpenAI) is configured, call it directly!
+            if (activeKey) {
+                try {
+                    if (activeKey.startsWith('AIza')) {
+                        // Official Google Gemini API
+                        const geminiContents = [
+                            ...formattedHistory.map(m => ({
+                                role: m.role === 'assistant' ? 'model' : 'user',
+                                parts: [{ text: m.content }]
+                            })),
+                            { role: 'user', parts: [{ text: userContent }] }
+                        ];
+                        for (const modelName of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+                            const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(activeKey)}`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    systemInstruction: { parts: [{ text: systemInstruction }] },
+                                    contents: geminiContents
+                                })
+                            });
+                            if (gRes.ok) {
+                                const gData = await gRes.json();
+                                const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                                if (gText && gText.trim()) {
+                                    return socket.emit('ai response', { requestId, text: gText.trim() });
+                                }
+                            }
+                        }
+                    } else {
+                        // Groq (gsk_...), OpenRouter (sk-or-...), or OpenAI (sk-...)
+                        const isGroq = activeKey.startsWith('gsk_');
+                        const isOpenRouter = activeKey.startsWith('sk-or-');
+                        const endpoint = isGroq
+                            ? 'https://api.groq.com/openai/v1/chat/completions'
+                            : (isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions');
+                        const modelName = isGroq
+                            ? 'llama-3.3-70b-versatile'
+                            : (isOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini');
+
+                        const cRes = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${activeKey}`
+                            },
+                            body: JSON.stringify({
+                                model: modelName,
+                                messages: messagesPayload,
+                                temperature: 0.7
+                            })
+                        });
+                        if (cRes.ok) {
+                            const cData = await cRes.json();
+                            const cText = cData?.choices?.[0]?.message?.content;
+                            if (cText && cText.trim()) {
+                                return socket.emit('ai response', { requestId, text: cText.trim() });
+                            }
+                        }
+                    }
+                } catch (customApiErr) {
+                    console.warn("Custom AI API error, falling back to built-in free API:", customApiErr.message);
+                }
+            }
+
+            // 2B. Built-in Free Generative LLM API with Auto-Retry
             for (let attempt = 1; attempt <= 3; attempt++) {
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 22000);

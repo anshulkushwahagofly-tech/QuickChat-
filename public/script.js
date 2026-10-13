@@ -1809,9 +1809,12 @@ function openChat(friendNumber) {
     emptyState.style.display = 'none';
     chatPanel.style.display = 'flex';
     if (friendNumber === 'QuickChat AI') {
-        activeChatTitle.innerHTML = `QuickChat AI <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official AI"></i>`;
+        activeChatTitle.innerHTML = `QuickChat AI <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official AI"></i> <button type="button" onclick="openAiApiKeyDialog(event)" style="margin-left:8px; background:rgba(0,168,132,0.15); color:#00a884; border:1px solid rgba(0,168,132,0.4); border-radius:12px; padding:2px 9px; font-size:11px; font-weight:600; cursor:pointer;">🔑 ${localStorage.getItem('quickchat_ai_api_key') ? 'API Connected' : 'Connect API'}</button>`;
         const statusEl = document.getElementById('active-chat-status');
-        if (statusEl) statusEl.innerHTML = `<span style="color:#00a884;">✨ Official AI Brain • Ask me anything</span>`;
+        if (statusEl) {
+            const hasKey = !!localStorage.getItem('quickchat_ai_api_key');
+            statusEl.innerHTML = `<span style="color:#00a884;">✨ ${hasKey ? 'Custom AI API Active (Gemini/Groq/OpenAI)' : 'Built-in Free AI API Active • Ask me anything'}</span>`;
+        }
     } else {
         activeChatTitle.innerText = "+91 " + friendNumber;
         const statusEl = document.getElementById('active-chat-status');
@@ -3989,6 +3992,74 @@ if (promoBanner) {
 // 18. ADVANCED QUICKCHAT AI BRAIN (LLM + WIKIPEDIA + LOCAL REASONING + IMAGE GEN)
 // ========================================================
 
+function updateAiHeaderBadge() {
+    if (activeChat !== 'QuickChat AI') return;
+    const hasKey = !!localStorage.getItem('quickchat_ai_api_key');
+    if (activeChatTitle) {
+        activeChatTitle.innerHTML = `QuickChat AI <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official AI"></i> <button type="button" onclick="openAiApiKeyDialog(event)" style="margin-left:8px; background:rgba(0,168,132,0.15); color:#00a884; border:1px solid rgba(0,168,132,0.4); border-radius:12px; padding:2px 9px; font-size:11px; font-weight:600; cursor:pointer;">🔑 ${hasKey ? 'API Connected' : 'Connect API'}</button>`;
+    }
+    const statusEl = document.getElementById('active-chat-status');
+    if (statusEl) {
+        statusEl.innerHTML = `<span style="color:#00a884;">✨ ${hasKey ? 'Custom AI API Active (Gemini/Groq/OpenAI)' : 'Built-in Free AI API Active • Ask me anything'}</span>`;
+    }
+}
+
+function openAiApiKeyDialog(e) {
+    if (e) e.stopPropagation();
+    let modal = document.getElementById('ai-api-key-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'ai-api-key-modal';
+        modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:99999; display:flex; align-items:center; justify-content:center; padding:16px;';
+        modal.innerHTML = `
+            <div style="background:var(--wa-bg-sidebar, #111b21); color:var(--wa-text-primary, #e9edef); width:100%; max-width:440px; border-radius:14px; padding:22px; box-shadow:0 12px 40px rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.1);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="margin:0; font-size:17px; color:#00a884;"><i class="fas fa-key"></i> Connect Official AI API Key</h3>
+                    <button type="button" id="ai-api-close-btn" style="background:none; border:none; color:var(--wa-text-secondary, #8696a0); font-size:18px; cursor:pointer;">✕</button>
+                </div>
+                <p style="font-size:13px; line-height:1.5; color:var(--wa-text-secondary, #8696a0); margin:0 0 12px 0;">
+                    QuickChat AI mein pehle se <b>Built-in Free AI API</b> juda hua hai. Agar aap <b>0.3 second ultra-fast response</b> chahte hain, toh apni Free <b>Google Gemini</b>, <b>Groq</b>, ya <b>OpenAI</b> API Key yahan daalein:
+                </p>
+                <div style="font-size:12px; margin-bottom:12px; display:flex; gap:8px; flex-wrap:wrap;">
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#00a884; text-decoration:none; background:rgba(0,168,132,0.12); padding:5px 10px; border-radius:8px; font-weight:600;">🔗 Get Free Gemini Key (AIza...)</a>
+                    <a href="https://console.groq.com/keys" target="_blank" style="color:#00a884; text-decoration:none; background:rgba(0,168,132,0.12); padding:5px 10px; border-radius:8px; font-weight:600;">⚡ Get Free Groq Key (gsk_...)</a>
+                </div>
+                <input type="text" id="ai-api-key-input" placeholder="Paste API Key: AIzaSy... or gsk_... or sk-..." style="width:100%; box-sizing:border-box; padding:11px 12px; border-radius:8px; border:1px solid rgba(0,168,132,0.5); background:var(--wa-bg-search-box, #202c33); color:var(--wa-text-primary, #e9edef); font-size:13.5px; margin-bottom:16px; outline:none;" />
+                <div style="display:flex; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
+                    <button type="button" id="ai-api-reset-btn" style="padding:8px 13px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:transparent; color:var(--wa-text-secondary, #8696a0); font-size:12.5px; cursor:pointer;">Use Built-in Free AI</button>
+                    <button type="button" id="ai-api-save-btn" style="padding:8px 16px; border-radius:8px; border:none; background:#00a884; color:#fff; font-weight:600; font-size:13px; cursor:pointer;">Save & Connect</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('ai-api-close-btn').onclick = () => { modal.style.display = 'none'; };
+        document.getElementById('ai-api-reset-btn').onclick = () => {
+            localStorage.removeItem('quickchat_ai_api_key');
+            if (socket && socket.connected) socket.emit('set ai api key', { apiKey: '' });
+            modal.style.display = 'none';
+            updateAiHeaderBadge();
+            showWhatsAppToast("Switched to Built-in Free AI API! 🤖", "info");
+        };
+        document.getElementById('ai-api-save-btn').onclick = () => {
+            const val = (document.getElementById('ai-api-key-input').value || '').trim();
+            if (!val) {
+                showWhatsAppToast("Please paste a valid API Key or click 'Use Built-in Free AI'.", "danger");
+                return;
+            }
+            localStorage.setItem('quickchat_ai_api_key', val);
+            if (socket && socket.connected) socket.emit('set ai api key', { apiKey: val });
+            modal.style.display = 'none';
+            updateAiHeaderBadge();
+            const provider = val.startsWith('AIza') ? 'Google Gemini' : (val.startsWith('gsk_') ? 'Groq LLaMA-3.3' : (val.startsWith('sk-or-') ? 'OpenRouter' : 'OpenAI'));
+            showWhatsAppToast(`✅ ${provider} API Connected Successfully!`, "success");
+        };
+    }
+    const inputEl = document.getElementById('ai-api-key-input');
+    if (inputEl) inputEl.value = localStorage.getItem('quickchat_ai_api_key') || '';
+    modal.style.display = 'flex';
+}
+
 function setAiThinkingStatus(isThinking) {
     if (activeChat !== 'QuickChat AI') return;
     const statusEl = document.getElementById('active-chat-status');
@@ -3996,7 +4067,8 @@ function setAiThinkingStatus(isThinking) {
     if (isThinking) {
         statusEl.innerHTML = `<span style="color:#00a884; font-weight:600;"><i class="fas fa-sparkles"></i> ✨ QuickChat AI is thinking...</span>`;
     } else {
-        statusEl.innerHTML = `<span style="color:#00a884;">✨ Official AI Brain • Ask me anything</span>`;
+        const hasKey = !!localStorage.getItem('quickchat_ai_api_key');
+        statusEl.innerHTML = `<span style="color:#00a884;">✨ ${hasKey ? 'Custom AI API Active (Gemini/Groq/OpenAI)' : 'Built-in Free AI API Active • Ask me anything'}</span>`;
     }
 }
 
@@ -4081,7 +4153,6 @@ function tryEvaluateMathQuery(text) {
 
     if (/^[0-9+\-*/().\s%*]+$/.test(expr) && /[+\-*/%]/.test(expr) && /\d/.test(expr)) {
         try {
-            // Safe evaluation of pure numeric expression
             const result = Function('"use strict"; return (' + expr + ')')();
             if (typeof result === 'number' && isFinite(result)) {
                 const formatted = Number.isInteger(result) ? result : +result.toFixed(6);
@@ -4121,7 +4192,7 @@ function getCleanAiHistory(historyArr) {
 // Serialize LLM requests so two requests never hit Pollinations simultaneously (prevents HTTP 402)
 let aiRequestChain = Promise.resolve();
 
-// Helper: Direct Browser Generative LLM Call with Serialization & Auto-Retry
+// Helper: Universal Generative AI API Call (Supports Custom Gemini / Groq / OpenAI / OpenRouter + Built-in Free API)
 async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio) {
     const runTask = async () => {
         const sysPrompt = [
@@ -4132,17 +4203,77 @@ async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio)
         ].join(" ");
 
         const recent = getCleanAiHistory(historyArr);
+        const userContent = hasImage
+            ? `[User shared a photo] ${userText || 'Describe and comment on this photo warmly.'}`
+            : (hasAudio ? `[User sent a voice note] ${userText || 'Reply warmly to my voice message.'}` : userText);
+
         const messagesPayload = [
             { role: 'system', content: sysPrompt },
             ...recent,
-            {
-                role: 'user',
-                content: hasImage
-                    ? `[User shared a photo] ${userText || 'Describe and comment on this photo warmly.'}`
-                    : (hasAudio ? `[User sent a voice note] ${userText || 'Reply warmly to my voice message.'}` : userText)
-            }
+            { role: 'user', content: userContent }
         ];
 
+        // A. If user connected a Custom API Key (Gemini / Groq / OpenRouter / OpenAI), call it directly!
+        const customKey = (localStorage.getItem('quickchat_ai_api_key') || '').trim();
+        if (customKey) {
+            try {
+                if (customKey.startsWith('AIza')) {
+                    const geminiContents = [
+                        ...recent.map(m => ({
+                            role: m.role === 'assistant' ? 'model' : 'user',
+                            parts: [{ text: m.content }]
+                        })),
+                        { role: 'user', parts: [{ text: userContent }] }
+                    ];
+                    for (const modelName of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+                        const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(customKey)}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                systemInstruction: { parts: [{ text: sysPrompt }] },
+                                contents: geminiContents
+                            })
+                        });
+                        if (gRes.ok) {
+                            const gData = await gRes.json();
+                            const gText = gData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (gText && gText.trim()) return gText.trim();
+                        }
+                    }
+                } else {
+                    const isGroq = customKey.startsWith('gsk_');
+                    const isOpenRouter = customKey.startsWith('sk-or-');
+                    const endpoint = isGroq
+                        ? 'https://api.groq.com/openai/v1/chat/completions'
+                        : (isOpenRouter ? 'https://openrouter.ai/api/v1/chat/completions' : 'https://api.openai.com/v1/chat/completions');
+                    const modelName = isGroq
+                        ? 'llama-3.3-70b-versatile'
+                        : (isOpenRouter ? 'openai/gpt-4o-mini' : 'gpt-4o-mini');
+
+                    const cRes = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${customKey}`
+                        },
+                        body: JSON.stringify({
+                            model: modelName,
+                            messages: messagesPayload,
+                            temperature: 0.7
+                        })
+                    });
+                    if (cRes.ok) {
+                        const cData = await cRes.json();
+                        const cText = cData?.choices?.[0]?.message?.content;
+                        if (cText && cText.trim()) return cText.trim();
+                    }
+                }
+            } catch (err) {
+                console.warn("Custom AI API error in browser, falling back:", err);
+            }
+        }
+
+        // B. Built-in Free Generative AI API (Pollinations OpenAI endpoint with Auto-Retry)
         for (let attempt = 1; attempt <= 3; attempt++) {
             const controller = new AbortController();
             const tId = setTimeout(() => controller.abort(), 22000);
@@ -4195,10 +4326,20 @@ async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio)
     return resultPromise;
 }
 
-// Instant Local Checks (Image Gen, Pure Math, Name Memory, Exact Time/Date)
+// Instant Local Checks (API Key Command, Image Gen, Pure Math, Name Memory, Exact Time/Date)
 function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
     const text = String(rawText || '').trim();
     const lower = text.toLowerCase();
+
+    // 0. Quick command to set API Key directly via chat: "/apikey AIzaSy..."
+    const apiCmdMatch = text.match(/^(?:\/apikey|apikey|set\s+api\s+key)\s+([A-Za-z0-9_\-]{12,})$/i);
+    if (apiCmdMatch && apiCmdMatch[1]) {
+        const keyVal = apiCmdMatch[1].trim();
+        localStorage.setItem('quickchat_ai_api_key', keyVal);
+        if (socket && socket.connected) socket.emit('set ai api key', { apiKey: keyVal });
+        updateAiHeaderBadge();
+        return `🔑 **AI API Key Connected Successfully!** ✅\nAb aapka QuickChat AI seedha aapke official API se super-fast jawab dega.`;
+    }
 
     if (hasImage && !text) {
         return "📸 **Bahut shandaar photo hai!** ✨\nComposition aur clarity kaafi acchi lag rahi hai. Agar aap is photo ke baare mein kuch khaas poochna chahte hain ya caption chahiye toh zaroor batayein!";
@@ -4268,7 +4409,7 @@ socket.on('ai response', (data) => {
 
     const promptText = String((data && data.prompt) || '').trim();
     appendAiMessageToChat(
-        `🤖 **QuickChat AI:** Aapka sawaal (*"${promptText}"*) mila, par abhi internet/AI server busy hai. Kripya 2 second baad dobara bhejein! 🔄`
+        `🤖 **QuickChat AI:** Aapka sawaal (*"${promptText}"*) mila, par abhi internet/AI server busy hai. Kripya 2 second baad dobara bhejein ya upar **🔑 Connect API** par click karke Free Gemini/Groq API Key jod lein! 🔄`
     );
 });
 
@@ -4293,7 +4434,7 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
 
         setAiThinkingStatus(true);
 
-        // 1. Check instant local tools (Math, Image Gen, Name Memory, Exact Time/Date)
+        // 1. Check instant local tools (API Key command, Math, Image Gen, Name Memory, Exact Time/Date)
         const instantReply = checkInstantAiTools(currentInputText, !!imageStr, !!audioStr);
         if (instantReply) {
             setTimeout(() => {
@@ -4325,7 +4466,8 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
                     prompt: currentInputText,
                     history: recentHistory,
                     hasImage: !!imageStr,
-                    hasAudio: !!audioStr
+                    hasAudio: !!audioStr,
+                    apiKey: localStorage.getItem('quickchat_ai_api_key') || ''
                 });
             } else {
                 appendAiMessageToChat(
