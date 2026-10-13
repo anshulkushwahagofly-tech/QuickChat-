@@ -1209,6 +1209,9 @@ body::before {
 .chat-list-item {
     display: flex;
     padding: 0 16px;
+    height: 72px;
+    max-height: 72px;
+    overflow: hidden;
     cursor: pointer;
     background-color: var(--wa-bg-chat-item);
     transition: background 0.15s;
@@ -1227,16 +1230,19 @@ body::before {
     margin: 10px 15px 10px 0;
     width: 48px;
     height: 48px;
+    flex-shrink: 0;
 }
 
 .chat-info {
     flex: 1;
     border-bottom: 1px solid var(--wa-border-chat);
-    padding: 14px 0;
+    height: 100%;
+    padding: 0;
     display: flex;
     flex-direction: column;
     justify-content: center;
     min-width: 0;
+    overflow: hidden;
 }
 
 .chat-title-row {
@@ -1258,9 +1264,15 @@ body::before {
 .chat-last-msg {
     color: var(--wa-chat-last-msg);
     font-size: 13.5px;
+    line-height: 20px;
+    max-height: 20px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.chat-last-msg br {
+    display: none;
 }
 
 /* Floating Action Button (Mobile only) */

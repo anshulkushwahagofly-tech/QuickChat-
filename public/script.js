@@ -1538,6 +1538,13 @@ function renderChatList(filter = '') {
 
     filteredFriends.forEach(friendNumber => {
         const messages = chats[friendNumber] || [];
+        if (friendNumber === 'QuickChat AI' && messages.length > 0) {
+            messages.forEach(m => {
+                if (m.text && m.text.includes('Aap mujhse **kisi bhi vishay')) {
+                    m.text = 'Namaste! 👋🤖 Main **QuickChat AI** hoon. Bataiye, aaj main aapki kya madad karun? 😊';
+                }
+            });
+        }
         const lastMsg = messages.length > 0 ? messages[messages.length - 1] : null;
         let lastMsgPrefix = '';
         let lastMsgText = 'Tap to chat';
@@ -1554,7 +1561,14 @@ function renderChatList(filter = '') {
             } else if (lastMsg.poll) {
                 lastMsgText = '<i class="fas fa-poll" style="font-size:12px; margin-right:4px; color:#8696a0;"></i> Poll';
             } else {
-                lastMsgText = escapeHtml(lastMsg.text || 'Message');
+                const cleanSingleLine = String(lastMsg.text || 'Message')
+                    .replace(/\r?\n+/g, ' ')
+                    .replace(/\*\*([^*]+)\*\*/g, '$1')
+                    .replace(/\*([^*]+)\*/g, '$1')
+                    .replace(/`([^`]+)`/g, '$1')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                lastMsgText = escapeHtml(cleanSingleLine);
             }
         }
         let lastMsgTime = lastMsg ? lastMsg.time : '';
@@ -3934,7 +3948,7 @@ function openAiAssistant() {
             {
                 id: 'ai_welcome_' + Date.now(),
                 from: aiId,
-                text: `Namaste${greetName}! 🤖✨ Main **QuickChat AI** hoon — aapka apna intelligent AI brain.\n\nAap mujhse **kisi bhi vishay (topic)** par baat kar sakte hain:\n• 🧠 **Koi bhi sawaal:** GK, Science, History, Career, Health, Recipes\n• 💻 **Coding & Tech:** Python, JS, HTML/CSS, C++, Debugging\n• ➗ **Math & Calculations:** कठिन से कठिन हिसाब या Table\n• 🎨 **AI Image Generation:** Type karein *"photo banao futuristic car"* ya *"/imagine mountain sunset"*\n• ✍️ **Shayari, Jokes, Stories, Emails & Applications**\n\nBataiye, aaj main aapki kya madad karun? 😊`,
+                text: `Namaste${greetName}! 👋🤖 Main **QuickChat AI** hoon. Bataiye, aaj main aapki kya madad karun? 😊`,
                 time: formatTime(new Date())
             }
         ];
