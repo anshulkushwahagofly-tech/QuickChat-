@@ -7,6 +7,29 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
+
+// Native .env file loader
+const envFilePath = path.join(__dirname, '.env');
+if (fs.existsSync(envFilePath)) {
+    try {
+        const envLines = fs.readFileSync(envFilePath, 'utf8').split(/\r?\n/);
+        for (const line of envLines) {
+            const trimmed = line.trim();
+            if (trimmed && !trimmed.startsWith('#')) {
+                const idx = trimmed.indexOf('=');
+                if (idx > 0) {
+                    const k = trimmed.slice(0, idx).trim();
+                    let v = trimmed.slice(idx + 1).trim();
+                    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) {
+                        v = v.slice(1, -1);
+                    }
+                    if (!process.env[k]) process.env[k] = v;
+                }
+            }
+        }
+    } catch (e) {}
+}
+
 const mongoose = require('mongoose');
 
 const compression = require('compression');

@@ -6592,8 +6592,9 @@ if (promoBanner) {
 
 function updateAiHeaderBadge() {
     if (activeChat !== 'ERA' && activeChat !== 'QuickChat AI') return;
+    const hasCustomKey = !!(localStorage.getItem('quickchat_ai_api_key'));
     if (activeChatTitle) {
-        activeChatTitle.innerHTML = `ERA <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official AI"></i>`;
+        activeChatTitle.innerHTML = `ERA <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official AI"></i> <span onclick="openAiApiKeyDialog(event)" style="cursor:pointer; font-size:10.5px; margin-left:6px; background:${hasCustomKey ? 'rgba(0,168,132,0.22)' : 'rgba(255,255,255,0.08)'}; color:${hasCustomKey ? '#00a884' : '#8696a0'}; padding:2px 8px; border-radius:10px; font-weight:600; vertical-align:middle; display:inline-flex; align-items:center; gap:4px; border:1px solid ${hasCustomKey ? 'rgba(0,168,132,0.4)' : 'rgba(255,255,255,0.1)'};" title="Click to Connect Google AI Studio Gemini API Key"><i class="fas fa-key"></i> ${hasCustomKey ? 'Gemini 2.0 Active' : 'Google AI Studio'}</span>`;
     }
     const statusEl = document.getElementById('active-chat-status');
     if (statusEl) {
@@ -6994,6 +6995,16 @@ function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
         return isHindi
             ? `🔑 **AI API Key Connected Successfully!** ✅\nAb aapka ERA seedha aapke official API se super-fast jawab dega.`
             : `🔑 **AI API Key Connected Successfully!** ✅\nERA is now connected to your official API for ultra-fast, intelligent responses.`;
+    }
+
+    // 0A. Google AI Studio / Gemini Setup Assistant
+    if (/\b(?:google\s+ai|ai\s+studio|gemini\s+api|api\s+key\s+kaise|connect\s+gemini|google\s+se\s+baat)\b/i.test(lower)) {
+        setTimeout(() => {
+            if (typeof openAiApiKeyDialog === 'function') openAiApiKeyDialog();
+        }, 300);
+        return isHindi
+            ? `✨ **Google AI Studio (Gemini) Connection:**\n\nGoogle AI Studio se seedha connect karne ke liye:\n1. [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) par jaakar **"Create API key"** par click karein (100% Free).\n2. Copy ki hui key ko chat mein likh dein: \`/apikey AIzaSy...\` ya upar open hue popup mein paste karke **Save & Connect** karein!\n\nIske baad main Google Gemini supercomputers se ultra-fast answers doonga! 🚀`
+            : `✨ **Google AI Studio (Gemini) Connection:**\n\nTo connect directly with Google AI Studio:\n1. Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) and click **"Create API key"** (100% Free, no credit card required).\n2. Paste your key in chat: \`/apikey AIzaSy...\` or use the popup to save it!\n\nOnce connected, ERA will respond via Google Gemini at lightning speed! 🚀`;
     }
 
     // 0B. Creator / Developer / "Baap" / "Pitaji" / "Kisne banaya" Check
