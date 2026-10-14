@@ -533,9 +533,10 @@ try {
 
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(() => {
-        console.log("Service Worker Registered");
-    });
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+        if (reg) reg.update();
+        console.log("Service Worker Registered & Updated");
+    }).catch(() => {});
 }
 
 const loginLoadingView = document.getElementById('login-loading-view');
