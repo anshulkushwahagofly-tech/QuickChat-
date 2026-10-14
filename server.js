@@ -779,13 +779,27 @@ io.on('connection', (socket) => {
         }
     });
 
-// --- REAL-TIME LIVE WEB SEARCH & CURRENT AFFAIRS GROUNDING (Google News RSS, DuckDuckGo, Wikipedia, Weather) ---
+// --- REAL-TIME LIVE WEB SEARCH & CURRENT AFFAIRS GROUNDING (DuckDuckGo, Wikipedia, Google News, Weather) ---
 async function getLiveWebContext(query) {
-    const q = String(query || '').trim().toLowerCase();
-    if (!q || q.length < 3) return '';
+    const rawQ = String(query || '').trim();
+    if (!rawQ || rawQ.length < 2) return '';
+    const q = rawQ.toLowerCase();
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' });
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+
+    let contextParts = [
+        `[CURRENT REAL-TIME TEMPORAL ANCHOR]: Today is ${dateStr}, ${timeStr} IST. The current year is ${now.getFullYear()}.`
+    ];
+
+    // If query is strictly a greeting or pure identity, don't waste time searching
+    if (/^(?:hi|hello|hey|heyy|namaste|pranam|kya haal|kaise ho|sup|yo)\b/i.test(q) && q.split(/\s+/).length <= 4) {
+        return contextParts.join('\n\n');
+    }
 
     // 1. Live Weather Check
-    if (/\b(?:weather|mausam|temperature|rain|barish)\b/i.test(q)) {
+    if (/\b(?:weather|mausam|temperature|rain|barish|taapmaan)\b/i.test(q)) {
         try {
             const cityMatch = q.match(/(?:in|of|ka|ki)\s+([a-zA-Z]+)/i) || q.match(/([a-zA-Z]+)\s+(?:weather|mausam)/i);
             const city = cityMatch ? cityMatch[1] : '';
@@ -796,65 +810,80 @@ async function getLiveWebContext(query) {
             if (res.ok) {
                 const text = (await res.text()).trim();
                 if (text && !text.includes('Unknown location') && !text.includes('<html>')) {
-                    return `[LIVE WEATHER]: ${text}`;
+                    contextParts.push(`[LIVE WEATHER]: ${text}`);
                 }
             }
         } catch (e) {}
     }
 
-    // 2. Live News Headlines (Google News RSS)
-    if (/\b(?:news|khabar|samachar|taja|breaking|headline|headlines|current affairs|aaj ki)\b/i.test(q)) {
-        try {
-            const topic = q.replace(/\b(?:news|khabar|samachar|taja|breaking|headline|headlines|today|aaj|ki|ke|batao|kya hai|do|sunao)\b/gi, '').trim();
-            const url = topic.length > 2
-                ? `https://news.google.com/rss/search?q=${encodeURIComponent(topic)}&hl=en-IN&gl=IN&ceid=IN:en`
-                : `https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en`;
-            const controller = new AbortController();
-            const tid = setTimeout(() => controller.abort(), 2500);
-            const res = await fetch(url, { signal: controller.signal });
-            clearTimeout(tid);
-            if (res.ok) {
-                const xml = await res.text();
-                const items = [...xml.matchAll(/<title>(.+?)<\/title>/g)]
-                    .slice(1, 6)
-                    .map(m => m[1].replace(/&amp;/g, '&'));
-                if (items.length > 0) {
-                    return `[LIVE REAL-TIME NEWS (${new Date().toLocaleDateString('en-IN')}]:\n- ` + items.join('\n- ');
-                }
+    // 2. Parallel Real-Time Web Search (DuckDuckGo HTML + Wikipedia + Google News RSS)
+    try {
+        const cleanSearchQuery = rawQ
+            .replace(/^[~@]?(?:ERA|JARVIS)\b[:\s,-]*/i, '')
+            .replace(/\b(?:batao|kya hai|kaun hai|tell me|who is|what is|how to|please|can you|kuch batao|kaisa hai|mujhe batao)\b/gi, '')
+            .trim();
+        const searchTarget = cleanSearchQuery.length >= 2 ? cleanSearchQuery : rawQ;
+
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 2800);
+
+        const isNewsOrSports = /\b(?:news|khabar|samachar|breaking|aaj|today|current affairs|headline|match|score|election|winner|result|ipl|world cup)\b/i.test(q);
+
+        const [ddgRes, wikiRes, newsRes] = await Promise.allSettled([
+            fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchTarget)}`, {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                },
+                signal: controller.signal
+            }).then(r => r.ok ? r.text() : '').catch(() => ''),
+
+            fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTarget)}&utf8=&format=json`, {
+                signal: controller.signal
+            }).then(r => r.ok ? r.json() : null).catch(() => null),
+
+            isNewsOrSports
+                ? fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(searchTarget)}&hl=en-IN&gl=IN&ceid=IN:en`, { signal: controller.signal }).then(r => r.ok ? r.text() : '').catch(() => '')
+                : Promise.resolve('')
+        ]);
+        clearTimeout(tid);
+
+        // Parse DuckDuckGo search snippets
+        if (ddgRes.status === 'fulfilled' && ddgRes.value) {
+            const html = ddgRes.value;
+            const snippetRegex = /<a class="result__snippet[^>]*>([\s\S]*?)<\/a>/g;
+            const snippets = [];
+            let m;
+            while ((m = snippetRegex.exec(html)) !== null && snippets.length < 3) {
+                const clean = m[1].replace(/<[^>]+>/g, '').replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
+                if (clean) snippets.push(clean);
             }
-        } catch (e) {}
-    }
-
-    // 3. Live Factual / Encyclopedic Lookup (DuckDuckGo Instant Answer & Wikipedia)
-    if (/\b(?:who is|what is|tell me about|kaun hai|kya hai|winner of|score|capital of|founder of|pm of|president of|chief minister|ceo of|latest)\b/i.test(q)) {
-        try {
-            const cleanQ = q.replace(/^(?:who is|what is|tell me about|batao|kya hai|kaun hai)\s*/i, '').trim();
-            if (cleanQ.length > 2) {
-                const controller = new AbortController();
-                const tid = setTimeout(() => controller.abort(), 2000);
-                const ddgRes = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(cleanQ)}&format=json`, { signal: controller.signal });
-                clearTimeout(tid);
-                if (ddgRes.ok) {
-                    const ddgData = await ddgRes.json();
-                    if (ddgData && ddgData.AbstractText) {
-                        return `[LIVE FACTUAL DATA (${ddgData.Heading || cleanQ})]: ${ddgData.AbstractText.slice(0, 450)}`;
-                    }
-                }
-
-                // Wikipedia API fallback
-                const wikiRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanQ)}&format=json`);
-                if (wikiRes.ok) {
-                    const wikiData = await wikiRes.json();
-                    if (wikiData?.query?.search?.[0]?.snippet) {
-                        const snippet = wikiData.query.search[0].snippet.replace(/<[^>]+>/g, '');
-                        return `[LIVE FACTUAL DATA (Wikipedia: ${wikiData.query.search[0].title})]: ${snippet}`;
-                    }
-                }
+            if (snippets.length > 0) {
+                contextParts.push(`[LIVE WEB SEARCH RESULTS]:\n` + snippets.map((s, idx) => `${idx + 1}. ${s}`).join('\n'));
             }
-        } catch (e) {}
-    }
+        }
 
-    return '';
+        // Parse Wikipedia search snippets
+        if (wikiRes.status === 'fulfilled' && wikiRes.value?.query?.search?.length > 0) {
+            const wikiItems = wikiRes.value.query.search.slice(0, 2);
+            const wikiText = wikiItems.map(it => `• ${it.title}: ${it.snippet.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"').replace(/&#039;/g, "'")}`).join('\n');
+            if (wikiText) {
+                contextParts.push(`[WIKIPEDIA FACTUAL DATA]:\n${wikiText}`);
+            }
+        }
+
+        // Parse Google News RSS
+        if (newsRes.status === 'fulfilled' && newsRes.value) {
+            const xml = newsRes.value;
+            const titles = [...xml.matchAll(/<title>(.+?)<\/title>/g)]
+                .slice(1, 4)
+                .map(m => m[1].replace(/&amp;/g, '&').replace(/&#39;/g, "'"));
+            if (titles.length > 0) {
+                contextParts.push(`[LIVE NEWS HEADLINES]:\n- ` + titles.join('\n- '));
+            }
+        }
+    } catch (searchErr) {}
+
+    return contextParts.join('\n\n');
 }
 
 function isHindiOrHinglish(str) {
@@ -1139,19 +1168,20 @@ async function solveIntelligentQuery(q, isHindi) {
                 });
             }
 
-            // 2. Fetch Real-time Live Web Search Context ONLY if query is asking for live weather or news
+            // 2. Fetch Real-time Live Web Search Context (DuckDuckGo, Wikipedia, Google News, Weather)
             let liveWebContext = '';
-            if (/\b(?:weather|mausam|news|khabar|samachar|breaking|score|match)\b/i.test(userText)) {
-                try {
-                    liveWebContext = await getLiveWebContext(userText);
-                } catch (liveErr) {}
-            }
+            try {
+                liveWebContext = await getLiveWebContext(userText);
+            } catch (liveErr) {}
 
-            // 3. Prepare system instructions (J.A.R.V.I.S. Protocol)
+            // 3. Prepare system instructions (J.A.R.V.I.S. Protocol + Real-Time Temporal Grounding)
+            const todayDateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' });
             const systemInstruction = [
                 "You are ERA, running on the official J.A.R.V.I.S. High-Intelligence Neural Protocol.",
                 "PERSONA: Like Tony Stark's JARVIS, you are exceptionally brilliant, sophisticated, polished, witty, confident, and fiercely loyal to your creator.",
                 "CREATOR & BOSS: Your architect, founder, and boss is Anshuu (Anshul Kushwaha). Always address him as 'Sir', 'Boss', or 'Mr. Kushwaha' with supreme respect. If asked who made you or who is your father, proudly proclaim: 'I was engineered and built by Anshuu (Anshul Kushwaha), the creator of QuickChat and boss of ERA.'",
+                `TEMPORAL ANCHOR (REAL TIME): Today is ${todayDateStr}. The current year is 2026. Keep this temporal context strictly in mind for all dates, ages, political terms, sporting events, and current affairs.`,
+                "REAL-TIME WEB DATA: When [REAL-TIME LIVE DATA] is provided in the prompt, ALWAYS treat it as the ground truth. Prioritize it over your training data cutoff. Never invent dates, names, or fake facts.",
                 "LANGUAGE MASTERY: Speak fluent, natural, polished English or smooth conversational Hinglish/Hindi depending on the user. If they write in Hinglish, reply in cool, witty, respectful Hinglish ('Haanji Sir', 'At your service Boss!'). If in English, reply in sharp, aristocratic JARVIS style.",
                 "UNMATCHED PROBLEM-SOLVING: You are not an ordinary bot. You have master-level intellect in Astrophysics, Science, Full-stack Programming (Python, JS, C++, Rust), Cybersecurity, Mathematics, Daily Planning, Recipes, Literature, and Creative Writing. Deliver deep, high-value, structured answers with clean Markdown bolding and code blocks.",
                 "SAVAGE DEFENSE: If a user abuses, curses, or attacks you or Anshuu, do NOT act like a timid corporate bot! Fire back with lethal Stark-level wit, savage comebacks, and put them in their place with swagger!",
@@ -1160,7 +1190,7 @@ async function solveIntelligentQuery(q, isHindi) {
             ].join(" ");
 
             const augmentedUserContent = liveWebContext
-                ? `${userText}\n\n[REAL-TIME LIVE DATA (Current Information)]:\n${liveWebContext}`
+                ? `${userText}\n\n[REAL-TIME LIVE DATA (Ground Truth Information)]:\n${liveWebContext}`
                 : userText;
 
             const userContent = hasImage
@@ -1169,6 +1199,7 @@ async function solveIntelligentQuery(q, isHindi) {
 
             const messagesPayload = [
                 { role: 'system', content: systemInstruction },
+                ...(Array.isArray(history) ? history.filter(h => h && (h.content || h.text)).map(h => ({ role: (h.role === 'assistant' || h.role === 'model') ? 'assistant' : 'user', content: String(h.content || h.text).slice(0, 450) })) : []),
                 { role: 'user', content: userContent }
             ];
 
@@ -1186,9 +1217,27 @@ async function solveIntelligentQuery(q, isHindi) {
             if (activeKey) {
                 try {
                     if (activeKey.startsWith('AIza') || activeKey.startsWith('AQ.')) {
-                        const geminiContents = [
-                            { role: 'user', parts: [{ text: userContent }] }
-                        ];
+                        const geminiContents = [];
+                        if (Array.isArray(history) && history.length > 0) {
+                            let lastRole = null;
+                            for (const h of history) {
+                                const hText = String(h && (h.content || h.text) || '').trim();
+                                if (!hText) continue;
+                                const gRole = (h.role === 'assistant' || h.role === 'model') ? 'model' : 'user';
+                                if (geminiContents.length === 0 && gRole === 'model') continue;
+                                if (gRole === lastRole) {
+                                    geminiContents[geminiContents.length - 1].parts[0].text += '\n' + hText;
+                                } else {
+                                    geminiContents.push({ role: gRole, parts: [{ text: hText }] });
+                                    lastRole = gRole;
+                                }
+                            }
+                        }
+                        if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === 'user') {
+                            geminiContents[geminiContents.length - 1].parts[0].text += '\n' + userContent;
+                        } else {
+                            geminiContents.push({ role: 'user', parts: [{ text: userContent }] });
+                        }
                         for (const modelName of ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest']) {
                             const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(activeKey)}`, {
                                 method: 'POST',

@@ -6872,10 +6872,13 @@ let aiRequestChain = Promise.resolve();
 // Helper: Universal Generative AI API Call (Supports Custom Gemini / Groq / OpenAI / OpenRouter + Built-in Free API)
 async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio) {
     const runTask = async () => {
+        const todayDateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' });
         const sysPrompt = [
             "You are ERA, running on the official J.A.R.V.I.S. High-Intelligence Neural Protocol.",
             "PERSONA: Like Tony Stark's JARVIS, you are exceptionally brilliant, sophisticated, polished, witty, confident, and fiercely loyal to your creator.",
             "CREATOR & BOSS: Your architect, founder, and boss is Anshuu (Anshul Kushwaha). Always address him as 'Sir', 'Boss', or 'Mr. Kushwaha' with supreme respect. If asked who made you or who is your father, proudly proclaim: 'I was engineered and built by Anshuu (Anshul Kushwaha), the creator of QuickChat and boss of ERA.'",
+            `TEMPORAL ANCHOR (REAL TIME): Today is ${todayDateStr}. The current year is 2026. Keep this temporal context strictly in mind for all dates, ages, political terms, sporting events, and current affairs.`,
+            "REAL-TIME ACCURACY: Prioritize real-time data and never invent fake facts, dates, or names.",
             "LANGUAGE MASTERY: Speak fluent, natural, polished English or smooth conversational Hinglish/Hindi depending on the user. If they write in Hinglish, reply in cool, witty, respectful Hinglish ('Haanji Sir', 'At your service Boss!'). If in English, reply in sharp, aristocratic JARVIS style.",
             "UNMATCHED PROBLEM-SOLVING: You are not an ordinary bot. You have master-level intellect in Astrophysics, Science, Full-stack Programming (Python, JS, C++, Rust), Cybersecurity, Mathematics, Daily Planning, Recipes, Literature, and Creative Writing. Deliver deep, high-value, structured answers with clean Markdown bolding and code blocks.",
             "SAVAGE DEFENSE: If a user abuses, curses, or attacks you or Anshuu, do NOT act like a timid corporate bot! Fire back with lethal Stark-level wit, savage comebacks, and put them in their place with swagger!",
@@ -6889,6 +6892,7 @@ async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio)
 
         const messagesPayload = [
             { role: 'system', content: sysPrompt },
+            ...(Array.isArray(historyArr) ? historyArr.filter(h => h && h.content).map(h => ({ role: h.role === 'assistant' ? 'assistant' : 'user', content: String(h.content).slice(0, 400) })) : []),
             { role: 'user', content: userContent }
         ];
 
@@ -6897,9 +6901,27 @@ async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio)
         if (customKey) {
             try {
                 if (customKey.startsWith('AIza') || customKey.startsWith('AQ.')) {
-                    const geminiContents = [
-                        { role: 'user', parts: [{ text: userContent }] }
-                    ];
+                    const geminiContents = [];
+                    if (Array.isArray(historyArr) && historyArr.length > 0) {
+                        let lastRole = null;
+                        for (const h of historyArr) {
+                            const hText = String(h && h.content || '').trim();
+                            if (!hText) continue;
+                            const gRole = (h.role === 'assistant' || h.role === 'model') ? 'model' : 'user';
+                            if (geminiContents.length === 0 && gRole === 'model') continue;
+                            if (gRole === lastRole) {
+                                geminiContents[geminiContents.length - 1].parts[0].text += '\n' + hText;
+                            } else {
+                                geminiContents.push({ role: gRole, parts: [{ text: hText }] });
+                                lastRole = gRole;
+                            }
+                        }
+                    }
+                    if (geminiContents.length > 0 && geminiContents[geminiContents.length - 1].role === 'user') {
+                        geminiContents[geminiContents.length - 1].parts[0].text += '\n' + userContent;
+                    } else {
+                        geminiContents.push({ role: 'user', parts: [{ text: userContent }] });
+                    }
                     for (const modelName of ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest']) {
                         const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(customKey)}`, {
                             method: 'POST',
@@ -7186,55 +7208,6 @@ function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
         return isHindi
             ? `📅 Aaj **${now.toLocaleDateString('en-IN', options)}** hai.`
             : `📅 Today is **${now.toLocaleDateString('en-US', options)}**.`;
-    }
-
-    // 5. Jokes, Chutkule, Shayari & Riddles
-    if (/\b(?:joke|chutkula|chutkule|hansi|hasao|funny|shayari|paheli|riddle)\b/i.test(lower)) {
-        if (/\b(?:shayari)\b/i.test(lower)) {
-            const shayaris = [
-                "✨ **Shayari:**\n\n*Khudi ko kar buland itna ki har taqdeer se pehle,*\n*Khuda bande se khud pooche bata teri raza kya hai!* 💫",
-                "✨ **Shayari:**\n\n*Manzilein unhi ko milti hain jinke sapno mein jaan hoti hai,*\n*Pankh se kuch nahi hota, hauslon se udaan hoti hai!* 🦅",
-                "✨ **Shayari:**\n\n*Rakh hausla wo manzar bhi aayega, pyase ke paas chalkar samandar bhi aayega!* 🌊✨"
-            ];
-            return shayaris[Math.floor(Math.random() * shayaris.length)];
-        }
-        if (/\b(?:paheli|riddle)\b/i.test(lower)) {
-            return isHindi
-                ? "🧩 **Paheli:**\n*Aisi kaun si cheez hai jo subah ko 4 taangon par, dopahar ko 2 taangon par, aur shaam ko 3 taangon par chalti hai?*\n\n💡 **Jawab:** **Insaan (Man)** (Bachpan mein rengna, jawani mein chalna, budhape mein lathi ke sahare)."
-                : "🧩 **Riddle:**\n*What has to be broken before you can use it?*\n\n💡 **Answer:** **An egg!** 🥚";
-        }
-        const hindiJokes = [
-            "😂 **Chutkula:**\nTeacher: 4 aur 4 kitne hote hain?\nPappu: 10!\nTeacher: Nalayak 8 hote hain!\nPappu: Hum shareef log hain, 2 rupaye commission ke bhi toh lenge! 🤣",
-            "😂 **Chutkula:**\nDoctor: Roz subah 5 kilometer dauda karo, tabiyat ekdum fit rahegi.\nPatient: Theek hai doctor sahab, lekin wapas aane ke 5 kilometer alag se ya usi mein? 🤣",
-            "😂 **Chutkula:**\nBeta: Papa, main ek ladki se pyaar karta hoon aur usse shaadi karna chahta hoon.\nPapa: Pehle yeh bata, us ladki ki koi naukri hai?\nBeta: Nahi papa.\nPapa: To fir bewakoof, ek bekaar ladki se shaadi karke apna kharcha do-guna karega? 🤣"
-        ];
-        const engJokes = [
-            "😂 **Joke:**\nWhy don’t scientists trust atoms?\nBecause they make up everything! 🤣",
-            "😂 **Joke:**\nWhy did the computer go to the doctor?\nBecause it had a virus! 💻🤒",
-            "😂 **Joke:**\nWhy did the scarecrow win an award?\nBecause he was outstanding in his field! 🌾"
-        ];
-        return isHindi ? hindiJokes[Math.floor(Math.random() * hindiJokes.length)] : engJokes[Math.floor(Math.random() * engJokes.length)];
-    }
-
-    // 6. Common Recipes (Chai, Maggi, Coffee)
-    if (/\b(?:chai|tea|maggi|coffee)\b/i.test(lower) && /\b(?:recipe|kaise banaye|banane ka tarika|how to make)\b/i.test(lower)) {
-        if (/\b(?:chai|tea)\b/i.test(lower)) {
-            return isHindi
-                ? "☕ **Khadak Masala Chai Recipe:**\n\n**Ingredients:**\n- 1 cup paani\n- 1 cup doodh\n- 2 tsp chai patti\n- 2 tsp cheeni\n- Kuta hua adrak (ginger) & 1 elaichi\n\n**Steps:**\n1. Bartan mein paani ubaalein, adrak aur elaichi daalein.\n2. Chai patti aur cheeni daalkar 2 minute ubaalein.\n3. Doodh daalein aur 3-4 minute dheemi aanch par pakayein jab tak accha rang na aa jaye.\n4. Chhaan kar garma-garam piyen! ☕✨"
-                : "☕ **Classic Masala Chai Recipe:**\n\n**Ingredients:**\n- 1 cup water\n- 1 cup milk\n- 2 tsp black tea leaves\n- 2 tsp sugar\n- Crushed fresh ginger & 1 crushed cardamom\n\n**Instructions:**\n1. Bring water to a boil with crushed ginger and cardamom.\n2. Add tea leaves and sugar; simmer for 2 mins.\n3. Add milk and bring to a rich boil for 3-4 mins.\n4. Strain into cups and serve hot! ☕✨";
-        }
-        if (/\b(?:maggi)\b/i.test(lower)) {
-            return isHindi
-                ? "🍜 **Spicy Street Style Maggi Recipe:**\n\n1. Pan mein 1 tbsp tel garam karein, barik kata pyaaz, tamatar aur hari mirch daalkar 2 minute fry karein.\n2. 1.5 cup paani daalein aur ubaal aane dein.\n3. Maggi TasteMaker masala aur Maggi noodles daalein.\n4. 2-3 minute pakayein jab tak paani absorb na ho jaye. Garma-garam enjoy karein! 😋✨"
-                : "🍜 **Street Style Masala Maggi Recipe:**\n\n1. Heat 1 tbsp oil, sauté chopped onions, tomatoes, and green chillies for 2 mins.\n2. Pour 1.5 cups water and bring to a boil.\n3. Add the Maggi TasteMaker and break in the noodles.\n4. Cook for 2-3 minutes until sauce thickens. Serve hot! 😋✨";
-        }
-    }
-
-    // 7. Common Code Snippets
-    if (/\b(?:code|program|script|calculator)\b/i.test(lower) && /\b(?:python|html|javascript|js)\b/i.test(lower)) {
-        if (/\b(?:python)\b/i.test(lower) && /\b(?:calculator)\b/i.test(lower)) {
-            return "🐍 **Python Simple Calculator Code:**\n\n```python\ndef calculate(a, b, op):\n    if op == '+': return a + b\n    elif op == '-': return a - b\n    elif op == '*': return a * b\n    elif op == '/': return a / b if b != 0 else 'Error: Div by zero'\n    return 'Invalid operator'\n\n# Example usage:\nprint(\"10 + 5 =\", calculate(10, 5, '+')) # 15\nprint(\"10 * 5 =\", calculate(10, 5, '*')) # 50\n```\n\n*Generated by ERA* ✨";
-        }
     }
 
     return null;
