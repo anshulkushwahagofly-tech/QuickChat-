@@ -1274,6 +1274,39 @@
             70% { transform: scale(1.1); box-shadow: 0 0 0 15px rgba(0, 168, 132, 0); }
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(0, 168, 132, 0); }
         }
+        .wa-jarvis-badge {
+            background: linear-gradient(135deg, rgba(0, 210, 255, 0.22), rgba(58, 123, 213, 0.22));
+            color: #00d2ff;
+            border: 1px solid rgba(0, 210, 255, 0.45);
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            vertical-align: middle;
+            margin-left: 6px;
+            text-transform: uppercase;
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.25);
+        }
+        .wa-ai-speak-btn {
+            background: transparent;
+            border: none;
+            color: var(--wa-text-secondary, #8696a0);
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 4px;
+            vertical-align: middle;
+            transition: color 0.15s ease, transform 0.15s ease;
+        }
+        .wa-ai-speak-btn:hover {
+            color: #00d2ff;
+            transform: scale(1.2);
+        }
     </style>
 
     <!-- New Chat / Contacts Modal -->
@@ -1530,7 +1563,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=68"></script>
+    <script src="script.js?v=69"></script>
     <script src="webrtc.js?v=6"></script>
 </body>
 </html>
