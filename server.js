@@ -1191,11 +1191,11 @@ async function solveIntelligentQuery(q, isHindi) {
             // 2A. Custom API Key handling
             if (activeKey) {
                 try {
-                    if (activeKey.startsWith('AIza')) {
+                    if (activeKey.startsWith('AIza') || activeKey.startsWith('AQ.')) {
                         const geminiContents = [
                             { role: 'user', parts: [{ text: userContent }] }
                         ];
-                        for (const modelName of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+                        for (const modelName of ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest']) {
                             const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(activeKey)}`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },

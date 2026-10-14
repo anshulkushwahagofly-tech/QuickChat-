@@ -6649,7 +6649,7 @@ function openAiApiKeyDialog(e) {
             if (socket && socket.connected) socket.emit('set ai api key', { apiKey: val });
             modal.style.display = 'none';
             updateAiHeaderBadge();
-            const provider = val.startsWith('AIza') ? 'Google Gemini' : (val.startsWith('gsk_') ? 'Groq LLaMA-3.3' : (val.startsWith('sk-or-') ? 'OpenRouter' : 'OpenAI'));
+            const provider = (val.startsWith('AIza') || val.startsWith('AQ.')) ? 'Google Gemini' : (val.startsWith('gsk_') ? 'Groq LLaMA-3.3' : (val.startsWith('sk-or-') ? 'OpenRouter' : 'OpenAI'));
             showWhatsAppToast(`✅ ${provider} API Connected Successfully!`, "success");
         };
     }
@@ -6826,11 +6826,11 @@ async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio)
         const customKey = (localStorage.getItem('quickchat_ai_api_key') || '').trim();
         if (customKey) {
             try {
-                if (customKey.startsWith('AIza')) {
+                if (customKey.startsWith('AIza') || customKey.startsWith('AQ.')) {
                     const geminiContents = [
                         { role: 'user', parts: [{ text: userContent }] }
                     ];
-                    for (const modelName of ['gemini-2.0-flash', 'gemini-1.5-flash']) {
+                    for (const modelName of ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest']) {
                         const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(customKey)}`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -6985,16 +6985,18 @@ function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
         return "I'm **ERA**! ✨ Your personal AI assistant built into QuickChat, created by **Anshuu (Anshul Kushwaha)**. Ask me anything, generate images, or plan your day! How can I help? 😊";
     }
 
-    // 0. Quick command to set API Key directly via chat: "/apikey AIzaSy..."
-    const apiCmdMatch = text.match(/^(?:\/apikey|apikey|set\s+api\s+key)\s+([A-Za-z0-9_\-]{12,})$/i);
-    if (apiCmdMatch && apiCmdMatch[1]) {
-        const keyVal = apiCmdMatch[1].trim();
+    // 0. Quick command or direct paste of API Key in chat: "AQ.Ab8...", "/apikey AIzaSy...", etc.
+    const rawKeyMatch = text.match(/^(?:AIzaSy|AQ\.|gsk_|sk-or-|sk-)[A-Za-z0-9_\-.]{20,}$/);
+    const apiCmdMatch = text.match(/^(?:\/apikey|apikey|set\s+api\s+key)\s+([A-Za-z0-9_\-.]{12,})$/i);
+    if ((apiCmdMatch && apiCmdMatch[1]) || rawKeyMatch) {
+        const keyVal = (apiCmdMatch ? apiCmdMatch[1] : rawKeyMatch[0]).trim();
         localStorage.setItem('quickchat_ai_api_key', keyVal);
         if (socket && socket.connected) socket.emit('set ai api key', { apiKey: keyVal });
         updateAiHeaderBadge();
+        const provider = (keyVal.startsWith('AIza') || keyVal.startsWith('AQ.')) ? 'Google Gemini' : 'Official AI';
         return isHindi
-            ? `🔑 **AI API Key Connected Successfully!** ✅\nAb aapka ERA seedha aapke official API se super-fast jawab dega.`
-            : `🔑 **AI API Key Connected Successfully!** ✅\nERA is now connected to your official API for ultra-fast, intelligent responses.`;
+            ? `🔑 **${provider} Key Connected Successfully!** ✅\nAb aapka ERA seedha Google Gemini se connect ho chuka hai aur sub-second mein super-fast jawab dega! 🚀`
+            : `🔑 **${provider} Key Connected Successfully!** ✅\nERA is now connected directly to Google Gemini for lightning-fast sub-second responses! 🚀`;
     }
 
     // 0A. Google AI Studio / Gemini Setup Assistant
