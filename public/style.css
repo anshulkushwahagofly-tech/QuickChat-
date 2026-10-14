@@ -4407,27 +4407,162 @@ body.dark-theme .encryption-msg,
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 16px;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--wa-border-drawer);
     cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.wa-new-community-btn:hover {
+    background: var(--wa-hover-chat, rgba(255, 255, 255, 0.05));
 }
 
 .wa-community-icon {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
+    border-radius: 12px;
     background: #00a884;
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 .wa-community-btn-text {
     font-size: 15.5px;
     font-weight: 600;
     color: var(--wa-text-drawer-card);
+}
+
+/* --- COMMUNITIES SYSTEM (AUTHENTIC WHATSAPP STYLE) --- */
+.wa-community-section {
+    border-bottom: 8px solid var(--wa-border-drawer, rgba(255, 255, 255, 0.05));
+    background: var(--wa-bg-sidebar);
+}
+
+.wa-community-header-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.wa-community-header-item:hover {
+    background: var(--wa-hover-chat, rgba(255, 255, 255, 0.05));
+}
+
+.wa-community-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px; /* WhatsApp community signature rounded square */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.wa-community-info {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.wa-community-name {
+    font-size: 15.5px;
+    font-weight: 600;
+    color: var(--wa-text-drawer-card, #e9edef);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wa-community-meta {
+    font-size: 12.5px;
+    color: var(--wa-text-pill, #8696a0);
+    margin-top: 2px;
+}
+
+.wa-community-groups-list {
+    background: var(--wa-bg-sidebar);
+}
+
+.wa-community-group-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px 10px 24px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border-top: 1px solid var(--wa-border-drawer, rgba(255, 255, 255, 0.04));
+}
+
+.wa-community-group-item:hover {
+    background: var(--wa-hover-chat, rgba(255, 255, 255, 0.05));
+}
+
+.wa-community-group-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--wa-bg-search-box, #202c33);
+    color: #00a884;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.wa-community-group-icon.announcement {
+    background: rgba(0, 168, 132, 0.15);
+    color: #00a884;
+}
+
+.wa-community-group-info {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.wa-community-group-title {
+    font-size: 14.5px;
+    font-weight: 500;
+    color: var(--wa-text-drawer-card, #e9edef);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wa-community-group-subtitle {
+    font-size: 12px;
+    color: var(--wa-text-pill, #8696a0);
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wa-community-view-all-btn {
+    padding: 11px 16px 11px 54px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #00a884;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.15s ease;
+}
+
+.wa-community-view-all-btn:hover {
+    background: var(--wa-hover-chat, rgba(255, 255, 255, 0.05));
 }
 
 /* --- WALLPAPER GRID --- */

@@ -3862,37 +3862,432 @@ function openChannelFeed(ch) {
 }
 
 // ========================================================
-// 8. COMMUNITIES ENGINE
 // ========================================================
+// 8. COMMUNITIES ENGINE (AUTHENTIC WHATSAPP STYLE)
+// ========================================================
+const DEFAULT_COMMUNITIES = [
+    {
+        id: 'comm_tech',
+        name: 'QuickChat Developers & AI Community',
+        desc: 'Official developer community for QuickChat, fullstack web, and ERA AI engineering.',
+        bg: 'linear-gradient(135deg, #008069, #00a884)',
+        icon: '<i class="fas fa-code"></i>',
+        members: '284 members',
+        groups: [
+            {
+                id: 'comm_tech_ann',
+                name: 'Announcements',
+                isAnnouncement: true,
+                subtitle: 'Anshuu (Admin): v2.5.0 is live with official ERA AI!',
+                time: '10:45 AM',
+                posts: [
+                    {
+                        author: 'Anshuu (Admin)',
+                        time: 'Today at 10:45 AM',
+                        text: '🚀 **QuickChat v2.5.0 Release is Official!**\nERA AI is now equipped with high-speed intelligence, custom avatar branding, and real-time responsiveness.\nWelcome to all 280+ members!',
+                        reactions: [{ emoji: '🔥', count: 184 }, { emoji: '🚀', count: 142 }, { emoji: '❤️', count: 96 }]
+                    },
+                    {
+                        author: 'Anshuu (Admin)',
+                        time: 'Yesterday at 6:30 PM',
+                        text: '📢 Please keep general discussions in the "General Developer Hub" channel to keep Announcements clean and focused.',
+                        reactions: [{ emoji: '👍', count: 88 }]
+                    }
+                ]
+            },
+            {
+                id: 'comm_tech_gen',
+                name: 'General Developer Hub',
+                isAnnouncement: false,
+                subtitle: 'Discuss APIs, frontend architecture & fullstack tricks',
+                time: '9:30 AM',
+                posts: [
+                    {
+                        author: 'Anshuu',
+                        time: 'Today at 9:30 AM',
+                        text: 'Welcome devs! Feel free to share your thoughts, project feedback, and questions here.'
+                    }
+                ]
+            },
+            {
+                id: 'comm_tech_ai',
+                name: 'ERA AI & Machine Learning',
+                isAnnouncement: false,
+                subtitle: 'LLM prompts, speed benchmarks & agent automation',
+                time: 'Yesterday',
+                posts: [
+                    {
+                        author: 'Anshuu',
+                        time: 'Yesterday at 4:15 PM',
+                        text: 'ERA has been optimized to sub-50ms latency for greetings and identity lookups! What features should we add next?'
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'comm_gaming',
+        name: 'Gaming & Esports Clan',
+        desc: 'Find teammates, coordinate scrims, and discuss latest gaming releases.',
+        bg: 'linear-gradient(135deg, #7b2ff7, #00d2ff)',
+        icon: '<i class="fas fa-gamepad"></i>',
+        members: '512 members',
+        groups: [
+            {
+                id: 'comm_game_ann',
+                name: 'Announcements',
+                isAnnouncement: true,
+                subtitle: 'Admin: Weekend Valorant & BGMI tournament schedule',
+                time: 'Yesterday',
+                posts: [
+                    {
+                        author: 'Tournament Admin',
+                        time: 'Yesterday at 8:00 PM',
+                        text: '🎮 **Weekend Community Custom Scrims!**\nRegistrations open for 5v5 custom matches starting this Saturday at 7 PM IST.',
+                        reactions: [{ emoji: '🏆', count: 210 }, { emoji: '🔥', count: 175 }]
+                    }
+                ]
+            },
+            {
+                id: 'comm_game_lfg',
+                name: 'Squad Finder & Discussion',
+                isAnnouncement: false,
+                subtitle: 'Drop your player IDs and rank up together',
+                time: '8:15 AM',
+                posts: [
+                    {
+                        author: 'Rohan',
+                        time: '8:15 AM',
+                        text: 'Anyone down for Diamond 2 rank push tonight? Drop ID!'
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        id: 'comm_college',
+        name: 'Campus Network & Study Circle',
+        desc: 'Course syllabus, notes exchange, hackathons, and placement updates.',
+        bg: 'linear-gradient(135deg, #f77062, #fe5196)',
+        icon: '<i class="fas fa-graduation-cap"></i>',
+        members: '196 members',
+        groups: [
+            {
+                id: 'comm_campus_ann',
+                name: 'Campus Notices',
+                isAnnouncement: true,
+                subtitle: 'Admin: Internal assessment schedules released',
+                time: 'Monday',
+                posts: [
+                    {
+                        author: 'Faculty Coordinator',
+                        time: 'Monday at 11:00 AM',
+                        text: '📋 **Notice:** Semester examination timetable and project submission deadlines have been updated.',
+                        reactions: [{ emoji: '📝', count: 110 }]
+                    }
+                ]
+            },
+            {
+                id: 'comm_campus_notes',
+                name: 'Notes & Resources Sharing',
+                isAnnouncement: false,
+                subtitle: 'PDFs, handwritten notes, and mock tests',
+                time: 'Sunday',
+                posts: [
+                    {
+                        author: 'Priya',
+                        time: 'Sunday at 5:00 PM',
+                        text: 'Uploaded Chapter 4 Data Structures & Algorithms handwritten summary in docs!'
+                    }
+                ]
+            }
+        ]
+    }
+];
+
+function getAllCommunities() {
+    let custom = [];
+    try {
+        const stored = localStorage.getItem('quickchat_custom_communities');
+        if (stored) custom = JSON.parse(stored);
+    } catch (e) {}
+    return [...DEFAULT_COMMUNITIES, ...custom];
+}
+
 const createCommunityBtn = document.getElementById('create-community-btn');
 if (createCommunityBtn) {
     createCommunityBtn.addEventListener('click', () => {
-        showWhatsAppDialog({
-            title: 'New Community',
-            message: 'Bring your members together in topic-based groups, and easily send admin announcements.',
-            confirmText: 'Get Started',
-            cancelText: 'Cancel',
-            onConfirm: () => {
-                showWhatsAppToast("Community feature is enabled for your account!", "success");
-            }
-        });
+        openNewCommunityModal();
     });
+}
+
+function openNewCommunityModal() {
+    let modal = document.getElementById('new-community-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'new-community-modal';
+        modal.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:99999; display:flex; align-items:center; justify-content:center; padding:16px;';
+        modal.innerHTML = `
+            <div style="background:var(--wa-bg-sidebar, #111b21); color:var(--wa-text-primary, #e9edef); width:100%; max-width:440px; border-radius:14px; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <h3 style="margin:0; font-size:18px; color:var(--wa-text-drawer-card);"><i class="fas fa-users" style="color:#00a884; margin-right:8px;"></i> Create Community</h3>
+                    <button type="button" id="close-new-comm-modal-btn" style="background:none; border:none; color:var(--wa-text-secondary, #8696a0); font-size:18px; cursor:pointer;">✕</button>
+                </div>
+                <div style="text-align:center; margin-bottom:16px;">
+                    <div style="width:68px; height:68px; border-radius:14px; background:#008069; color:#fff; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 10px auto; box-shadow:0 4px 12px rgba(0,0,0,0.25);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div style="font-size:12.5px; color:var(--wa-text-pill);">Communities bring members together in topic-based groups.</div>
+                </div>
+                <div style="margin-bottom:14px;">
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--wa-text-pill); margin-bottom:6px;">Community name</label>
+                    <input type="text" id="new-comm-name-input" placeholder="e.g. Neighborhood Society, Coding Club" maxlength="40" style="width:100%; box-sizing:border-box; padding:11px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:var(--wa-bg-search-box, #202c33); color:var(--wa-text-primary, #e9edef); font-size:14px; outline:none;" />
+                </div>
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; font-size:12.5px; font-weight:600; color:var(--wa-text-pill); margin-bottom:6px;">Community description</label>
+                    <textarea id="new-comm-desc-input" placeholder="How would you describe this community to members?" maxlength="140" rows="3" style="width:100%; box-sizing:border-box; padding:10px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.12); background:var(--wa-bg-search-box, #202c33); color:var(--wa-text-primary, #e9edef); font-size:13.5px; outline:none; resize:none;"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" id="cancel-new-comm-btn" style="padding:9px 16px; border-radius:8px; border:1px solid rgba(255,255,255,0.15); background:transparent; color:var(--wa-text-secondary, #8696a0); font-size:13px; cursor:pointer;">Cancel</button>
+                    <button type="button" id="submit-new-comm-btn" style="padding:9px 20px; border-radius:8px; border:none; background:#00a884; color:#fff; font-weight:600; font-size:13.5px; cursor:pointer;">Create Community</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        document.getElementById('close-new-comm-modal-btn').onclick = () => { modal.style.display = 'none'; };
+        document.getElementById('cancel-new-comm-btn').onclick = () => { modal.style.display = 'none'; };
+        document.getElementById('submit-new-comm-btn').onclick = () => {
+            const name = (document.getElementById('new-comm-name-input').value || '').trim();
+            const desc = (document.getElementById('new-comm-desc-input').value || '').trim();
+            if (!name) {
+                showWhatsAppToast("Please enter a community name", "danger");
+                return;
+            }
+            const newComm = {
+                id: 'comm_custom_' + Date.now(),
+                name: name,
+                desc: desc || 'Welcome to our community!',
+                bg: 'linear-gradient(135deg, #008069, #00a884)',
+                icon: '<i class="fas fa-users"></i>',
+                members: '1 member',
+                groups: [
+                    {
+                        id: 'comm_ann_' + Date.now(),
+                        name: 'Announcements',
+                        isAnnouncement: true,
+                        subtitle: 'Welcome to ' + name + '!',
+                        time: 'Just now',
+                        posts: [
+                            {
+                                author: 'You (Admin)',
+                                time: 'Just now',
+                                text: '🎉 **Welcome to ' + name + '!**\nThis is the official announcements channel. Only admins can send announcements here.'
+                            }
+                        ]
+                    },
+                    {
+                        id: 'comm_gen_' + Date.now(),
+                        name: 'General Chat',
+                        isAnnouncement: false,
+                        subtitle: 'Say hi to everyone!',
+                        time: 'Just now',
+                        posts: []
+                    }
+                ]
+            };
+
+            let customList = [];
+            try {
+                const stored = localStorage.getItem('quickchat_custom_communities');
+                if (stored) customList = JSON.parse(stored);
+            } catch (e) {}
+            customList.push(newComm);
+            localStorage.setItem('quickchat_custom_communities', JSON.stringify(customList));
+
+            modal.style.display = 'none';
+            showWhatsAppToast(`Community "${name}" created! 👥`, "success");
+            renderCommunitiesDrawer();
+            openCommunityGroupFeed(newComm, newComm.groups[0]);
+        };
+    }
+    const nameIn = document.getElementById('new-comm-name-input');
+    const descIn = document.getElementById('new-comm-desc-input');
+    if (nameIn) nameIn.value = '';
+    if (descIn) descIn.value = '';
+    modal.style.display = 'flex';
+    if (nameIn) nameIn.focus();
 }
 
 function renderCommunitiesDrawer() {
     const container = document.getElementById('communities-list-container');
     if (!container) return;
-    container.innerHTML = `
-        <div class="wa-community-card">
-            <div class="avatar" style="width:48px; height:48px; background:#128c7e; color:#fff; display:flex; align-items:center; justify-content:center; font-size:20px; border-radius:12px;">
-                <i class="fas fa-users"></i>
+    container.innerHTML = '';
+
+    const list = getAllCommunities();
+
+    list.forEach(comm => {
+        const sec = document.createElement('div');
+        sec.className = 'wa-community-section';
+
+        // 1. Community Header Row
+        const headerEl = document.createElement('div');
+        headerEl.className = 'wa-community-header-item';
+        headerEl.innerHTML = `
+            <div class="wa-community-avatar" style="background:${comm.bg};">
+                ${comm.icon}
             </div>
-            <div style="flex:1;">
-                <div style="font-size:15.5px; font-weight:600; color:var(--wa-text-drawer-card);">QuickChat Global Community</div>
-                <div style="font-size:12.5px; color:var(--wa-text-pill); margin-top:2px;">Announcements • 140 members</div>
+            <div class="wa-community-info">
+                <div class="wa-community-name">${escapeHtml(comm.name)}</div>
+                <div class="wa-community-meta">${comm.groups.length} groups &bull; ${escapeHtml(comm.members)}</div>
             </div>
-        </div>
-    `;
+            <i class="fas fa-chevron-down" style="color:var(--wa-icon-secondary, #8696a0); font-size:12px;"></i>
+        `;
+
+        // Click header to open main announcements
+        headerEl.onclick = () => {
+            if (comm.groups && comm.groups.length > 0) {
+                openCommunityGroupFeed(comm, comm.groups[0]);
+            }
+        };
+
+        sec.appendChild(headerEl);
+
+        // 2. Nested Groups List
+        const groupsContainer = document.createElement('div');
+        groupsContainer.className = 'wa-community-groups-list';
+
+        (comm.groups || []).forEach(group => {
+            const groupItem = document.createElement('div');
+            groupItem.className = 'wa-community-group-item';
+            const iconHTML = group.isAnnouncement
+                ? `<div class="wa-community-group-icon announcement" title="Announcements"><i class="fas fa-bullhorn"></i></div>`
+                : `<div class="wa-community-group-icon" title="Discussion"><i class="fas fa-comments"></i></div>`;
+
+            groupItem.innerHTML = `
+                ${iconHTML}
+                <div class="wa-community-group-info">
+                    <div class="wa-community-group-title">${escapeHtml(group.name)}</div>
+                    <div class="wa-community-group-subtitle">${escapeHtml(group.subtitle || '')}</div>
+                </div>
+                <span style="font-size:11.5px; color:var(--wa-text-pill); flex-shrink:0;">${escapeHtml(group.time || '')}</span>
+            `;
+
+            groupItem.onclick = (e) => {
+                e.stopPropagation();
+                openCommunityGroupFeed(comm, group);
+            };
+
+            groupsContainer.appendChild(groupItem);
+        });
+
+        sec.appendChild(groupsContainer);
+        container.appendChild(sec);
+    });
+}
+
+function openCommunityGroupFeed(comm, group) {
+    activeChat = 'comm_' + comm.id + '_' + group.id;
+    emptyState.style.display = 'none';
+    chatPanel.style.display = 'flex';
+
+    // 1. Header avatar (rounded square)
+    const activeAvatarEl = document.getElementById('active-chat-avatar');
+    if (activeAvatarEl) {
+        activeAvatarEl.style.backgroundImage = 'none';
+        activeAvatarEl.style.background = comm.bg;
+        activeAvatarEl.style.borderRadius = '10px';
+        activeAvatarEl.innerHTML = comm.icon;
+        activeAvatarEl.onclick = null;
+    }
+
+    // 2. Header title & subtitle
+    if (activeChatTitle) {
+        activeChatTitle.innerHTML = `${escapeHtml(comm.name)} <span style="font-size:13px; color:var(--wa-text-pill); font-weight:400;">&rsaquo; ${escapeHtml(group.name)}</span>`;
+    }
+    const statusEl = document.getElementById('active-chat-status');
+    if (statusEl) {
+        statusEl.innerHTML = `<span style="color:var(--wa-text-pill); font-size:12.5px;">Community &bull; ${group.isAnnouncement ? 'Announcements (Read-only)' : 'Discussion group'}</span>`;
+    }
+
+    // 3. Render Posts in messagesContainer
+    if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+
+        // Community Banner Card
+        const introCard = document.createElement('div');
+        introCard.style.cssText = 'text-align:center; padding:20px 16px; margin:14px auto; max-width:440px; background:var(--wa-bg-search-box, #202c33); border-radius:12px; border:1px solid rgba(255,255,255,0.06);';
+        introCard.innerHTML = `
+            <div style="width:58px; height:58px; border-radius:12px; background:${comm.bg}; margin:0 auto 10px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 10px rgba(0,0,0,0.3); color:#fff; font-size:24px;">
+                ${comm.icon}
+            </div>
+            <div style="font-size:16.5px; font-weight:600; color:var(--wa-text-drawer-card); margin-bottom:3px;">${escapeHtml(comm.name)}</div>
+            <div style="font-size:13px; color:#00a884; font-weight:500; margin-bottom:8px;">${escapeHtml(group.name)}</div>
+            <div style="font-size:12.5px; color:var(--wa-text-secondary); line-height:1.4;">${escapeHtml(comm.desc)}</div>
+        `;
+        messagesContainer.appendChild(introCard);
+
+        // Render Group Posts
+        (group.posts || []).forEach(post => {
+            const postCard = document.createElement('div');
+            postCard.className = 'wa-channel-post-card';
+            postCard.style.margin = '12px auto';
+
+            const reactionsHTML = (post.reactions || []).map(r => `
+                <span class="wa-channel-post-reaction-badge" onclick="this.querySelector('.rc-count').innerText = parseInt(this.querySelector('.rc-count').innerText) + 1; showWhatsAppToast('Reacted with ${r.emoji}', 'success');">
+                    <span>${r.emoji}</span>
+                    <span class="rc-count">${r.count}</span>
+                </span>
+            `).join('');
+
+            postCard.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                    <span style="font-size:13.5px; font-weight:600; color:#00a884;">${escapeHtml(post.author || comm.name)}</span>
+                    <span style="font-size:11.5px; color:var(--wa-text-pill);">${escapeHtml(post.time || 'Today')}</span>
+                </div>
+                <div style="font-size:14px; line-height:1.5; color:var(--wa-text-primary); white-space:pre-wrap;">${escapeHtml(post.text).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</div>
+                ${reactionsHTML ? `<div class="wa-channel-post-reactions" style="margin-top:10px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.06);">${reactionsHTML}</div>` : ''}
+            `;
+            messagesContainer.appendChild(postCard);
+        });
+
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // 4. Input Area: If Announcement -> Lock footer. If Discussion -> Normal chat input!
+    const normalInputBar = document.getElementById('normal-input-bar');
+    const micWrapper = document.getElementById('mic-circle-wrapper');
+    let chAdminFooter = document.getElementById('channel-custom-admin-footer');
+
+    if (group.isAnnouncement) {
+        if (normalInputBar) normalInputBar.style.display = 'none';
+        if (micWrapper) micWrapper.style.display = 'none';
+        if (!chAdminFooter) {
+            chAdminFooter = document.createElement('div');
+            chAdminFooter.id = 'channel-custom-admin-footer';
+            chAdminFooter.className = 'wa-channel-admin-footer';
+            const panelInputContainer = document.querySelector('.chat-panel-input');
+            if (panelInputContainer) panelInputContainer.appendChild(chAdminFooter);
+        }
+        chAdminFooter.style.display = 'flex';
+        chAdminFooter.innerHTML = `
+            <div class="wa-channel-admin-pill">
+                <i class="fas fa-lock" style="color:#00a884;"></i> Only community admins can send announcements
+            </div>
+            <div style="font-size:12px; color:var(--wa-text-pill);"><i class="fas fa-shield-alt" style="color:#00a884;"></i> Verified Community</div>
+        `;
+    } else {
+        // Regular discussion group -> enable normal typing!
+        if (chAdminFooter) chAdminFooter.style.display = 'none';
+        if (normalInputBar) normalInputBar.style.display = 'flex';
+        if (micWrapper) micWrapper.style.display = 'flex';
+        if (messageInput) {
+            messageInput.placeholder = `Message ${group.name}...`;
+        }
+    }
+
+    // Mobile slide in
+    chatPanel.classList.add('active-mobile');
 }
 
 // ========================================================
