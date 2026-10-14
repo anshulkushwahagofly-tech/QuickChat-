@@ -1863,6 +1863,15 @@ function openChat(friendNumber) {
     }
     emptyState.style.display = 'none';
     chatPanel.style.display = 'flex';
+
+    // Remove channel custom admin footer if it was active
+    const chAdminFooter = document.getElementById('channel-custom-admin-footer');
+    if (chAdminFooter) chAdminFooter.remove();
+    const normalInputBar = document.getElementById('normal-input-bar');
+    if (normalInputBar) normalInputBar.style.display = 'flex';
+    const micWrapper = document.getElementById('mic-circle-wrapper');
+    if (micWrapper) micWrapper.style.display = 'flex';
+
     const activeAvatarEl = document.getElementById('active-chat-avatar');
     if (friendNumber === 'ERA' || friendNumber === 'QuickChat AI') {
         activeChatTitle.innerHTML = `ERA <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official AI"></i>`;
@@ -3067,10 +3076,21 @@ function openDrawer(drawerId) {
 function closeDrawer(drawerId) {
     const target = document.getElementById(drawerId);
     if (target) target.classList.remove('active');
+    setTimeout(() => {
+        const anyActive = document.querySelector('.wa-drawer.active');
+        if (!anyActive) {
+            document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+            const railChatsBtn = document.getElementById('rail-chats-btn');
+            if (railChatsBtn) railChatsBtn.classList.add('active');
+        }
+    }, 10);
 }
 
 function closeAllDrawers() {
     document.querySelectorAll('.wa-drawer').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
+    const railChatsBtn = document.getElementById('rail-chats-btn');
+    if (railChatsBtn) railChatsBtn.classList.add('active');
 }
 
 // Drawer Back / Close Button Handlers
@@ -3458,61 +3478,387 @@ function renderCallsDrawer() {
 }
 
 // ========================================================
-// 7. CHANNELS DIRECTORY & FOLLOWING ENGINE
+// 7. CHANNELS DIRECTORY & FOLLOWING ENGINE (WHATSAPP AUTHENTIC)
 // ========================================================
 const officialChannels = [
-    { id: 'c1', name: 'WhatsApp Official', handle: '@whatsapp', followers: '142M followers', desc: 'Updates, news, and official announcements from WhatsApp.' },
-    { id: 'c2', name: 'TechCrunch', handle: '@techcrunch', followers: '18.4M followers', desc: 'Breaking technology news, AI developments, and startup analysis.' },
-    { id: 'c3', name: 'Real Madrid C.F.', handle: '@realmadrid', followers: '32.1M followers', desc: 'Official updates, scores, and match highlights.' },
-    { id: 'c4', name: 'Coding & AI World', handle: '@codingai', followers: '6.5M followers', desc: 'Daily web development tips, fullstack guides, and AI tutorials.' }
+    {
+        id: 'c1',
+        name: 'WhatsApp Official',
+        handle: '@whatsapp',
+        followers: '142M followers',
+        desc: 'Updates, news, and official announcements from WhatsApp.',
+        category: 'popular',
+        bg: '#25D366',
+        icon: '<i class="fab fa-whatsapp" style="font-size:24px; color:#fff;"></i>',
+        posts: [
+            {
+                id: 'wp1',
+                time: 'Yesterday at 5:30 PM',
+                text: '🚀 **Introducing Screen Sharing on Video Calls!**\nWhether sharing documents for work, showing family memories, or shopping together, you can now share a live view of your screen right on WhatsApp.',
+                reactions: [{ emoji: '👍', count: 1420 }, { emoji: '❤️', count: 890 }, { emoji: '🔥', count: 450 }],
+                views: '4.2M'
+            },
+            {
+                id: 'wp2',
+                time: 'Today at 10:15 AM',
+                text: '🔒 **Chat Lock is now more powerful!**\nKeep your most private chats locked behind your fingerprint, Face ID, or a secret PIN code. Your locked chats will only be visible when you unlock them.',
+                reactions: [{ emoji: '🛡️', count: 2150 }, { emoji: '❤️', count: 1120 }, { emoji: '✨', count: 980 }],
+                views: '5.8M'
+            }
+        ]
+    },
+    {
+        id: 'c2',
+        name: 'TechCrunch',
+        handle: '@techcrunch',
+        followers: '18.4M followers',
+        desc: 'Breaking technology news, AI developments, and startup analysis.',
+        category: 'most-active',
+        bg: '#00D084',
+        icon: '<span style="font-weight:900; color:#fff; font-size:18px; font-family:sans-serif;">TC</span>',
+        posts: [
+            {
+                id: 'tc1',
+                time: 'Today at 8:40 AM',
+                text: '⚡ **Breaking Tech:** Autonomous AI coding agents achieve unprecedented accuracy across real-world software benchmarks, accelerating enterprise adoption worldwide.',
+                reactions: [{ emoji: '🚀', count: 450 }, { emoji: '🤯', count: 320 }, { emoji: '💡', count: 210 }],
+                views: '240K'
+            }
+        ]
+    },
+    {
+        id: 'c3',
+        name: 'Real Madrid C.F.',
+        handle: '@realmadrid',
+        followers: '32.1M followers',
+        desc: 'Official updates, scores, and match highlights.',
+        category: 'popular',
+        bg: '#00529F',
+        icon: '<i class="fas fa-futbol" style="font-size:20px; color:#FEBE10;"></i>',
+        posts: [
+            {
+                id: 'rm1',
+                time: 'Sunday at 11:45 PM',
+                text: '👑 **FINAL SCORE: Real Madrid 3 - 1!**\nWhat an electrifying night at the Santiago Bernabéu! Thank you Madridistas worldwide for your relentless support! ⚪💪 ¡Hala Madrid!',
+                reactions: [{ emoji: '⚽', count: 4100 }, { emoji: '🏆', count: 3200 }, { emoji: '🔥', count: 2800 }],
+                views: '1.8M'
+            }
+        ]
+    },
+    {
+        id: 'c4',
+        name: 'Coding & AI World',
+        handle: '@codingai',
+        followers: '6.5M followers',
+        desc: 'Daily web development tips, fullstack guides, and AI tutorials.',
+        category: 'new',
+        bg: 'linear-gradient(135deg, #00d2ff, #7b2ff7)',
+        icon: '<i class="fas fa-laptop-code" style="font-size:19px; color:#fff;"></i>',
+        posts: [
+            {
+                id: 'code1',
+                time: 'Today at 7:00 AM',
+                text: '💡 **Pro Tip for Web Developers:**\nMaster CSS Flexbox, Grid, and asynchronous event loops. The cleaner your foundation, the faster and smoother your web applications run.',
+                reactions: [{ emoji: '💻', count: 540 }, { emoji: '❤️', count: 380 }, { emoji: '🔥', count: 290 }],
+                views: '320K'
+            }
+        ]
+    },
+    {
+        id: 'c5',
+        name: 'BBC News',
+        handle: '@bbcnews',
+        followers: '24.8M followers',
+        desc: 'Top stories and trusted global news updates.',
+        category: 'most-active',
+        bg: '#BB1919',
+        icon: '<span style="font-weight:900; color:#fff; font-size:13px; letter-spacing:1px;">BBC</span>',
+        posts: [
+            {
+                id: 'bbc1',
+                time: 'Today at 9:15 AM',
+                text: '🌍 **Global News Brief:** International leaders reach landmark cooperation agreements on renewable clean energy and high-speed digital infrastructure.',
+                reactions: [{ emoji: '👍', count: 880 }, { emoji: '🌍', count: 520 }],
+                views: '610K'
+            }
+        ]
+    },
+    {
+        id: 'c6',
+        name: 'Netflix',
+        handle: '@netflix',
+        followers: '29.2M followers',
+        desc: 'Upcoming movies, series trailers, and release dates.',
+        category: 'new',
+        bg: '#141414',
+        icon: '<span style="font-weight:900; color:#E50914; font-size:22px; font-family:sans-serif;">N</span>',
+        posts: [
+            {
+                id: 'nflx1',
+                time: 'Yesterday at 3:00 PM',
+                text: '🍿 **New Trailers Just Dropped!**\nGet ready for an epic lineup of thrillers, sci-fi, and action hitting your screens this month. Grab your popcorn and save the date!',
+                reactions: [{ emoji: '🍿', count: 1900 }, { emoji: '🔥', count: 1400 }, { emoji: '❤️', count: 980 }],
+                views: '1.2M'
+            }
+        ]
+    }
 ];
 
 let followedChannels = JSON.parse(localStorage.getItem('quickchat_followed_channels') || '["c1"]');
+let currentChannelsCategory = 'all';
+let currentChannelsSearch = '';
 
 function renderChannelsDrawer() {
     const container = document.getElementById('channels-list-container');
     if (!container) return;
     container.innerHTML = '';
 
-    officialChannels.forEach(ch => {
-        const isFollowed = followedChannels.includes(ch.id);
-        const card = document.createElement('div');
-        card.className = 'wa-channel-card';
-        card.innerHTML = `
-            <div class="avatar" style="width:48px; height:48px; background:#008069; color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px;">
-                <i class="fas fa-bullhorn"></i>
-            </div>
-            <div style="flex:1;">
-                <div style="font-size:15px; font-weight:600; color:var(--wa-text-drawer-card); display:flex; align-items:center; gap:6px;">
-                    ${ch.name} <i class="fas fa-check-circle" style="color:#00a884; font-size:13px;"></i>
-                </div>
-                <div style="font-size:12px; color:var(--wa-text-pill); margin-top:1px;">${ch.followers}</div>
-                <div style="font-size:12.5px; color:var(--wa-text-pill); margin-top:3px; line-height:1.3;">${ch.desc}</div>
-            </div>
-            <button class="wa-channel-follow-btn ${isFollowed ? 'following' : ''}" data-chid="${ch.id}">
-                ${isFollowed ? 'Following' : 'Follow'}
-            </button>
-        `;
-
-        const followBtn = card.querySelector('.wa-channel-follow-btn');
-        followBtn.onclick = (e) => {
-            e.stopPropagation();
-            if (followedChannels.includes(ch.id)) {
-                followedChannels = followedChannels.filter(id => id !== ch.id);
-                followBtn.classList.remove('following');
-                followBtn.innerText = 'Follow';
-                showWhatsAppToast(`Unfollowed ${ch.name}`, 'info');
-            } else {
-                followedChannels.push(ch.id);
-                followBtn.classList.add('following');
-                followBtn.innerText = 'Following';
-                showWhatsAppToast(`Following ${ch.name}! 📢`, 'success');
-            }
-            localStorage.setItem('quickchat_followed_channels', JSON.stringify(followedChannels));
+    // Bind Search Input listener (once)
+    const searchInput = document.getElementById('channels-search-input');
+    if (searchInput && !searchInput.dataset.bound) {
+        searchInput.dataset.bound = 'true';
+        searchInput.oninput = (e) => {
+            currentChannelsSearch = (e.target.value || '').trim().toLowerCase();
+            renderChannelsDrawer();
         };
+    }
 
-        container.appendChild(card);
+    // Bind Category Filter Pills
+    const filterRow = document.getElementById('channels-filter-row');
+    if (filterRow && !filterRow.dataset.bound) {
+        filterRow.dataset.bound = 'true';
+        filterRow.querySelectorAll('.wa-channels-filter-pill').forEach(btn => {
+            btn.onclick = () => {
+                filterRow.querySelectorAll('.wa-channels-filter-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentChannelsCategory = btn.getAttribute('data-category') || 'all';
+                renderChannelsDrawer();
+            };
+        });
+    }
+
+    // Filter channels list
+    let list = officialChannels.filter(ch => {
+        if (currentChannelsCategory !== 'all' && ch.category !== currentChannelsCategory) {
+            return false;
+        }
+        if (currentChannelsSearch) {
+            const matchName = ch.name.toLowerCase().includes(currentChannelsSearch);
+            const matchDesc = ch.desc.toLowerCase().includes(currentChannelsSearch);
+            const matchHandle = ch.handle.toLowerCase().includes(currentChannelsSearch);
+            if (!matchName && !matchDesc && !matchHandle) return false;
+        }
+        return true;
     });
+
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div style="padding:32px 16px; text-align:center; color:var(--wa-text-pill);">
+                <i class="fas fa-search" style="font-size:28px; opacity:0.4; margin-bottom:10px;"></i>
+                <div style="font-size:14px; font-weight:500;">No channels found</div>
+                <div style="font-size:12.5px; opacity:0.7; margin-top:4px;">Try searching for a different channel or topic</div>
+            </div>
+        `;
+        return;
+    }
+
+    const followedList = list.filter(ch => followedChannels.includes(ch.id));
+    const discoverList = list.filter(ch => !followedChannels.includes(ch.id));
+
+    // A. Render Followed Channels Section
+    if (followedList.length > 0 && !currentChannelsSearch && currentChannelsCategory === 'all') {
+        const followedHeader = document.createElement('div');
+        followedHeader.className = 'wa-channels-section-heading';
+        followedHeader.innerText = 'FOLLOWED CHANNELS';
+        container.appendChild(followedHeader);
+
+        followedList.forEach(ch => {
+            container.appendChild(createChannelCardElement(ch, true));
+        });
+    }
+
+    // B. Render Explore / Discover Channels Section
+    if (discoverList.length > 0) {
+        if (!currentChannelsSearch && currentChannelsCategory === 'all') {
+            const discoverHeader = document.createElement('div');
+            discoverHeader.className = 'wa-channels-section-heading';
+            discoverHeader.innerText = 'FIND CHANNELS';
+            container.appendChild(discoverHeader);
+        }
+        discoverList.forEach(ch => {
+            container.appendChild(createChannelCardElement(ch, false));
+        });
+    } else if (followedList.length > 0 && currentChannelsCategory !== 'all') {
+        followedList.forEach(ch => {
+            container.appendChild(createChannelCardElement(ch, true));
+        });
+    }
+}
+
+function createChannelCardElement(ch, isFollowed) {
+    const card = document.createElement('div');
+    card.className = 'wa-channel-item';
+    card.setAttribute('data-chid', ch.id);
+    card.innerHTML = `
+        <div class="wa-channel-avatar" style="background:${ch.bg};">
+            ${ch.icon}
+        </div>
+        <div class="wa-channel-info">
+            <div class="wa-channel-title-row">
+                <span class="wa-channel-name">${escapeHtml(ch.name)}</span>
+                <i class="fas fa-check-circle" style="color:#00a884; font-size:13px;" title="Verified"></i>
+            </div>
+            <div class="wa-channel-sub">${escapeHtml(ch.followers)}</div>
+            <div class="wa-channel-desc-line">${escapeHtml(ch.desc)}</div>
+        </div>
+        <button type="button" class="wa-channel-follow-btn ${isFollowed ? 'following' : ''}" data-chid="${ch.id}">
+            ${isFollowed ? 'Following' : 'Follow'}
+        </button>
+    `;
+
+    // Click card to open Channel Feed in main panel
+    card.onclick = (e) => {
+        if (e.target.closest('.wa-channel-follow-btn')) return;
+        openChannelFeed(ch);
+    };
+
+    // Follow / Unfollow button handler
+    const followBtn = card.querySelector('.wa-channel-follow-btn');
+    followBtn.onclick = (e) => {
+        e.stopPropagation();
+        if (followedChannels.includes(ch.id)) {
+            followedChannels = followedChannels.filter(id => id !== ch.id);
+            followBtn.classList.remove('following');
+            followBtn.innerText = 'Follow';
+            showWhatsAppToast(`Unfollowed ${ch.name}`, 'info');
+        } else {
+            followedChannels.push(ch.id);
+            followBtn.classList.add('following');
+            followBtn.innerText = 'Following';
+            showWhatsAppToast(`Following ${ch.name}! 📢`, 'success');
+        }
+        localStorage.setItem('quickchat_followed_channels', JSON.stringify(followedChannels));
+        // Refresh channels list layout
+        setTimeout(renderChannelsDrawer, 200);
+    };
+
+    return card;
+}
+
+// Function to open Channel feed inside main chat panel
+function openChannelFeed(ch) {
+    activeChat = 'channel_' + ch.id;
+    emptyState.style.display = 'none';
+    chatPanel.style.display = 'flex';
+
+    // 1. Header avatar & styling
+    const activeAvatarEl = document.getElementById('active-chat-avatar');
+    if (activeAvatarEl) {
+        activeAvatarEl.style.backgroundImage = 'none';
+        activeAvatarEl.style.background = ch.bg;
+        activeAvatarEl.innerHTML = ch.icon;
+        activeAvatarEl.onclick = null;
+    }
+
+    // 2. Header title & subtitle
+    if (activeChatTitle) {
+        activeChatTitle.innerHTML = `${escapeHtml(ch.name)} <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Official Channel"></i>`;
+    }
+    const statusEl = document.getElementById('active-chat-status');
+    if (statusEl) {
+        statusEl.innerHTML = `<span style="color:var(--wa-text-pill); font-size:12.5px;">Channel &bull; ${escapeHtml(ch.followers)}</span>`;
+    }
+
+    // 3. Render Channel Posts in messages container
+    if (messagesContainer) {
+        messagesContainer.innerHTML = '';
+
+        // Channel Introduction Banner
+        const introCard = document.createElement('div');
+        introCard.style.cssText = 'text-align:center; padding:24px 16px; margin:16px auto; max-width:440px; background:var(--wa-bg-search-box, #202c33); border-radius:12px; border:1px solid rgba(255,255,255,0.06);';
+        introCard.innerHTML = `
+            <div style="width:64px; height:64px; border-radius:50%; background:${ch.bg}; margin:0 auto 12px auto; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(0,0,0,0.3);">
+                ${ch.icon}
+            </div>
+            <div style="font-size:17px; font-weight:600; color:var(--wa-text-drawer-card); margin-bottom:4px;">${escapeHtml(ch.name)} <i class="fas fa-check-circle" style="color:#00a884; font-size:14px;"></i></div>
+            <div style="font-size:13px; color:var(--wa-text-pill); margin-bottom:12px;">${escapeHtml(ch.followers)} &bull; ${escapeHtml(ch.handle)}</div>
+            <div style="font-size:13.5px; color:var(--wa-text-secondary); line-height:1.45;">${escapeHtml(ch.desc)}</div>
+        `;
+        messagesContainer.appendChild(introCard);
+
+        // Render Posts
+        (ch.posts || []).forEach(post => {
+            const postCard = document.createElement('div');
+            postCard.className = 'wa-channel-post-card';
+            postCard.style.margin = '14px auto';
+
+            const reactionsHTML = (post.reactions || []).map(r => `
+                <span class="wa-channel-post-reaction-badge" onclick="this.querySelector('.rc-count').innerText = parseInt(this.querySelector('.rc-count').innerText) + 1; showWhatsAppToast('Reacted with ${r.emoji}', 'success');">
+                    <span>${r.emoji}</span>
+                    <span class="rc-count">${r.count}</span>
+                </span>
+            `).join('');
+
+            postCard.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="font-size:14px; font-weight:600; color:#00a884;">${escapeHtml(ch.name)}</span>
+                        <i class="fas fa-check-circle" style="color:#00a884; font-size:12px;"></i>
+                    </div>
+                    <span style="font-size:11.5px; color:var(--wa-text-pill);">${escapeHtml(post.time)}</span>
+                </div>
+                <div style="font-size:14px; line-height:1.5; color:var(--wa-text-primary); white-space:pre-wrap;">${escapeHtml(post.text).replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')}</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; pt-2; border-top:1px solid rgba(255,255,255,0.06); padding-top:8px;">
+                    <div class="wa-channel-post-reactions">${reactionsHTML}</div>
+                    <div style="font-size:12px; color:var(--wa-text-pill); display:flex; align-items:center; gap:4px;">
+                        <i class="far fa-eye"></i> ${post.views || '1M'}
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(postCard);
+        });
+
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    // 4. Replace normal message input with Channel Admin Footer
+    const normalInputBar = document.getElementById('normal-input-bar');
+    if (normalInputBar) normalInputBar.style.display = 'none';
+    const micWrapper = document.getElementById('mic-circle-wrapper');
+    if (micWrapper) micWrapper.style.display = 'none';
+
+    let chAdminFooter = document.getElementById('channel-custom-admin-footer');
+    if (!chAdminFooter) {
+        chAdminFooter = document.createElement('div');
+        chAdminFooter.id = 'channel-custom-admin-footer';
+        chAdminFooter.className = 'wa-channel-admin-footer';
+        const panelInputContainer = document.querySelector('.chat-panel-input');
+        if (panelInputContainer) panelInputContainer.appendChild(chAdminFooter);
+    }
+    chAdminFooter.style.display = 'flex';
+    const isMuted = localStorage.getItem('quickchat_channel_mute_' + ch.id) === 'true';
+    chAdminFooter.innerHTML = `
+        <div class="wa-channel-admin-pill">
+            <i class="fas fa-lock" style="color:#00a884;"></i> Only channel admins can post updates
+        </div>
+        <button type="button" class="wa-channel-mute-btn" id="channel-mute-btn">
+            <i class="fas ${isMuted ? 'fa-bell' : 'fa-bell-slash'}"></i> ${isMuted ? 'Unmute' : 'Mute'}
+        </button>
+    `;
+
+    const muteBtn = chAdminFooter.querySelector('#channel-mute-btn');
+    if (muteBtn) {
+        muteBtn.onclick = () => {
+            const currentlyMuted = localStorage.getItem('quickchat_channel_mute_' + ch.id) === 'true';
+            localStorage.setItem('quickchat_channel_mute_' + ch.id, String(!currentlyMuted));
+            showWhatsAppToast(!currentlyMuted ? `Muted notifications for ${ch.name}` : `Unmuted notifications for ${ch.name}`, 'info');
+            openChannelFeed(ch);
+        };
+    }
+
+    // Mobile slide in
+    chatPanel.classList.add('active-mobile');
 }
 
 // ========================================================

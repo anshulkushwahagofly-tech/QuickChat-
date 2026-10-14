@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="logo.png?v=4">
     <link rel="manifest" href="manifest.json?v=4">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=31">
+    <link rel="stylesheet" href="style.css?v=32">
     <link rel="stylesheet" href="mobile-whatsapp.css?v=14">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script>
@@ -1037,7 +1037,19 @@
                     <button id="close-channels-drawer" class="wa-drawer-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
                     <h3>Channels</h3>
                 </div>
-                <div class="wa-drawer-body">
+                <div class="wa-drawer-body" style="overflow-y:auto; flex:1;">
+                    <div class="wa-channels-search-container">
+                        <div class="wa-channels-search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="channels-search-input" placeholder="Search channels" />
+                        </div>
+                    </div>
+                    <div class="wa-channels-filter-row" id="channels-filter-row">
+                        <button class="wa-channels-filter-pill active" data-category="all">All</button>
+                        <button class="wa-channels-filter-pill" data-category="most-active">Most active</button>
+                        <button class="wa-channels-filter-pill" data-category="popular">Popular</button>
+                        <button class="wa-channels-filter-pill" data-category="new">New</button>
+                    </div>
                     <div class="wa-channels-desc">Stay updated on topics you care about. Find channels to follow below.</div>
                     <div class="wa-channels-list" id="channels-list-container">
                         <!-- Loaded dynamically -->
@@ -1516,7 +1528,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=60"></script>
+    <script src="script.js?v=61"></script>
     <script src="webrtc.js?v=5"></script>
 </body>
 </html>
