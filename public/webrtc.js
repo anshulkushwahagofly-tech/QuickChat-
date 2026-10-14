@@ -146,6 +146,9 @@ socket.on('call-made', async (data) => {
     rejectCallBtn.onclick = () => {
         incomingCallModal.style.display = 'none';
         socket.emit('reject-call', { to: data.from });
+        if (typeof recordMissedCall === 'function') {
+            recordMissedCall(data.from);
+        }
     };
 });
 
@@ -162,6 +165,11 @@ socket.on('call-rejected', () => {
 });
 
 socket.on('call-ended', () => {
+    if (incomingCallModal && incomingCallModal.style.display === 'flex' && currentCaller) {
+        if (typeof recordMissedCall === 'function') {
+            recordMissedCall(currentCaller);
+        }
+    }
     stopCall();
 });
 

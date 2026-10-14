@@ -288,28 +288,29 @@
                     </svg>
                     <span class="wa-rail-badge" id="rail-chats-badge" style="display: none;"></span>
                 </button>
-                <button class="wa-rail-item has-badge" id="rail-calls-btn" title="Calls">
+                <button class="wa-rail-item" id="rail-calls-btn" title="Calls">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
                         <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.44-5.15-3.75-6.59-6.59l1.97-1.57c.28-.28.37-.68.25-1.02A11.36 11.36 0 0 1 8.56 4c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1 0 9.39 7.61 17 17 17 .55 0 1-.45 1-1v-3.62c0-.55-.45-1-.99-1z"/>
                     </svg>
-                    <span class="wa-rail-badge">11</span>
+                    <span class="wa-rail-badge" id="rail-calls-badge" style="display: none;"></span>
                 </button>
-                <button class="wa-rail-item has-dot" id="rail-status-btn" title="Status">
+                <button class="wa-rail-item" id="rail-status-btn" title="Status">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
                         <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-dasharray="8 3"/>
                     </svg>
-                    <span class="wa-rail-dot"></span>
+                    <span class="wa-rail-dot" id="rail-status-dot" style="display: none;"></span>
                 </button>
-                <button class="wa-rail-item has-dot" id="rail-channels-btn" title="Channels">
+                <button class="wa-rail-item" id="rail-channels-btn" title="Channels">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
                         <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14.5a1.5 1.5 0 1 1 1.5-1.5 1.5 1.5 0 0 1-1.5 1.5zm3.2-3.8a4.5 4.5 0 0 0-6.4 0 .75.75 0 1 1-1.06-1.06 6 6 0 0 1 8.52 0 .75.75 0 1 1-1.06 1.06z"/>
                     </svg>
-                    <span class="wa-rail-dot"></span>
+                    <span class="wa-rail-dot" id="rail-channels-dot" style="display: none;"></span>
                 </button>
                 <button class="wa-rail-item" id="rail-communities-btn" title="Communities">
                     <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
                         <path d="M16.5 12c1.38 0 2.49-1.12 2.49-2.5S17.88 7 16.5 7a2.5 2.5 0 0 0 0 5zM9 11c1.66 0 2.99-1.34 2.99-3S10.66 5 9 5C7.34 5 6 6.34 6 8s1.34 3 3 3zm7.5 3c-1.83 0-5.5.92-5.5 2.75V19h11v-2.25c0-1.83-3.67-2.75-5.5-2.75zM9 13c-2.33 0-7 1.17-7 3.5V19h7v-2.25c0-.85.34-1.65.94-2.28-.31-.31-.63-.47-.94-.47z"/>
                     </svg>
+                    <span class="wa-rail-dot" id="rail-communities-dot" style="display: none;"></span>
                 </button>
                 <button class="wa-rail-item wa-meta-ai-btn" id="rail-ai-btn" title="ERA AI">
                     <div class="wa-meta-ai-icon">
@@ -1529,7 +1530,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=63"></script>
-    <script src="webrtc.js?v=5"></script>
+    <script src="script.js?v=64"></script>
+    <script src="webrtc.js?v=6"></script>
 </body>
 </html>

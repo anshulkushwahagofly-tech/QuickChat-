@@ -298,17 +298,151 @@ function renderFaviconBadge(count) {
     }
 }
 
-function updateFaviconAndTitleBadge() {
-    const totalUnread = getTotalUnreadCount();
+// ========================================================
+// WHATSAPP RAIL NOTIFICATION & UNREAD BADGE SUBSYSTEM
+// ========================================================
 
-    // 1. WhatsApp Tab Title: "(N) QuickChat" or "QuickChat"
-    if (totalUnread > 0) {
-        document.title = `(${totalUnread}) QuickChat`;
-    } else {
-        document.title = 'QuickChat';
+function getMissedCallsCount() {
+    try {
+        if (!myNumber) return 0;
+        return parseInt(localStorage.getItem('quickchat_missed_calls_' + myNumber) || '0', 10);
+    } catch (e) {
+        return 0;
     }
+}
 
-    // 2. Update Left Navigation Rail Chats Icon Badge
+function updateCallsRailBadge() {
+    const railCallsBtn = document.getElementById('rail-calls-btn');
+    const railCallsBadge = document.getElementById('rail-calls-badge');
+    if (!railCallsBtn) return;
+    const missed = getMissedCallsCount();
+    if (missed > 0) {
+        railCallsBtn.classList.add('has-badge');
+        if (railCallsBadge) {
+            railCallsBadge.textContent = missed > 99 ? '99+' : String(missed);
+            railCallsBadge.style.display = 'block';
+        }
+    } else {
+        railCallsBtn.classList.remove('has-badge');
+        if (railCallsBadge) railCallsBadge.style.display = 'none';
+    }
+}
+
+function markCallsAsSeen() {
+    try {
+        if (myNumber) {
+            localStorage.setItem('quickchat_missed_calls_' + myNumber, '0');
+        }
+    } catch (e) {}
+    updateCallsRailBadge();
+}
+
+function recordMissedCall(callerNumber) {
+    try {
+        const key = 'quickchat_missed_calls_' + (myNumber || '');
+        let count = parseInt(localStorage.getItem(key) || '0', 10);
+        count += 1;
+        localStorage.setItem(key, String(count));
+    } catch (e) {}
+    updateCallsRailBadge();
+}
+
+function getUnseenStatusesCount() {
+    if (!allStatuses || allStatuses.length === 0) return 0;
+    try {
+        const seenIds = JSON.parse(localStorage.getItem('quickchat_seen_statuses_' + myNumber) || '[]');
+        const unseen = allStatuses.filter(st => st.phone !== myNumber && (!st.id || !seenIds.includes(st.id)));
+        return unseen.length;
+    } catch (e) {
+        return 0;
+    }
+}
+
+function updateStatusRailDot() {
+    const railStatusBtn = document.getElementById('rail-status-btn');
+    const railStatusDot = document.getElementById('rail-status-dot');
+    if (!railStatusBtn) return;
+    const count = getUnseenStatusesCount();
+    if (count > 0) {
+        railStatusBtn.classList.add('has-dot');
+        if (railStatusDot) railStatusDot.style.display = 'block';
+    } else {
+        railStatusBtn.classList.remove('has-dot');
+        if (railStatusDot) railStatusDot.style.display = 'none';
+    }
+}
+
+function markStatusesAsSeen() {
+    try {
+        if (myNumber && allStatuses && allStatuses.length > 0) {
+            const seenIds = allStatuses.map(s => s.id || (s.phone + '_' + s.timestamp)).filter(Boolean);
+            localStorage.setItem('quickchat_seen_statuses_' + myNumber, JSON.stringify(seenIds));
+        }
+    } catch (e) {}
+    updateStatusRailDot();
+}
+
+function updateChannelsRailDot() {
+    const railChannelsBtn = document.getElementById('rail-channels-btn');
+    const railChannelsDot = document.getElementById('rail-channels-dot');
+    if (!railChannelsBtn) return;
+    try {
+        const hasUnseen = localStorage.getItem('quickchat_unseen_channels_' + myNumber) === 'true';
+        if (hasUnseen) {
+            railChannelsBtn.classList.add('has-dot');
+            if (railChannelsDot) railChannelsDot.style.display = 'block';
+        } else {
+            railChannelsBtn.classList.remove('has-dot');
+            if (railChannelsDot) railChannelsDot.style.display = 'none';
+        }
+    } catch (e) {
+        railChannelsBtn.classList.remove('has-dot');
+        if (railChannelsDot) railChannelsDot.style.display = 'none';
+    }
+}
+
+function markChannelsAsSeen() {
+    try {
+        if (myNumber) {
+            localStorage.setItem('quickchat_unseen_channels_' + myNumber, 'false');
+            localStorage.setItem('quickchat_channels_last_seen_' + myNumber, String(Date.now()));
+        }
+    } catch (e) {}
+    updateChannelsRailDot();
+}
+
+function updateCommunitiesRailDot() {
+    const railCommunitiesBtn = document.getElementById('rail-communities-btn');
+    const railCommunitiesDot = document.getElementById('rail-communities-dot');
+    if (!railCommunitiesBtn) return;
+    try {
+        const hasUnseen = localStorage.getItem('quickchat_unseen_communities_' + myNumber) === 'true';
+        if (hasUnseen) {
+            railCommunitiesBtn.classList.add('has-dot');
+            if (railCommunitiesDot) railCommunitiesDot.style.display = 'block';
+        } else {
+            railCommunitiesBtn.classList.remove('has-dot');
+            if (railCommunitiesDot) railCommunitiesDot.style.display = 'none';
+        }
+    } catch (e) {
+        railCommunitiesBtn.classList.remove('has-dot');
+        if (railCommunitiesDot) railCommunitiesDot.style.display = 'none';
+    }
+}
+
+function markCommunitiesAsSeen() {
+    try {
+        if (myNumber) {
+            localStorage.setItem('quickchat_unseen_communities_' + myNumber, 'false');
+            localStorage.setItem('quickchat_communities_last_seen_' + myNumber, String(Date.now()));
+        }
+    } catch (e) {}
+    updateCommunitiesRailDot();
+}
+
+function updateRailNotificationBadges() {
+    // 1. Chats
+    const totalUnread = getTotalUnreadCount();
     const railChatsBtn = document.getElementById('rail-chats-btn');
     let railChatsBadge = document.getElementById('rail-chats-badge');
     if (railChatsBtn) {
@@ -327,6 +461,32 @@ function updateFaviconAndTitleBadge() {
             railChatsBtn.classList.remove('has-badge');
         }
     }
+
+    // 2. Calls
+    updateCallsRailBadge();
+
+    // 3. Status
+    updateStatusRailDot();
+
+    // 4. Channels
+    updateChannelsRailDot();
+
+    // 5. Communities
+    updateCommunitiesRailDot();
+}
+
+function updateFaviconAndTitleBadge() {
+    const totalUnread = getTotalUnreadCount();
+
+    // 1. WhatsApp Tab Title: "(N) QuickChat" or "QuickChat"
+    if (totalUnread > 0) {
+        document.title = `(${totalUnread}) QuickChat`;
+    } else {
+        document.title = 'QuickChat';
+    }
+
+    // 2. Update Left Navigation Rail Badges & Dots (Chats, Calls, Status, Channels, Communities)
+    updateRailNotificationBadges();
 
     // 3. Update Unread Filter Pill Badge
     const unreadPill = document.querySelector('.wa-pill[data-filter="unread"]');
@@ -3382,10 +3542,22 @@ function openDrawer(drawerId) {
     const target = document.getElementById(drawerId);
     if (target) {
         target.classList.add('active');
-        if (drawerId === 'status-drawer') loadStatusDrawer();
-        if (drawerId === 'calls-drawer') renderCallsDrawer();
-        if (drawerId === 'channels-drawer') renderChannelsDrawer();
-        if (drawerId === 'communities-drawer') renderCommunitiesDrawer();
+        if (drawerId === 'status-drawer') {
+            loadStatusDrawer();
+            if (typeof markStatusesAsSeen === 'function') markStatusesAsSeen();
+        }
+        if (drawerId === 'calls-drawer') {
+            renderCallsDrawer();
+            if (typeof markCallsAsSeen === 'function') markCallsAsSeen();
+        }
+        if (drawerId === 'channels-drawer') {
+            renderChannelsDrawer();
+            if (typeof markChannelsAsSeen === 'function') markChannelsAsSeen();
+        }
+        if (drawerId === 'communities-drawer') {
+            renderCommunitiesDrawer();
+            if (typeof markCommunitiesAsSeen === 'function') markCommunitiesAsSeen();
+        }
         if (drawerId === 'starred-messages-drawer') renderStarredDrawer();
         if (drawerId === 'contact-info-drawer') renderContactInfoDrawer();
         if (drawerId === 'settings-drawer') renderSettingsDrawer();
@@ -3483,6 +3655,7 @@ if (railCallsBtn) {
     railCallsBtn.addEventListener('click', () => {
         document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
         railCallsBtn.classList.add('active');
+        if (typeof markCallsAsSeen === 'function') markCallsAsSeen();
         openDrawer('calls-drawer');
     });
 }
@@ -3492,6 +3665,7 @@ if (railStatusBtn) {
     railStatusBtn.addEventListener('click', () => {
         document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
         railStatusBtn.classList.add('active');
+        if (typeof markStatusesAsSeen === 'function') markStatusesAsSeen();
         openDrawer('status-drawer');
     });
 }
@@ -3501,6 +3675,7 @@ if (railChannelsBtn) {
     railChannelsBtn.addEventListener('click', () => {
         document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
         railChannelsBtn.classList.add('active');
+        if (typeof markChannelsAsSeen === 'function') markChannelsAsSeen();
         openDrawer('channels-drawer');
     });
 }
@@ -3510,6 +3685,7 @@ if (railCommunitiesBtn) {
     railCommunitiesBtn.addEventListener('click', () => {
         document.querySelectorAll('.wa-rail-item').forEach(i => i.classList.remove('active'));
         railCommunitiesBtn.classList.add('active');
+        if (typeof markCommunitiesAsSeen === 'function') markCommunitiesAsSeen();
         openDrawer('communities-drawer');
     });
 }
@@ -3579,11 +3755,13 @@ function loadStatusDrawer() {
 socket.on('statuses list', (list) => {
     allStatuses = list || [];
     renderStatusList(allStatuses);
+    if (typeof updateStatusRailDot === 'function') updateStatusRailDot();
 });
 
 socket.on('new status', (st) => {
     allStatuses.unshift(st);
     renderStatusList(allStatuses);
+    if (typeof updateStatusRailDot === 'function') updateStatusRailDot();
 });
 
 function renderStatusList(statuses) {
