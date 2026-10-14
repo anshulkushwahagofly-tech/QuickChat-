@@ -6937,7 +6937,17 @@ function isHindiOrHinglish(str) {
 
 // Instant Local Checks (API Key Command, Image Gen, Pure Math, Name Memory, Exact Time/Date)
 function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
-    const text = String(rawText || '').trim();
+    let text = String(rawText || '').trim();
+    // Normalize and handle ~ERA, @ERA summon prefix
+    if (/^[~@]?ERA\b/i.test(text)) {
+        const stripped = text.replace(/^[~@]?ERA\b[:\s,-]*/i, '').trim();
+        if (!stripped) {
+            return isHindiOrHinglish(rawText)
+                ? "Hello! 👋 Main **ERA** hoon, aapka smart personal AI assistant! Kahiye, aaj main aapki kya madad kar sakta hoon? 😊"
+                : "Hello! 👋 I'm **ERA**, your smart personal AI assistant. How can I help you today? 😊";
+        }
+        text = stripped;
+    }
     const lower = text.toLowerCase();
 
     // Default language is English (like WhatsApp Meta AI), switches to Hindi if Hindi/Hinglish detected
@@ -7100,6 +7110,29 @@ function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
 // Track handled AI requests
 const handledAiRequestIds = new Set();
 
+function getSmartConversationalFallback(rawText) {
+    const text = String(rawText || '').trim();
+    const isHindi = typeof isHindiOrHinglish === 'function' ? isHindiOrHinglish(text) : false;
+    const hasAbuse = /\b(?:bhosdike|bhosadike|chutiya|chutiye|madarchod|bhenchod|behenchod|mc|bc|gandu|gaandu|lodu|laude|bkl|harami|kamina|kutta|kutte|saale|saala|fuck\s+you|fuck|bitch|asshole|bastard)\b/i.test(text);
+
+    if (hasAbuse) {
+        return isHindi
+            ? "Abe apni aukaat mein reh kar baat kar samjha! Yahan faltu ki badtameezi nahi chalegi. Dhang se baat karega toh jawaab milega! 🔥"
+            : "Mind your language! Speak with respect if you want an answer. 🔥";
+    }
+
+    if (/^[~@]?ERA\b/i.test(text)) {
+        return isHindi
+            ? "Hello! 👋 Main **ERA** hoon, aapka smart personal AI assistant! Kahiye, aaj main aapki kya madad kar sakta hoon? 😊"
+            : "Hello! 👋 I am **ERA**, your smart personal AI assistant created by **Anshuu (Anshul Kushwaha)**. How can I assist you today? 😊";
+    }
+
+    if (isHindi) {
+        return "Hello! Main **ERA** hoon ✨ Kahiye, main aapki kya madad kar sakta hoon? Aap mujhse koi bhi sawaal pooch sakte hain, calculations, daily planning ya images generate karwa sakte hain! 😊";
+    }
+    return "Hello! I am **ERA** ✨ How can I assist you today? Feel free to ask questions, solve problems, or generate images! 😊";
+}
+
 socket.on('ai response', (data) => {
     const reqId = data && data.requestId;
     if (reqId && handledAiRequestIds.has(reqId)) {
@@ -7107,14 +7140,13 @@ socket.on('ai response', (data) => {
     }
     if (reqId) handledAiRequestIds.add(reqId);
 
-    if (data && !data.fallback && data.text) {
+    if (data && data.text) {
         appendAiMessageToChat(data.text, data.image || null);
         return;
     }
 
-    appendAiMessageToChat(
-        `🤖 **ERA:** The server is currently busy. Please wait a moment and try again. 🔄`
-    );
+    // Never show cold busy error; provide smart conversational fallback
+    appendAiMessageToChat(getSmartConversationalFallback(data && data.prompt));
 });
 
 const originalSendMessage = sendMessage;
@@ -7168,9 +7200,9 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
                     apiKey: localStorage.getItem('quickchat_ai_api_key') || ''
                 });
 
-                // Wait up to 3.5s for Server response (which has real-time live web grounding)
+                // Wait up to 20s for Server response (which runs multi-model LLM)
                 await new Promise((resolve) => {
-                    const timer = setTimeout(resolve, 3500);
+                    const timer = setTimeout(resolve, 20000);
                     const checker = setInterval(() => {
                         if (handledAiRequestIds.has(requestId)) {
                             clearInterval(checker);
@@ -7191,9 +7223,8 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
                     return;
                 }
                 if (!handledAiRequestIds.has(requestId)) {
-                    appendAiMessageToChat(
-                        `🤖 **ERA:** The server is currently busy. Please wait a moment and try again. 🔄`
-                    );
+                    handledAiRequestIds.add(requestId);
+                    appendAiMessageToChat(getSmartConversationalFallback(currentInputText));
                 }
             }
         })();

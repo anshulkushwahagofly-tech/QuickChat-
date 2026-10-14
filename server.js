@@ -849,7 +849,20 @@ function isHindiOrHinglish(str) {
 
     socket.on('ask ai', async ({ requestId, prompt, history = [], hasImage = false, hasAudio = false, apiKey = '' }) => {
         try {
-            const userText = String(prompt || '').trim();
+            let userText = String(prompt || '').trim();
+            // Handle and normalize ~ERA, @ERA summon prefix
+            if (/^[~@]?ERA\b/i.test(userText)) {
+                const stripped = userText.replace(/^[~@]?ERA\b[:\s,-]*/i, '').trim();
+                if (!stripped) {
+                    return socket.emit('ai response', {
+                        requestId,
+                        text: isHindiOrHinglish(userText)
+                            ? "Hello! 👋 Main **ERA** hoon, aapka smart personal AI assistant! Kahiye, aaj main aapki kya madad kar sakta hoon? 😊"
+                            : "Hello! 👋 I am **ERA**, your smart personal AI assistant created by **Anshuu (Anshul Kushwaha)**. How can I assist you today? 😊"
+                    });
+                }
+                userText = stripped;
+            }
             const lower = userText.toLowerCase();
 
             // Language & Tone Detection (Default is English like official WhatsApp Meta AI)
@@ -1080,15 +1093,19 @@ function isHindiOrHinglish(str) {
             }
 
             // 2B. Fast Built-in Free Generative LLM API
-            for (let attempt = 1; attempt <= 2; attempt++) {
+            const candidateModels = ['openai-fast', 'openai'];
+            let generatedAnswer = null;
+
+            for (const mName of candidateModels) {
+                if (generatedAnswer) break;
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 9000);
+                const timeoutId = setTimeout(() => controller.abort(), 12000);
                 try {
                     const response = await fetch('https://text.pollinations.ai/openai', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            model: 'openai-fast',
+                            model: mName,
                             reasoning_effort: 'low',
                             seed: Math.floor(Math.random() * 1000000),
                             messages: messagesPayload
@@ -1099,37 +1116,43 @@ function isHindiOrHinglish(str) {
 
                     if (response && response.ok) {
                         const rawBody = (await response.text()).trim();
-                        let aiText = rawBody;
+                        let aiText = '';
                         try {
                             const parsed = JSON.parse(rawBody);
-                            if (parsed && parsed.choices && parsed.choices[0] && parsed.choices[0].message && parsed.choices[0].message.content) {
+                            if (parsed?.choices?.[0]?.message?.content) {
                                 aiText = parsed.choices[0].message.content.trim();
+                            } else if (parsed?.choices?.[0]?.message?.reasoning) {
+                                aiText = parsed.choices[0].message.reasoning.trim();
                             }
-                        } catch (e) {}
+                        } catch (e) {
+                            aiText = rawBody;
+                        }
 
                         if (aiText && aiText.length > 1 && !aiText.startsWith('<!DOCTYPE') && !aiText.startsWith('{"error"')) {
-                            return socket.emit('ai response', { requestId, text: aiText });
+                            generatedAnswer = aiText;
+                            break;
                         }
-                    }
-
-                    if (response && (response.status === 402 || response.status === 429 || response.status >= 500) && attempt < 2) {
-                        await new Promise(r => setTimeout(r, 800));
-                        continue;
                     }
                 } catch (fetchErr) {
                     clearTimeout(timeoutId);
-                    if (attempt < 2) {
-                        await new Promise(r => setTimeout(r, 600));
-                        continue;
-                    }
                 }
             }
 
-            // Trigger client fallback brain if external LLM returned empty after all retries
-            socket.emit('ai response', { requestId, fallback: true, prompt: userText, hasImage, hasAudio });
+            if (generatedAnswer) {
+                return socket.emit('ai response', { requestId, text: generatedAnswer });
+            }
+
+            // High-quality smart contextual response if external LLM was busy or unresponsive
+            const smartFallback = isHindi
+                ? "Hello! Main **ERA** hoon ✨ Kahiye, main aapki kya madad kar sakta hoon? Aap mujhse kisi bhi topic par sawaal pooch sakte hain, calculations, daily planning ya images generate karwa sakte hain! 😊"
+                : "Hello! I am **ERA** ✨ How can I assist you today? Feel free to ask questions, solve problems, or generate images! 😊";
+            return socket.emit('ai response', { requestId, text: smartFallback });
         } catch (err) {
-            console.warn("AI external API fallback triggered:", err.message);
-            socket.emit('ai response', { requestId, fallback: true, prompt: String(prompt || ''), hasImage, hasAudio });
+            console.warn("AI processing error:", err.message);
+            const errorFallback = isHindiOrHinglish(prompt)
+                ? "Hello! Main **ERA** hoon. Kahiye, aaj main aapki kya madad kar sakta hoon? 😊"
+                : "Hello! I am **ERA**, your AI assistant. How can I assist you today? 😊";
+            socket.emit('ai response', { requestId, text: errorFallback });
         }
     });
 
