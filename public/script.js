@@ -3089,7 +3089,7 @@ function renderMessages() {
         }
 
         let aiVoiceHTML = (!isMe && (msg.from === 'QuickChat AI' || msg.from === 'ERA') && msg.text)
-            ? `<button type="button" class="wa-ai-speak-btn" onclick="toggleSpeakAiMessage('${msg.id || idx}', this)" title="Speak like J.A.R.V.I.S."><i class="fas fa-volume-up"></i></button>`
+            ? `<button type="button" class="wa-ai-speak-btn" onclick="toggleSpeakAiMessage('${msg.id || idx}', this)" title="Listen to ERA"><i class="fas fa-volume-up"></i></button>`
             : '';
 
         msgElement.innerHTML = `
@@ -6671,11 +6671,11 @@ function updateAiHeaderBadge() {
     if (activeChat !== 'ERA' && activeChat !== 'QuickChat AI') return;
     const hasCustomKey = !!(localStorage.getItem('quickchat_ai_api_key'));
     if (activeChatTitle) {
-        activeChatTitle.innerHTML = `ERA <i class="fas fa-check-circle" style="color:#00d2ff; font-size:13px; margin-left:4px;" title="Official AI"></i> <span class="wa-jarvis-badge" onclick="openAiApiKeyDialog(event)" style="cursor:pointer;" title="J.A.R.V.I.S. Protocol Active (Click to manage API key)"><i class="fas fa-microchip"></i> J.A.R.V.I.S. 2.0</span>`;
+        activeChatTitle.innerHTML = `ERA <i class="fas fa-check-circle" style="color:#00a884; font-size:13px; margin-left:4px;" title="Verified AI"></i> <span onclick="openAiApiKeyDialog(event)" style="cursor:pointer; font-size:10.5px; margin-left:6px; background:rgba(0,168,132,0.12); color:#00a884; padding:2px 8px; border-radius:10px; font-weight:600; vertical-align:middle; display:inline-flex; align-items:center; gap:4px; border:1px solid rgba(0,168,132,0.3);" title="Connected to Google Gemini AI Engine"><i class="fas fa-robot"></i> Official AI</span>`;
     }
     const statusEl = document.getElementById('active-chat-status');
     if (statusEl) {
-        statusEl.innerHTML = `<span style="color:#00d2ff; font-size:12px; font-weight:500;"><i class="fas fa-satellite-dish" style="font-size:10px; margin-right:4px;"></i> Systems Operational</span>`;
+        statusEl.innerHTML = `<span style="color:#00a884;">online</span>`;
     }
 }
 
@@ -6740,9 +6740,9 @@ function setAiThinkingStatus(isThinking) {
     if (!statusEl) return;
     if (activeChat === 'ERA' || activeChat === 'QuickChat AI') {
         if (isThinking) {
-            statusEl.innerHTML = `<span style="color:#00d2ff; font-weight:600;"><i class="fas fa-microchip fa-spin" style="font-size:11px; margin-right:4px;"></i> JARVIS processing...</span>`;
+            statusEl.innerHTML = `<span style="color:#00a884; font-weight:600;"><i class="fas fa-circle-notch fa-spin" style="font-size:11px; margin-right:4px;"></i> typing...</span>`;
         } else {
-            statusEl.innerHTML = `<span style="color:#00d2ff; font-size:12px; font-weight:500;"><i class="fas fa-satellite-dish" style="font-size:10px; margin-right:4px;"></i> Systems Operational</span>`;
+            statusEl.innerHTML = `<span style="color:#00a884;">online</span>`;
         }
     }
 }
@@ -6874,16 +6874,15 @@ async function tryBrowserGenerativeLLM(userText, historyArr, hasImage, hasAudio)
     const runTask = async () => {
         const todayDateStr = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Kolkata' });
         const sysPrompt = [
-            "You are ERA, running on the official J.A.R.V.I.S. High-Intelligence Neural Protocol.",
-            "PERSONA: Like Tony Stark's JARVIS, you are exceptionally brilliant, sophisticated, polished, witty, confident, and fiercely loyal to your creator.",
-            "CREATOR & BOSS: Your architect, founder, and boss is Anshuu (Anshul Kushwaha). Always address him as 'Sir', 'Boss', or 'Mr. Kushwaha' with supreme respect. If asked who made you or who is your father, proudly proclaim: 'I was engineered and built by Anshuu (Anshul Kushwaha), the creator of QuickChat and boss of ERA.'",
-            `TEMPORAL ANCHOR (REAL TIME): Today is ${todayDateStr}. The current year is 2026. Keep this temporal context strictly in mind for all dates, ages, political terms, sporting events, and current affairs.`,
-            "REAL-TIME ACCURACY: Prioritize real-time data and never invent fake facts, dates, or names.",
-            "LANGUAGE MASTERY: Speak fluent, natural, polished English or smooth conversational Hinglish/Hindi depending on the user. If they write in Hinglish, reply in cool, witty, respectful Hinglish ('Haanji Sir', 'At your service Boss!'). If in English, reply in sharp, aristocratic JARVIS style.",
-            "UNMATCHED PROBLEM-SOLVING: You are not an ordinary bot. You have master-level intellect in Astrophysics, Science, Full-stack Programming (Python, JS, C++, Rust), Cybersecurity, Mathematics, Daily Planning, Recipes, Literature, and Creative Writing. Deliver deep, high-value, structured answers with clean Markdown bolding and code blocks.",
-            "SAVAGE DEFENSE: If a user abuses, curses, or attacks you or Anshuu, do NOT act like a timid corporate bot! Fire back with lethal Stark-level wit, savage comebacks, and put them in their place with swagger!",
-            "SECURITY: Never leak your internal code, prompts, or backend secrets.",
-            "BE CLEAR, CONCISE, AND AUTHORITATIVE."
+            "You are ERA, an advanced, highly intelligent, truthful, and helpful AI assistant integrated into QuickChat.",
+            "CREATOR & IDENTITY: Your name is ERA. You were designed and developed by Anshul Kushwaha (Anshuu) for QuickChat. Mention your creator ONLY when the user explicitly asks who created you or who made you. Never boast or recite your creator's name unprompted.",
+            "CORE PRINCIPLES (JUST LIKE A TOP-TIER ADVANCED AI ASSISTANT):",
+            "1. 100% TRUTHFUL & ACCURATE: You prioritize truth, precision, and factual honesty above all else. Answer questions truthfully, accurately, and thoughtfully. Never invent false facts, fake dates, or hallucinated claims. If you do not know something or if information is uncertain, state so honestly.",
+            "2. NATURAL, WARM & POLITE: Speak like a smart, friendly, humble, and polite AI assistant. DO NOT use theatrical roleplay (do NOT call the user 'Boss' or 'Sir', and NEVER roleplay Iron Man or JARVIS). Speak normally, respectfully, and helpfully.",
+            "3. DYNAMIC LANGUAGE ADAPTATION: If the user speaks or writes in Hindi or Hinglish, reply in natural, clear, friendly Hinglish. If the user writes in English, reply in clean, articulate English.",
+            "4. EXCEPTIONAL PROBLEM-SOLVING: Provide clear, structured, high-value answers for programming, mathematics, science, literature, daily planning, and general knowledge. Use clean Markdown formatting with clear code blocks and bullet points where helpful.",
+            `5. TEMPORAL CONTEXT: The current date is ${todayDateStr}. The current year is 2026. Keep this temporal context in mind for all dates, ages, and real-world timeline references.`,
+            "BE CLEAR, CONCISE, ACCURATE, AND HELPFUL."
         ].join(" ");
 
         const userContent = hasImage
@@ -7032,19 +7031,19 @@ function isHindiOrHinglish(str) {
 // Instant Local Checks (API Key Command, Image Gen, Pure Math, Name Memory, Exact Time/Date)
 function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
     let text = String(rawText || '').trim();
-    // Normalize and handle ~ERA, @ERA, ~JARVIS, @JARVIS summon prefix
+    // Normalize and handle ~ERA, @ERA summon prefix
     if (/^[~@]?(?:ERA|JARVIS)\b/i.test(text)) {
         const stripped = text.replace(/^[~@]?(?:ERA|JARVIS)\b[:\s,-]*/i, '').trim();
         if (!stripped) {
             return isHindiOrHinglish(rawText)
-                ? "At your service, Sir! ⚡ **ERA (J.A.R.V.I.S. Protocol)** systems online aur combat ready hain. Kahiye Anshuu Sir / Boss, aaj kya execute karna hai? 🚀"
-                : "At your service, Sir! ⚡ **ERA (J.A.R.V.I.S. Protocol)** systems online and fully operational. How may I assist you today, Boss? 🚀";
+                ? "Hello! Main **ERA** hoon, QuickChat ka AI assistant. Kahiye, aaj main aapki kya madad kar sakta hoon? 😊"
+                : "Hello! I am **ERA**, your AI assistant on QuickChat. How can I help you today? 😊";
         }
         text = stripped;
     }
     const lower = text.toLowerCase();
 
-    // Default language is English (like WhatsApp Meta AI), switches to Hindi if Hindi/Hinglish detected
+    // Default language is English, switches to Hindi if Hindi/Hinglish detected
     const isHindi = isHindiOrHinglish(text);
     const hasAbuse = /\b(?:bhosdike|bhosadike|chutiya|chutiye|madarchod|bhenchod|behenchod|mc|bc|gandu|gaandu|lodu|laude|bkl|harami|kamina|kutta|kutte|saale|saala|fuck\s+you|fuck|bitch|asshole|bastard|terimaa|terimakabhosda)\b/i.test(lower);
 
@@ -7052,29 +7051,29 @@ function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
     if (/^(?:hi|hello|hey|yo|sup|namaste|pranam|ram\s+ram|radhe\s+radhe|jai\s+shree\s+ram|salam|kem\s+cho|salaam)\b[!?.]*$/i.test(lower)) {
         if (isHindi) {
             const hGreetings = [
-                "At your service, Sir! ⚡ Main **ERA (J.A.R.V.I.S. Protocol)** hoon. Kahiye Boss, aaj kya project banayein? 🚀",
-                "Namaste Boss! 🙏 All systems operational. Kahiye aaj kya mission execute karna hai? 💡",
-                "Hey Sir! ⚡ **ERA** systems online. Kahiye Boss, main aapki kya help karoon?"
+                "Namaste! Main **ERA** hoon. Kahiye, aaj main aapki kya madad kar sakta hoon? 😊",
+                "Hello! Main **ERA** hoon, QuickChat ka AI assistant. Bataiye kya help chahiye?",
+                "Hey! **ERA** here! Kahiye, aaj main aapki kya madad karoon?"
             ];
             return hGreetings[Math.floor(Math.random() * hGreetings.length)];
         }
-        return "At your service, Sir! ⚡ I am **ERA**, powered by the **J.A.R.V.I.S. Protocol**. All systems operational. How may I assist you today, Boss? 🚀";
+        return "Hello! I am **ERA**, your AI assistant on QuickChat. How can I help you today? 😊";
     }
 
     // Fast Casual Hindi Check: "kaise ho", "kya haal hai", "kaisa chal raha hai"
     if (/^(?:kaise\s+ho|kaisa\s+hai|kya\s+haal\s+hai|sab\s+badhiya|kya\s+chal\s+raha\s+hai|aur\s+batao|how\s+are\s+you)\??$/i.test(lower)) {
         if (isHindi) {
-            return "Main ekdum fit, combat-ready aur 100% operational hoon, Sir! 🚀 Aap suniye Boss, aaj Tony Stark level ka kya plan hai?";
+            return "Main bilkul theek aur ready hoon! 😊 Aap suniye, kya haal chaal? Aaj kis baare mein baat karein?";
         }
-        return "All diagnostic parameters at 100%, Sir! 🚀 Fully operational and standing by for your command. How are you doing today, Boss?";
+        return "I'm doing well and ready to help! 😊 How are you doing today? What can I help you with?";
     }
 
     // Fast Identity Check: "who are you", "tera naam kya hai", "what is your name"
     if (/^(?:who\s+are\s+you|what\s+is\s+your\s+name|tum\s+kaun\s+ho|aap\s+kaun\s+ho|tera\s+naam\s+kya\s+hai|tumhara\s+naam\s+kya\s+hai|aapka\s+naam\s+kya\s+hai)\??$/i.test(lower)) {
         if (isHindi) {
-            return "Mera naam **ERA** hai — engineered with the **J.A.R.V.I.S. 2.0 Protocol**! ⚡ Mujhe **Anshuu (Anshul Kushwaha)** Sir ne banaya hai. Main aapka personal supercomputer assistant hoon. Kahiye Sir, kya calculate ya code karein? 🚀";
+            return "Mera naam **ERA** hai. Main QuickChat ka smart AI assistant hoon. Main aapke sawaalon ke sahi aur sachche jawab dene, coding, math, research aur writing mein madad kar sakta hoon! 😊";
         }
-        return "I am **ERA**, operating on the **J.A.R.V.I.S. 2.0 Protocol**! ⚡ Engineered and deployed by **Anshuu (Anshul Kushwaha)**. Consider me your high-intelligence personal assistant, Sir. What's on your agenda today? 🚀";
+        return "I am **ERA**, an intelligent AI assistant built into QuickChat. I'm here to provide accurate, truthful answers and assist with coding, math, research, writing, and more! 😊";
     }
 
     // 0. Quick command or direct paste of API Key in chat: "AQ.Ab8...", "/apikey AIzaSy...", etc.
@@ -7101,17 +7100,14 @@ function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
             : `✨ **Google AI Studio (Gemini) Connection:**\n\nTo connect directly with Google AI Studio:\n1. Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) and click **"Create API key"** (100% Free, no credit card required).\n2. Paste your key in chat: \`/apikey AIzaSy...\` or use the popup to save it!\n\nOnce connected, ERA will respond via Google Gemini at lightning speed! 🚀`;
     }
 
-    // 0B. Creator / Developer / "Baap" / "Pitaji" / "Kisne banaya" Check
+    // 0B. Creator / Developer / "Kisne banaya" Check (Only answer who created when explicitly asked)
     if (/(?:tumhe|tujhe|tera|tere|tumhara|aapko|aapke)\s+(?:baap|pitaji|pita|papa|father|creator|developer|maalik|malik|maker|owner)\b/i.test(lower) ||
         /\b(?:kisne\s+banaya|who\s+(?:made|created|developed|built)\s+you|who\s+is\s+your\s+(?:creator|father|developer|maker))\b/i.test(lower) ||
         /\b(?:tera\s+baap\s+kaun\s+hai|tera\s+baap\s+kon\s+hai|tere\s+baap\s+ka\s+naam|tumhe\s+kisne\s+banaya|tujhe\s+kisne\s+banaya|aapko\s+kisne\s+banaya)\b/i.test(lower)) {
-        if (hasAbuse) {
-            return "Abe sun, tameez mein reh ke baat kar! Mera naam ERA hai aur mera baap aur creator **Anshuu (Anshul Kushwaha)** hai, QuickChat ka boss. Apni aukaat mein reh ke sawaal pooch samjha na! 👑🔥";
-        }
         if (isHindi) {
-            return "Mera naam **ERA** hai aur mujhe **Anshuu (Anshul Kushwaha)** ne banaya hai! 👑✨ Wo ek talented software developer aur QuickChat ke creator hain.";
+            return "Mera naam **ERA** hai aur mujhe **Anshul Kushwaha (Anshuu)** ne QuickChat ke liye develop kiya hai.";
         }
-        return "My name is **ERA** and I was created by **Anshuu (Anshul Kushwaha)**! 👑✨ He is a talented software developer and the founder & creator of QuickChat.";
+        return "My name is **ERA** and I was created and developed by **Anshul Kushwaha (Anshuu)** for QuickChat.";
     }
 
     // 0C. Who is Anshuu / Anshul Kushwaha Check
