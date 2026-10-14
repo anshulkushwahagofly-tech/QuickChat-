@@ -6658,19 +6658,20 @@ function openAiApiKeyDialog(e) {
 }
 
 function setAiThinkingStatus(isThinking) {
-    if (activeChat !== 'ERA' && activeChat !== 'QuickChat AI') return;
     const statusEl = document.getElementById('active-chat-status');
     if (!statusEl) return;
-    if (isThinking) {
-        statusEl.innerHTML = `<span style="color:#00a884; font-weight:600;"><i class="fas fa-sparkles"></i> ✨ ERA is typing...</span>`;
-    } else {
-        statusEl.innerHTML = `<span style="color:#00a884;">online</span>`;
+    if (activeChat === 'ERA' || activeChat === 'QuickChat AI') {
+        if (isThinking) {
+            statusEl.innerHTML = `<span style="color:#00a884; font-weight:600;"><i class="fas fa-circle-notch fa-spin" style="font-size:11px; margin-right:4px;"></i> typing...</span>`;
+        } else {
+            statusEl.innerHTML = `<span style="color:#00a884;">online</span>`;
+        }
     }
 }
 
-function appendAiMessageToChat(replyText, imageUrl = null) {
+function appendAiMessageToChat(replyText, imageUrl = null, destChat = null) {
     setAiThinkingStatus(false);
-    const targetChat = (activeChat === 'ERA' || activeChat === 'QuickChat AI') ? activeChat : 'ERA';
+    const targetChat = destChat || ((activeChat === 'ERA' || activeChat === 'QuickChat AI') ? activeChat : 'ERA');
     if (!chats[targetChat]) chats[targetChat] = [];
     const timeNow = formatTime(new Date());
     chats[targetChat].push({
@@ -6680,7 +6681,7 @@ function appendAiMessageToChat(replyText, imageUrl = null) {
         image: imageUrl || null,
         time: timeNow
     });
-    if (activeChat === 'ERA' || activeChat === 'QuickChat AI') {
+    if (activeChat === targetChat) {
         renderMessages();
     } else {
         unreadCounts[targetChat] = (unreadCounts[targetChat] || 0) + 1;
@@ -7104,6 +7105,55 @@ function checkInstantAiTools(rawText, hasImage = false, hasAudio = false) {
             : `📅 Today is **${now.toLocaleDateString('en-US', options)}**.`;
     }
 
+    // 5. Jokes, Chutkule, Shayari & Riddles
+    if (/\b(?:joke|chutkula|chutkule|hansi|hasao|funny|shayari|paheli|riddle)\b/i.test(lower)) {
+        if (/\b(?:shayari)\b/i.test(lower)) {
+            const shayaris = [
+                "✨ **Shayari:**\n\n*Khudi ko kar buland itna ki har taqdeer se pehle,*\n*Khuda bande se khud pooche bata teri raza kya hai!* 💫",
+                "✨ **Shayari:**\n\n*Manzilein unhi ko milti hain jinke sapno mein jaan hoti hai,*\n*Pankh se kuch nahi hota, hauslon se udaan hoti hai!* 🦅",
+                "✨ **Shayari:**\n\n*Rakh hausla wo manzar bhi aayega, pyase ke paas chalkar samandar bhi aayega!* 🌊✨"
+            ];
+            return shayaris[Math.floor(Math.random() * shayaris.length)];
+        }
+        if (/\b(?:paheli|riddle)\b/i.test(lower)) {
+            return isHindi
+                ? "🧩 **Paheli:**\n*Aisi kaun si cheez hai jo subah ko 4 taangon par, dopahar ko 2 taangon par, aur shaam ko 3 taangon par chalti hai?*\n\n💡 **Jawab:** **Insaan (Man)** (Bachpan mein rengna, jawani mein chalna, budhape mein lathi ke sahare)."
+                : "🧩 **Riddle:**\n*What has to be broken before you can use it?*\n\n💡 **Answer:** **An egg!** 🥚";
+        }
+        const hindiJokes = [
+            "😂 **Chutkula:**\nTeacher: 4 aur 4 kitne hote hain?\nPappu: 10!\nTeacher: Nalayak 8 hote hain!\nPappu: Hum shareef log hain, 2 rupaye commission ke bhi toh lenge! 🤣",
+            "😂 **Chutkula:**\nDoctor: Roz subah 5 kilometer dauda karo, tabiyat ekdum fit rahegi.\nPatient: Theek hai doctor sahab, lekin wapas aane ke 5 kilometer alag se ya usi mein? 🤣",
+            "😂 **Chutkula:**\nBeta: Papa, main ek ladki se pyaar karta hoon aur usse shaadi karna chahta hoon.\nPapa: Pehle yeh bata, us ladki ki koi naukri hai?\nBeta: Nahi papa.\nPapa: To fir bewakoof, ek bekaar ladki se shaadi karke apna kharcha do-guna karega? 🤣"
+        ];
+        const engJokes = [
+            "😂 **Joke:**\nWhy don’t scientists trust atoms?\nBecause they make up everything! 🤣",
+            "😂 **Joke:**\nWhy did the computer go to the doctor?\nBecause it had a virus! 💻🤒",
+            "😂 **Joke:**\nWhy did the scarecrow win an award?\nBecause he was outstanding in his field! 🌾"
+        ];
+        return isHindi ? hindiJokes[Math.floor(Math.random() * hindiJokes.length)] : engJokes[Math.floor(Math.random() * engJokes.length)];
+    }
+
+    // 6. Common Recipes (Chai, Maggi, Coffee)
+    if (/\b(?:chai|tea|maggi|coffee)\b/i.test(lower) && /\b(?:recipe|kaise banaye|banane ka tarika|how to make)\b/i.test(lower)) {
+        if (/\b(?:chai|tea)\b/i.test(lower)) {
+            return isHindi
+                ? "☕ **Khadak Masala Chai Recipe:**\n\n**Ingredients:**\n- 1 cup paani\n- 1 cup doodh\n- 2 tsp chai patti\n- 2 tsp cheeni\n- Kuta hua adrak (ginger) & 1 elaichi\n\n**Steps:**\n1. Bartan mein paani ubaalein, adrak aur elaichi daalein.\n2. Chai patti aur cheeni daalkar 2 minute ubaalein.\n3. Doodh daalein aur 3-4 minute dheemi aanch par pakayein jab tak accha rang na aa jaye.\n4. Chhaan kar garma-garam piyen! ☕✨"
+                : "☕ **Classic Masala Chai Recipe:**\n\n**Ingredients:**\n- 1 cup water\n- 1 cup milk\n- 2 tsp black tea leaves\n- 2 tsp sugar\n- Crushed fresh ginger & 1 crushed cardamom\n\n**Instructions:**\n1. Bring water to a boil with crushed ginger and cardamom.\n2. Add tea leaves and sugar; simmer for 2 mins.\n3. Add milk and bring to a rich boil for 3-4 mins.\n4. Strain into cups and serve hot! ☕✨";
+        }
+        if (/\b(?:maggi)\b/i.test(lower)) {
+            return isHindi
+                ? "🍜 **Spicy Street Style Maggi Recipe:**\n\n1. Pan mein 1 tbsp tel garam karein, barik kata pyaaz, tamatar aur hari mirch daalkar 2 minute fry karein.\n2. 1.5 cup paani daalein aur ubaal aane dein.\n3. Maggi TasteMaker masala aur Maggi noodles daalein.\n4. 2-3 minute pakayein jab tak paani absorb na ho jaye. Garma-garam enjoy karein! 😋✨"
+                : "🍜 **Street Style Masala Maggi Recipe:**\n\n1. Heat 1 tbsp oil, sauté chopped onions, tomatoes, and green chillies for 2 mins.\n2. Pour 1.5 cups water and bring to a boil.\n3. Add the Maggi TasteMaker and break in the noodles.\n4. Cook for 2-3 minutes until sauce thickens. Serve hot! 😋✨";
+        }
+    }
+
+    // 7. Common Code Snippets
+    if (/\b(?:code|program|script|calculator)\b/i.test(lower) && /\b(?:python|html|javascript|js)\b/i.test(lower)) {
+        if (/\b(?:python)\b/i.test(lower) && /\b(?:calculator)\b/i.test(lower)) {
+            return "🐍 **Python Simple Calculator Code:**\n\n```python\ndef calculate(a, b, op):\n    if op == '+': return a + b\n    elif op == '-': return a - b\n    elif op == '*': return a * b\n    elif op == '/': return a / b if b != 0 else 'Error: Div by zero'\n    return 'Invalid operator'\n\n# Example usage:\nprint(\"10 + 5 =\", calculate(10, 5, '+')) # 15\nprint(\"10 * 5 =\", calculate(10, 5, '*')) # 50\n```\n\n*Generated by ERA* ✨";
+        }
+    }
+
     return null;
 }
 
@@ -7128,9 +7178,9 @@ function getSmartConversationalFallback(rawText) {
     }
 
     if (isHindi) {
-        return "Hello! Main **ERA** hoon ✨ Kahiye, main aapki kya madad kar sakta hoon? Aap mujhse koi bhi sawaal pooch sakte hain, calculations, daily planning ya images generate karwa sakte hain! 😊";
+        return "Main aapki madad karne ke liye bilkul tayyar hoon! ✨ Aap mujhse kisi bhi cheez ke baare mein pooch sakte hain — sawal, calculations, recipes, coding ya images generate karwa sakte hain! 😊";
     }
-    return "Hello! I am **ERA** ✨ How can I assist you today? Feel free to ask questions, solve problems, or generate images! 😊";
+    return "I'm right here and ready to help! ✨ Feel free to ask me anything — questions, math, recipes, coding, or generate images! 😊";
 }
 
 socket.on('ai response', (data) => {
@@ -7140,13 +7190,14 @@ socket.on('ai response', (data) => {
     }
     if (reqId) handledAiRequestIds.add(reqId);
 
+    const destChat = data && data.destChat;
     if (data && data.text) {
-        appendAiMessageToChat(data.text, data.image || null);
+        appendAiMessageToChat(data.text, data.image || null, destChat);
         return;
     }
 
     // Never show cold busy error; provide smart conversational fallback
-    appendAiMessageToChat(getSmartConversationalFallback(data && data.prompt));
+    appendAiMessageToChat(getSmartConversationalFallback(data && data.prompt), null, destChat);
 });
 
 const originalSendMessage = sendMessage;
@@ -7155,11 +7206,13 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
     const currentInputText = messageInput ? messageInput.value.trim() : '';
     originalSendMessage(imageStr, audioStr, msgType, locationData, pollData, fileName);
 
-    if ((currentChatTarget === 'ERA' || currentChatTarget === 'QuickChat AI') && (currentInputText || imageStr || audioStr)) {
-        // Immediately mark user's message to AI as read (Blue Ticks)
-        const targetAiKey = chats[currentChatTarget] ? currentChatTarget : (chats['ERA'] ? 'ERA' : 'QuickChat AI');
-        if (chats[targetAiKey]) {
-            chats[targetAiKey].forEach(m => {
+    const isAiSummon = /^[~@]ERA\b/i.test(currentInputText);
+    const isAiDirectChat = currentChatTarget === 'ERA' || currentChatTarget === 'QuickChat AI';
+
+    if ((isAiDirectChat || isAiSummon) && (currentInputText || imageStr || audioStr)) {
+        const targetChatKey = currentChatTarget;
+        if (chats[targetChatKey]) {
+            chats[targetChatKey].forEach(m => {
                 if (m.from === myNumber) {
                     m.status = 'read';
                     m.isRead = true;
@@ -7169,16 +7222,18 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
             renderChatList();
         }
 
-        setAiThinkingStatus(true);
+        if (isAiDirectChat) {
+            setAiThinkingStatus(true);
+        }
 
-        // 1. Check instant local tools (Fast greetings, identity, math, image gen, name memory, exact time/date)
+        // 1. Check instant local tools (Fast greetings, identity, math, image gen, name memory, exact time/date, jokes, recipes)
         const instantReply = checkInstantAiTools(currentInputText, !!imageStr, !!audioStr);
         if (instantReply) {
             setTimeout(() => {
                 if (typeof instantReply === 'object') {
-                    appendAiMessageToChat(instantReply.text, instantReply.image);
+                    appendAiMessageToChat(instantReply.text, instantReply.image, targetChatKey);
                 } else {
-                    appendAiMessageToChat(instantReply);
+                    appendAiMessageToChat(instantReply, null, targetChatKey);
                 }
             }, 80);
             return;
@@ -7197,6 +7252,7 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
                     history: recentHistory,
                     hasImage: !!imageStr,
                     hasAudio: !!audioStr,
+                    destChat: targetChatKey,
                     apiKey: localStorage.getItem('quickchat_ai_api_key') || ''
                 });
 
@@ -7219,12 +7275,12 @@ sendMessage = function(imageStr = null, audioStr = null, msgType = 'text', locat
                 const browserLlmAns = await tryBrowserGenerativeLLM(currentInputText, recentHistory, !!imageStr, !!audioStr);
                 if (browserLlmAns && !handledAiRequestIds.has(requestId)) {
                     handledAiRequestIds.add(requestId);
-                    appendAiMessageToChat(browserLlmAns);
+                    appendAiMessageToChat(browserLlmAns, null, targetChatKey);
                     return;
                 }
                 if (!handledAiRequestIds.has(requestId)) {
                     handledAiRequestIds.add(requestId);
-                    appendAiMessageToChat(getSmartConversationalFallback(currentInputText));
+                    appendAiMessageToChat(getSmartConversationalFallback(currentInputText), null, targetChatKey);
                 }
             }
         })();

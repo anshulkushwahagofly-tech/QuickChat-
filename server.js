@@ -840,6 +840,130 @@ function isHindiOrHinglish(str) {
     return /\b(?:kya|kaun|kon|kaise|kaisa|kaisi|kyu|kyun|kab|kahan|kidhar|kitna|kitni|hai|hain|hoon|ho|tha|the|thi|hoga|hogi|batao|bata|bataiye|bhai|yaar|dost|karo|karein|karna|kar|raha|rahe|rahi|mera|meri|mere|tera|teri|tere|tumhara|tumhari|tumhare|aapka|aapki|aapke|tujhe|tumhe|aapko|hum|hume|humko|unhe|unko|inhe|inko|nahi|mat|bhi|aur|ya|par|lekin|magar|se|ko|mein|mai|pe|accha|theek|sahi|galat|arre|abe|sun|suno|bol|bolo|chahiye|sakta|sakte|sakti|apna|apni|apne|baat|kaam|naam|baap|pitaji|maalik|khabar|mausam|gaali|chutiya|chutiye|bhosdike|bhosadike|bhenchod|madarchod|lodu|gandu|harami|kamina|kutta|kutte|saale|saala)\b/i.test(str);
 }
 
+// --- HIGH-INTELLIGENCE ERA REASONING & KNOWLEDGE ENGINE ---
+async function solveIntelligentQuery(q, isHindi) {
+    if (!q) return null;
+    const cleanQ = String(q).trim();
+    const lower = cleanQ.toLowerCase();
+
+    // 1. Math Evaluation (e.g. "15*4", "100/5", "25% of 800", "calculate 50 + 20")
+    const mathMatch = cleanQ.match(/^[\d\s+\-*/().%^xX÷=]+$/) ||
+                      lower.match(/(?:what is|calculate|solve|kitna hota hai|kitna hoga|batao)\s*([0-9\s+\-*/().%^xX÷]+)/i);
+    if (mathMatch) {
+        let expr = (mathMatch[1] || mathMatch[0]).replace(/x|X/g, '*').replace(/÷/g, '/').replace(/=/g, '').trim();
+        try {
+            const pctMatch = expr.match(/(\d+(?:\.\d+)?)\s*%\s*(?:of)?\s*(\d+(?:\.\d+)?)/i);
+            if (pctMatch) {
+                const ans = (parseFloat(pctMatch[1]) / 100) * parseFloat(pctMatch[2]);
+                return `🔢 **Math Result:**\n\`${pctMatch[1]}% of ${pctMatch[2]} = ${ans}\``;
+            }
+            if (/^[\d\s+\-*/().%]+$/.test(expr)) {
+                const ans = Function('return (' + expr + ')')();
+                if (typeof ans === 'number' && !isNaN(ans) && isFinite(ans)) {
+                    return `🔢 **Math Result:**\n\`${expr} = ${ans}\``;
+                }
+            }
+        } catch (e) {}
+    }
+
+    // 2. Jokes, Chutkule, Shayari & Riddles
+    if (/\b(?:joke|chutkula|chutkule|hansi|hasao|funny|shayari|paheli|riddle)\b/i.test(lower)) {
+        if (/\b(?:shayari)\b/i.test(lower)) {
+            const shayaris = [
+                "✨ **Shayari:**\n\n*Khudi ko kar buland itna ki har taqdeer se pehle,*\n*Khuda bande se khud pooche bata teri raza kya hai!* 💫",
+                "✨ **Shayari:**\n\n*Manzilein unhi ko milti hain jinke sapno mein jaan hoti hai,*\n*Pankh se kuch nahi hota, hauslon se udaan hoti hai!* 🦅",
+                "✨ **Shayari:**\n\n*Rakh hausla wo manzar bhi aayega, pyase ke paas chalkar samandar bhi aayega!* 🌊✨"
+            ];
+            return shayaris[Math.floor(Math.random() * shayaris.length)];
+        }
+        if (/\b(?:paheli|riddle)\b/i.test(lower)) {
+            return isHindi
+                ? "🧩 **Paheli:**\n*Aisi kaun si cheez hai jo subah ko 4 taangon par, dopahar ko 2 taangon par, aur shaam ko 3 taangon par chalti hai?*\n\n💡 **Jawab:** **Insaan (Man)** (Bachpan mein rengna, jawani mein chalna, budhape mein lathi ke sahare)."
+                : "🧩 **Riddle:**\n*What has to be broken before you can use it?*\n\n💡 **Answer:** **An egg!** 🥚";
+        }
+        const hindiJokes = [
+            "😂 **Chutkula:**\nTeacher: 4 aur 4 kitne hote hain?\nPappu: 10!\nTeacher: Nalayak 8 hote hain!\nPappu: Hum shareef log hain, 2 rupaye commission ke bhi toh lenge! 🤣",
+            "😂 **Chutkula:**\nDoctor: Roz subah 5 kilometer dauda karo, tabiyat ekdum fit rahegi.\nPatient: Theek hai doctor sahab, lekin wapas aane ke 5 kilometer alag se ya usi mein? 🤣",
+            "😂 **Chutkula:**\nBeta: Papa, main ek ladki se pyaar karta hoon aur usse shaadi karna chahta hoon.\nPapa: Pehle yeh bata, us ladki ki koi naukri hai?\nBeta: Nahi papa.\nPapa: To fir bewakoof, ek bekaar ladki se shaadi karke apna kharcha do-guna karega? 🤣"
+        ];
+        const engJokes = [
+            "😂 **Joke:**\nWhy don’t scientists trust atoms?\nBecause they make up everything! 🤣",
+            "😂 **Joke:**\nWhy did the computer go to the doctor?\nBecause it had a virus! 💻🤒",
+            "😂 **Joke:**\nWhy did the scarecrow win an award?\nBecause he was outstanding in his field! 🌾"
+        ];
+        return isHindi ? hindiJokes[Math.floor(Math.random() * hindiJokes.length)] : engJokes[Math.floor(Math.random() * engJokes.length)];
+    }
+
+    // 3. Recipes (Chai, Coffee, Maggi, Omelette, Biryani, Pasta)
+    if (/\b(?:chai|tea|maggi|coffee|omelette|pasta|biryani|paneer)\b/i.test(lower) &&
+        /\b(?:recipe|kaise banaye|banane ka tarika|how to make|ingredients|vidhi|विधि|बनाएं)\b/i.test(lower)) {
+        if (/\b(?:chai|tea)\b/i.test(lower)) {
+            return isHindi
+                ? "☕ **Khadak Masala Chai Recipe:**\n\n**Ingredients:**\n- 1 cup paani\n- 1 cup doodh\n- 2 tsp chai patti\n- 2 tsp cheeni (sugar)\n- Kuta hua adrak (ginger) & 1 elaichi\n\n**Steps:**\n1. Bartan mein paani ubaalein, adrak aur elaichi daalein.\n2. Chai patti aur cheeni daalkar 2 minute ubaalein.\n3. Doodh daalein aur 3-4 minute dheemi aanch par pakayein jab tak accha rang na aa jaye.\n4. Chhaan kar garma-garam piyen! ☕✨"
+                : "☕ **Classic Masala Chai Recipe:**\n\n**Ingredients:**\n- 1 cup water\n- 1 cup milk\n- 2 tsp black tea leaves\n- 2 tsp sugar\n- Crushed fresh ginger & 1 crushed cardamom\n\n**Instructions:**\n1. Bring water to a boil with crushed ginger and cardamom.\n2. Add tea leaves and sugar; simmer for 2 mins.\n3. Add milk and bring to a rich boil for 3-4 mins.\n4. Strain into cups and serve hot! ☕✨";
+        }
+        if (/\b(?:maggi)\b/i.test(lower)) {
+            return isHindi
+                ? "🍜 **Spicy Street Style Maggi Recipe:**\n\n1. Pan mein 1 tbsp tel garam karein, barik kata pyaaz, tamatar aur hari mirch daalkar 2 minute fry karein.\n2. 1.5 cup paani daalein aur ubaal aane dein.\n3. Maggi TasteMaker masala aur Maggi noodles daalein.\n4. 2-3 minute pakayein jab tak paani absorb na ho jaye. Garma-garam enjoy karein! 😋✨"
+                : "🍜 **Street Style Masala Maggi Recipe:**\n\n1. Heat 1 tbsp oil, sauté chopped onions, tomatoes, and green chillies for 2 mins.\n2. Pour 1.5 cups water and bring to a boil.\n3. Add the Maggi TasteMaker and break in the noodles.\n4. Cook for 2-3 minutes until sauce thickens. Serve hot! 😋✨";
+        }
+        if (/\b(?:coffee)\b/i.test(lower)) {
+            return isHindi
+                ? "☕ **Creamy Frothy Coffee Recipe:**\n\n1. Ek cup mein 1 tsp instant coffee powder aur 2 tsp cheeni daalein.\n2. 1 chammach gunguna paani daalkar chammach se 3-4 minute zor se fentein (whisk karein) jab tak light brown creamy jhaag na ban jaye.\n3. Garam ubla hua doodh upar se daalein aur mix karein. Delicious café-style frothy coffee ready! ☕✨"
+                : "☕ **Café-Style Frothy Coffee Recipe:**\n\n1. In a mug, add 1 tsp instant coffee and 2 tsp sugar.\n2. Add 1 tbsp warm water and vigorously whisk for 3-4 mins until light, thick and frothy.\n3. Pour in hot boiled milk from height and gently stir. Enjoy rich café coffee! ☕✨";
+        }
+    }
+
+    // 4. Programming Code Snippets
+    if (/\b(?:code|program|script|function|calculator|loop|array|hello world|snake game)\b/i.test(lower) &&
+        /\b(?:python|javascript|js|html|css|c\+\+|java|sql)\b/i.test(lower)) {
+        if (/\b(?:python)\b/i.test(lower) && /\b(?:calculator)\b/i.test(lower)) {
+            return "🐍 **Python Simple Calculator Code:**\n\n```python\ndef calculate(a, b, op):\n    if op == '+': return a + b\n    elif op == '-': return a - b\n    elif op == '*': return a * b\n    elif op == '/': return a / b if b != 0 else 'Error: Div by zero'\n    return 'Invalid operator'\n\n# Example usage:\nprint(\"10 + 5 =\", calculate(10, 5, '+')) # 15\nprint(\"10 * 5 =\", calculate(10, 5, '*')) # 50\n```\n\n*Generated by ERA* ✨";
+        }
+        if (/\b(?:python)\b/i.test(lower) && /\b(?:hello\s*world)\b/i.test(lower)) {
+            return "🐍 **Python Hello World:**\n\n```python\nprint(\"Hello, World!\")\n```";
+        }
+        if (/\b(?:html)\b/i.test(lower) && /\b(?:button)\b/i.test(lower)) {
+            return "🌐 **HTML/CSS Styled Glow Button:**\n\n```html\n<button class=\"glow-btn\">Click Me</button>\n\n<style>\n.glow-btn {\n  background: #00a884;\n  color: white;\n  padding: 10px 22px;\n  border: none;\n  border-radius: 8px;\n  font-size: 16px;\n  cursor: pointer;\n  transition: all 0.3s ease;\n}\n.glow-btn:hover {\n  background: #008f6f;\n  box-shadow: 0 0 12px rgba(0, 168, 132, 0.6);\n  transform: translateY(-2px);\n}\n</style>\n```";
+        }
+    }
+
+    // 5. Live Encyclopedic Knowledge Lookup (Wikipedia REST Summary API)
+    try {
+        const searchTopic = cleanQ
+            .replace(/^[~@]ERA\b[:\s,-]*/i, '')
+            .replace(/^(?:who is|what is|tell me about|batao|kya hai|kaun hai|search for|information on|details of|about)\s*/i, '')
+            .replace(/\b(?:ke baare mein batao|ke bare me batao|kaun hai|kya hai|bataiye)\b/i, '')
+            .replace(/[?!.]+$/, '')
+            .trim();
+
+        if (searchTopic.length >= 2 && !/^(hi|hello|hey|test|ok|bye|sup)$/i.test(searchTopic)) {
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 3500);
+            const sRes = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTopic)}&format=json`, { signal: controller.signal });
+            clearTimeout(tid);
+            if (sRes.ok) {
+                const sData = await sRes.json();
+                const bestTitle = sData?.query?.search?.[0]?.title;
+                if (bestTitle) {
+                    const sumController = new AbortController();
+                    const sumTid = setTimeout(() => sumController.abort(), 3000);
+                    const sumRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(bestTitle)}`, { signal: sumController.signal });
+                    clearTimeout(sumTid);
+                    if (sumRes.ok) {
+                        const sumData = await sumRes.json();
+                        if (sumData && sumData.extract && sumData.extract.length > 30) {
+                            return `📖 **${sumData.title}**\n\n${sumData.extract}\n\n*ERA Live Knowledge* ✨`;
+                        }
+                    }
+                }
+            }
+        }
+    } catch (wikiErr) {}
+
+    return null;
+}
+
     // --- ADVANCED QUICKCHAT AI BRAIN (Supports Google Gemini, Groq, OpenAI, OpenRouter + Built-in Free API) ---
     socket.on('set ai api key', ({ apiKey }) => {
         if (typeof apiKey === 'string') {
@@ -847,8 +971,16 @@ function isHindiOrHinglish(str) {
         }
     });
 
-    socket.on('ask ai', async ({ requestId, prompt, history = [], hasImage = false, hasAudio = false, apiKey = '' }) => {
+    socket.on('ask ai', async ({ requestId, prompt, history = [], hasImage = false, hasAudio = false, apiKey = '', destChat = null }) => {
         try {
+            const originalEmit = socket.emit;
+            socket.emit = function(event, ...args) {
+                if (event === 'ai response' && args[0] && typeof args[0] === 'object' && destChat) {
+                    args[0].destChat = destChat;
+                }
+                return originalEmit.apply(this, [event, ...args]);
+            };
+
             let userText = String(prompt || '').trim();
             // Handle and normalize ~ERA, @ERA summon prefix
             if (/^[~@]?ERA\b/i.test(userText)) {
@@ -1093,59 +1225,81 @@ function isHindiOrHinglish(str) {
             }
 
             // 2B. Fast Built-in Free Generative LLM API
-            const candidateModels = ['openai-fast', 'openai'];
+            // 2B. Fast Built-in Free Generative LLM API
             let generatedAnswer = null;
 
-            for (const mName of candidateModels) {
-                if (generatedAnswer) break;
+            // Try Pollinations POST with clean user query (omits system role to prevent 402 Payment Required)
+            try {
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 12000);
-                try {
-                    const response = await fetch('https://text.pollinations.ai/openai', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            model: mName,
-                            reasoning_effort: 'low',
-                            seed: Math.floor(Math.random() * 1000000),
-                            messages: messagesPayload
-                        }),
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
+                const timeoutId = setTimeout(() => controller.abort(), 9000);
+                const response = await fetch('https://text.pollinations.ai/openai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: 'openai-fast',
+                        messages: [{ role: 'user', content: userText }]
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
 
-                    if (response && response.ok) {
-                        const rawBody = (await response.text()).trim();
-                        let aiText = '';
-                        try {
-                            const parsed = JSON.parse(rawBody);
-                            if (parsed?.choices?.[0]?.message?.content) {
-                                aiText = parsed.choices[0].message.content.trim();
-                            } else if (parsed?.choices?.[0]?.message?.reasoning) {
-                                aiText = parsed.choices[0].message.reasoning.trim();
-                            }
-                        } catch (e) {
-                            aiText = rawBody;
+                if (response && response.ok) {
+                    const rawBody = (await response.text()).trim();
+                    let aiText = '';
+                    try {
+                        const parsed = JSON.parse(rawBody);
+                        if (parsed?.choices?.[0]?.message?.content) {
+                            aiText = parsed.choices[0].message.content.trim();
+                        } else if (parsed?.choices?.[0]?.message?.reasoning) {
+                            aiText = parsed.choices[0].message.reasoning.trim();
                         }
+                    } catch (e) {
+                        aiText = rawBody;
+                    }
 
-                        if (aiText && aiText.length > 1 && !aiText.startsWith('<!DOCTYPE') && !aiText.startsWith('{"error"')) {
-                            generatedAnswer = aiText;
-                            break;
+                    if (aiText && aiText.length > 1 && !aiText.startsWith('<!DOCTYPE') && !aiText.startsWith('{"error"') && !aiText.startsWith('{"id":')) {
+                        generatedAnswer = aiText;
+                    }
+                }
+            } catch (postErr) {}
+
+            // Try Pollinations Direct Endpoint fallback if POST was rate-limited
+            if (!generatedAnswer) {
+                try {
+                    const getController = new AbortController();
+                    const getTid = setTimeout(() => getController.abort(), 8000);
+                    const getRes = await fetch(`https://text.pollinations.ai/${encodeURIComponent(userText)}`, {
+                        signal: getController.signal
+                    });
+                    clearTimeout(getTid);
+                    if (getRes && getRes.ok) {
+                        const getTxt = (await getRes.text()).trim();
+                        if (getTxt && getTxt.length > 1 && !getTxt.startsWith('<!DOCTYPE') && !getTxt.startsWith('{"error"') && !getTxt.startsWith('{}')) {
+                            generatedAnswer = getTxt;
                         }
                     }
-                } catch (fetchErr) {
-                    clearTimeout(timeoutId);
-                }
+                } catch (getErr) {}
             }
 
             if (generatedAnswer) {
                 return socket.emit('ai response', { requestId, text: generatedAnswer });
             }
 
-            // High-quality smart contextual response if external LLM was busy or unresponsive
+            // 2C. Live Real-Time Context (e.g., Weather / Live News)
+            if (liveWebContext && liveWebContext.trim()) {
+                return socket.emit('ai response', { requestId, text: `🌤️ **Live Update:**\n\n${liveWebContext.trim()}\n\n*ERA Live Intelligence* ✨` });
+            }
+
+            // 2D. High-Intelligence ERA Knowledge Engine (Math, Jokes, Recipes, Code, Wikipedia Live Facts)
+            const intelligentAnswer = await solveIntelligentQuery(userText, isHindi);
+            if (intelligentAnswer) {
+                return socket.emit('ai response', { requestId, text: intelligentAnswer });
+            }
+
+            // 2E. High-quality smart contextual response if completely conversational
             const smartFallback = isHindi
-                ? "Hello! Main **ERA** hoon ✨ Kahiye, main aapki kya madad kar sakta hoon? Aap mujhse kisi bhi topic par sawaal pooch sakte hain, calculations, daily planning ya images generate karwa sakte hain! 😊"
-                : "Hello! I am **ERA** ✨ How can I assist you today? Feel free to ask questions, solve problems, or generate images! 😊";
+                ? "Main aapki madad karne ke liye bilkul tayyar hoon! ✨ Aap mujhse kisi bhi cheez ke baare mein pooch sakte hain — sawaal, calculations, recipes, coding ya images generate karwa sakte hain! 😊"
+                : "I'm right here and ready to help! ✨ Feel free to ask me anything — questions, math, recipes, coding, or generate images! 😊";
             return socket.emit('ai response', { requestId, text: smartFallback });
         } catch (err) {
             console.warn("AI processing error:", err.message);
