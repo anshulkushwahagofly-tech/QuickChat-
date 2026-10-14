@@ -7226,7 +7226,7 @@ function getSmartConversationalFallback(rawText) {
     if (/^[~@]?ERA\b/i.test(text)) {
         return isHindi
             ? "Hello! 👋 Main **ERA** hoon, aapka smart personal AI assistant! Kahiye, aaj main aapki kya madad kar sakta hoon? 😊"
-            : "Hello! 👋 I am **ERA**, your smart personal AI assistant created by **Anshuu (Anshul Kushwaha)**. How can I assist you today? 😊";
+            : "Hello! 👋 I am **ERA**, your smart personal AI assistant. How can I assist you today? 😊";
     }
 
     if (isHindi) {

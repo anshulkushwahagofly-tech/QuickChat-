@@ -1239,7 +1239,7 @@ async function solveIntelligentQuery(q, isHindi) {
                         } else {
                             geminiContents.push({ role: 'user', parts: [{ text: userContent }] });
                         }
-                        for (const modelName of ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.7-flash', 'gemini-flash-latest']) {
+                        for (const modelName of ['gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemma-4-26b-a4b-it']) {
                             const gRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(activeKey)}`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
