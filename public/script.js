@@ -44,6 +44,307 @@ let chats = {};
 let unreadCounts = {};
 let allRegisteredUsers = [];
 
+// ========================================================
+// WHATSAPP DYNAMIC FAVICON & TITLE UNREAD BADGE SUBSYSTEM
+// ========================================================
+let cachedFaviconBaseImg = null;
+let isFaviconBaseLoaded = false;
+let faviconCanvas = null;
+let lastAppliedFaviconUrl = '';
+
+function initFaviconBaseImage() {
+    if (cachedFaviconBaseImg) return;
+    try {
+        cachedFaviconBaseImg = new Image();
+        cachedFaviconBaseImg.crossOrigin = 'anonymous';
+        cachedFaviconBaseImg.onload = () => {
+            isFaviconBaseLoaded = true;
+            updateFaviconAndTitleBadge();
+        };
+        cachedFaviconBaseImg.onerror = () => {
+            isFaviconBaseLoaded = false;
+        };
+        cachedFaviconBaseImg.src = 'logo.png?v=5';
+    } catch (e) {
+        isFaviconBaseLoaded = false;
+    }
+}
+
+function getTotalUnreadCount() {
+    let total = 0;
+    if (!unreadCounts || typeof unreadCounts !== 'object') return 0;
+    for (const friend in unreadCounts) {
+        if (!Object.prototype.hasOwnProperty.call(unreadCounts, friend)) continue;
+        const count = parseInt(unreadCounts[friend], 10) || 0;
+        if (count <= 0) continue;
+        if (Array.isArray(archivedChats) && archivedChats.includes(friend)) continue;
+        if (Array.isArray(mutedChats) && mutedChats.includes(friend)) continue;
+        total += count;
+    }
+    return total;
+}
+
+function drawRoundedRectPath(ctx, x, y, w, h, r) {
+    if (typeof ctx.roundRect === 'function') {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, r);
+        return;
+    }
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+function drawFaviconBaseFallback(ctx) {
+    // WhatsApp Gradient Rounded Square
+    const grad = ctx.createLinearGradient(0, 0, 64, 64);
+    grad.addColorStop(0, '#25d366');
+    grad.addColorStop(0.5, '#00a884');
+    grad.addColorStop(1, '#075e54');
+
+    ctx.save();
+    drawRoundedRectPath(ctx, 0, 0, 64, 64, 14);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // White Speech Bubble
+    ctx.beginPath();
+    ctx.fillStyle = '#ffffff';
+    ctx.arc(32, 33, 19, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bubble Tail
+    ctx.beginPath();
+    ctx.moveTo(18, 43);
+    ctx.lineTo(13, 53);
+    ctx.lineTo(26, 49);
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+
+    // 3 Message Dots
+    ctx.fillStyle = '#00a884';
+    ctx.beginPath();
+    ctx.arc(24, 33, 3, 0, Math.PI * 2);
+    ctx.arc(32, 33, 3, 0, Math.PI * 2);
+    ctx.arc(40, 33, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawFaviconBadge(ctx, count) {
+    ctx.save();
+    
+    // Subtle shadow for realistic pop effect
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+
+    const countStr = count > 99 ? '99+' : String(count);
+
+    if (count < 10) {
+        // Single digit circular badge
+        const cx = 46;
+        const cy = 18;
+        const r = 15;
+
+        // White border
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+
+        // WhatsApp signature green fill
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = '#25d366';
+        ctx.fill();
+
+        // Center crisp text
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 18px "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(countStr, cx, cy + 1);
+    } else if (count <= 99) {
+        // Two digits pill badge
+        const x = 24, y = 3, w = 38, h = 26, r = 13;
+
+        // White border
+        drawRoundedRectPath(ctx, x - 2.5, y - 2.5, w + 5, h + 5, r + 2.5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+
+        // WhatsApp signature green fill
+        drawRoundedRectPath(ctx, x, y, w, h, r);
+        ctx.fillStyle = '#25d366';
+        ctx.fill();
+
+        // Center crisp text
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 14px "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(countStr, x + w / 2, y + h / 2 + 1);
+    } else {
+        // 99+ pill badge
+        const x = 16, y = 3, w = 46, h = 26, r = 13;
+
+        // White border
+        drawRoundedRectPath(ctx, x - 2.5, y - 2.5, w + 5, h + 5, r + 2.5);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+
+        // WhatsApp signature green fill
+        drawRoundedRectPath(ctx, x, y, w, h, r);
+        ctx.fillStyle = '#25d366';
+        ctx.fill();
+
+        // Center crisp text
+        ctx.shadowColor = 'transparent';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '900 12.5px "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('99+', x + w / 2, y + h / 2 + 1);
+    }
+
+    ctx.restore();
+}
+
+function applyFaviconDataUrl(dataUrl) {
+    if (lastAppliedFaviconUrl === dataUrl) return;
+    lastAppliedFaviconUrl = dataUrl;
+
+    const existingIcons = document.querySelectorAll("link[rel*='icon']");
+    existingIcons.forEach(el => el.remove());
+
+    const newLink = document.createElement('link');
+    newLink.id = 'dynamic-favicon';
+    newLink.rel = 'shortcut icon';
+    newLink.type = 'image/png';
+    newLink.href = dataUrl;
+    document.head.appendChild(newLink);
+}
+
+function restoreDefaultFavicon() {
+    if (lastAppliedFaviconUrl === 'default') return;
+    lastAppliedFaviconUrl = 'default';
+
+    const existingIcons = document.querySelectorAll("link[rel*='icon']");
+    existingIcons.forEach(el => el.remove());
+
+    const svgLink = document.createElement('link');
+    svgLink.id = 'dynamic-favicon-svg';
+    svgLink.rel = 'icon';
+    svgLink.type = 'image/svg+xml';
+    svgLink.href = 'logo.svg?v=5';
+    document.head.appendChild(svgLink);
+
+    const pngLink = document.createElement('link');
+    pngLink.id = 'dynamic-favicon-png';
+    pngLink.rel = 'alternate icon';
+    pngLink.type = 'image/png';
+    pngLink.href = 'logo.png?v=5';
+    document.head.appendChild(pngLink);
+}
+
+function renderFaviconBadge(count) {
+    if (count <= 0) {
+        restoreDefaultFavicon();
+        return;
+    }
+
+    if (!faviconCanvas) {
+        faviconCanvas = document.createElement('canvas');
+        faviconCanvas.width = 64;
+        faviconCanvas.height = 64;
+    }
+
+    const ctx = faviconCanvas.getContext('2d');
+    ctx.clearRect(0, 0, 64, 64);
+
+    // 1. Draw Base App Logo
+    if (isFaviconBaseLoaded && cachedFaviconBaseImg && cachedFaviconBaseImg.complete && cachedFaviconBaseImg.naturalWidth > 0) {
+        try {
+            ctx.drawImage(cachedFaviconBaseImg, 0, 0, 64, 64);
+        } catch (e) {
+            drawFaviconBaseFallback(ctx);
+        }
+    } else {
+        drawFaviconBaseFallback(ctx);
+    }
+
+    // 2. Draw WhatsApp Unread Badge in Top-Right Corner
+    drawFaviconBadge(ctx, count);
+
+    // 3. Apply to document favicon
+    try {
+        const dataUrl = faviconCanvas.toDataURL('image/png');
+        applyFaviconDataUrl(dataUrl);
+    } catch (e) {
+        console.warn("Favicon data URL error:", e);
+    }
+}
+
+function updateFaviconAndTitleBadge() {
+    const totalUnread = getTotalUnreadCount();
+
+    // 1. WhatsApp Tab Title: "(N) QuickChat" or "QuickChat"
+    if (totalUnread > 0) {
+        document.title = `(${totalUnread}) QuickChat`;
+    } else {
+        document.title = 'QuickChat';
+    }
+
+    // 2. Update Left Navigation Rail Chats Icon Badge
+    const railChatsBtn = document.getElementById('rail-chats-btn');
+    let railChatsBadge = document.getElementById('rail-chats-badge');
+    if (railChatsBtn) {
+        if (!railChatsBadge) {
+            railChatsBadge = document.createElement('span');
+            railChatsBadge.id = 'rail-chats-badge';
+            railChatsBadge.className = 'wa-rail-badge';
+            railChatsBtn.appendChild(railChatsBadge);
+        }
+        if (totalUnread > 0) {
+            railChatsBadge.textContent = totalUnread > 99 ? '99+' : totalUnread;
+            railChatsBadge.style.display = 'block';
+            railChatsBtn.classList.add('has-badge');
+        } else {
+            railChatsBadge.style.display = 'none';
+            railChatsBtn.classList.remove('has-badge');
+        }
+    }
+
+    // 3. Update Unread Filter Pill Badge
+    const unreadPill = document.querySelector('.wa-pill[data-filter="unread"]');
+    if (unreadPill) {
+        if (totalUnread > 0) {
+            unreadPill.innerHTML = `Unread <span style="background:var(--wa-badge-bg, #00a884); color:#111b21; border-radius:10px; padding:0 6px; font-size:11px; font-weight:700; margin-left:4px; display:inline-block; vertical-align:middle;">${totalUnread > 99 ? '99+' : totalUnread}</span>`;
+        } else {
+            unreadPill.textContent = 'Unread';
+        }
+    }
+
+    // 4. Update Favicon with dynamic Canvas badge
+    renderFaviconBadge(totalUnread);
+}
+
+// Preload base favicon image immediately
+initFaviconBaseImage();
+
 const WHATSAPP_ABOUT_PRESETS = [
     "Available",
     "Busy",
@@ -330,6 +631,7 @@ function saveLocalCache() {
     try {
         if (myNumber) {
             localStorage.setItem('quickchat_cached_chats_' + myNumber, JSON.stringify(chats));
+            localStorage.setItem('quickchat_unread_counts_' + myNumber, JSON.stringify(unreadCounts));
         }
     } catch(e) {}
 }
@@ -364,9 +666,16 @@ if (savedNum) {
         const cachedChats = localStorage.getItem('quickchat_cached_chats_' + myNumber);
         if (cachedChats) {
             chats = JSON.parse(cachedChats);
-            renderChatList();
         } else {
             chats = {};
+        }
+        const cachedUnreads = localStorage.getItem('quickchat_unread_counts_' + myNumber);
+        if (cachedUnreads) {
+            unreadCounts = JSON.parse(cachedUnreads);
+        }
+        renderChatList();
+        if (typeof updateFaviconAndTitleBadge === 'function') {
+            updateFaviconAndTitleBadge();
         }
     } catch (e) {
         console.warn("Local cache parse err:", e);
@@ -1190,6 +1499,10 @@ socket.on('login success', (data) => {
         pinnedChats = JSON.parse(localStorage.getItem('quickchat_pinned_chats_' + myNumber) || '[]');
         mutedChats = JSON.parse(localStorage.getItem('quickchat_muted_chats_' + myNumber) || '[]');
         archivedChats = JSON.parse(localStorage.getItem('quickchat_archived_chats_' + myNumber) || '[]');
+        const cachedUnreads = localStorage.getItem('quickchat_unread_counts_' + myNumber);
+        if (cachedUnreads) {
+            unreadCounts = JSON.parse(cachedUnreads);
+        }
     } catch(e) {}
 
     // Update UI previews
@@ -1202,6 +1515,9 @@ socket.on('login success', (data) => {
     
     renderChatList();
     saveLocalCache();
+    if (typeof updateFaviconAndTitleBadge === 'function') {
+        updateFaviconAndTitleBadge();
+    }
     if (typeof updateAllUserAvatarElements === 'function') {
         updateAllUserAvatarElements();
     }
@@ -1472,6 +1788,9 @@ function getTicksHTML(msg, isChatList = false) {
 
 function renderChatList(filter = '') {
     chatList.innerHTML = '';
+    if (typeof updateFaviconAndTitleBadge === 'function') {
+        updateFaviconAndTitleBadge();
+    }
     
     const friendNumbers = Object.keys(chats);
     let filteredFriends = friendNumbers.filter(num => num.includes(filter));
@@ -1673,6 +1992,9 @@ function renderChatList(filter = '') {
 
         chatList.appendChild(chatItem);
     });
+    if (typeof updateFaviconAndTitleBadge === 'function') {
+        updateFaviconAndTitleBadge();
+    }
 }
 
 // ========================================================
@@ -1793,6 +2115,7 @@ if (ctxChatUnread) {
             unreadCounts[friend] = 1;
             showWhatsAppToast(`Marked as unread`, 'info');
         }
+        saveLocalCache();
         renderChatList();
     };
 }
@@ -1858,6 +2181,7 @@ if (ctxChatDelete) {
 function openChat(friendNumber) {
     activeChat = friendNumber;
     unreadCounts[friendNumber] = 0; // Clear unread badge
+    saveLocalCache();
     if (!chats[friendNumber]) {
         chats[friendNumber] = [];
     }
@@ -2881,6 +3205,7 @@ document.addEventListener('visibilitychange', () => {
     if (!document.hidden && activeChat && activeChat !== 'QuickChat AI' && activeChat !== 'ERA') {
         unreadCounts[activeChat] = 0;
         socket.emit('mark read', { from: activeChat });
+        saveLocalCache();
         renderChatList();
     }
 });

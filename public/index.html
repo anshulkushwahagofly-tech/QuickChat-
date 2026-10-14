@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QuickChat</title>
-    <link rel="icon" type="image/svg+xml" href="logo.svg?v=4">
-    <link rel="alternate icon" type="image/png" href="logo.png?v=4">
-    <link rel="apple-touch-icon" href="logo.png?v=4">
-    <link rel="manifest" href="manifest.json?v=4">
+    <link id="dynamic-favicon-svg" rel="icon" type="image/svg+xml" href="logo.svg?v=5">
+    <link id="dynamic-favicon-png" rel="alternate icon" type="image/png" href="logo.png?v=5">
+    <link rel="apple-touch-icon" href="logo.png?v=5">
+    <link rel="manifest" href="manifest.json?v=5">
     <meta name="theme-color" content="#075E54">
-    <link rel="stylesheet" href="style.css?v=33">
+    <link rel="stylesheet" href="style.css?v=34">
     <link rel="stylesheet" href="mobile-whatsapp.css?v=14">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script>
@@ -286,6 +286,7 @@
                         <path d="M19.005 3.175H4.674C3.642 3.175 2.8 4.017 2.8 5.05v15.775l3.87-3.87h12.335c1.032 0 1.874-.842 1.874-1.875V5.05c0-1.033-.842-1.875-1.874-1.875zm0 13.9H6.108l-1.428 1.428V5.05h14.325v12.025z"/>
                         <path d="M7 8h10v1.5H7zm0 3h7v1.5H7z"/>
                     </svg>
+                    <span class="wa-rail-badge" id="rail-chats-badge" style="display: none;"></span>
                 </button>
                 <button class="wa-rail-item has-badge" id="rail-calls-btn" title="Calls">
                     <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
@@ -1528,7 +1529,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="firebase-config.js?v=2"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="script.js?v=62"></script>
+    <script src="script.js?v=63"></script>
     <script src="webrtc.js?v=5"></script>
 </body>
 </html>
